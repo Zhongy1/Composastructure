@@ -1,0 +1,23 @@
+{
+  "name": "liqid",
+  "version": "0.0.1",
+  "description": "Module for Liqid API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zhongy1/Liqid.git"
+  },
+  "author": "Zhongyi Chen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Zhongy1/Liqid/issues"
+  },
+  "homepage": "https://github.com/Zhongy1/Liqid#readme",
+  "devDependencies": {
+    "typescript": "^3.5.3"
+  }
+}
