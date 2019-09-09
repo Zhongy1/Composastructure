@@ -19,5 +19,11 @@
   "homepage": "https://github.com/Zhongy1/Liqid#readme",
   "devDependencies": {
     "typescript": "^3.5.3"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.137",
+    "axios": "^0.19.0",
+    "lodash": "^4.17.15",
+    "typedoc": "^0.15.0"
   }
 }
