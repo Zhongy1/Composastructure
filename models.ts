@@ -461,3 +461,6 @@ export interface PredeviceParams {
     dev_type?: string,
     cid?: number | string
 }
+export interface DeviceStatusParams {
+
+}

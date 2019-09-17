@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>MachineAssembly | composastructure</title>
+	<title>OrganizedDeviceStatuses | composastructure</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -56,13 +56,13 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="../modules/_models_.html">&quot;models&quot;</a>
+					<a href="../modules/_liqid_observer_.html">&quot;liqid-observer&quot;</a>
 				</li>
 				<li>
-					<a href="_models_.machineassembly.html">MachineAssembly</a>
+					<a href="_liqid_observer_.organizeddevicestatuses.html">OrganizedDeviceStatuses</a>
 				</li>
 			</ul>
-			<h1>Interface MachineAssembly</h1>
+			<h1>Interface OrganizedDeviceStatuses</h1>
 		</div>
 	</div>
 </header>
@@ -73,7 +73,7 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">MachineAssembly</span>
+						<span class="target">OrganizedDeviceStatuses</span>
 					</li>
 				</ul>
 			</section>
@@ -84,8 +84,10 @@
 						<section class="tsd-index-section tsd-is-external">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-external"><a href="_models_.machineassembly.html#assemblytimestamp" class="tsd-kind-icon">assembly<wbr>Timestamp</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-external"><a href="_models_.machineassembly.html#machine" class="tsd-kind-icon">machine</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-external"><a href="_liqid_observer_.organizeddevicestatuses.html#cpu" class="tsd-kind-icon">cpu</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-external"><a href="_liqid_observer_.organizeddevicestatuses.html#gpu" class="tsd-kind-icon">gpu</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-external"><a href="_liqid_observer_.organizeddevicestatuses.html#nic" class="tsd-kind-icon">nic</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-external"><a href="_liqid_observer_.organizeddevicestatuses.html#ssd" class="tsd-kind-icon">ssd</a></li>
 							</ul>
 						</section>
 					</div>
@@ -94,24 +96,76 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-external">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-external">
-					<a name="assemblytimestamp" class="tsd-anchor"></a>
-					<h3>assembly<wbr>Timestamp</h3>
-					<div class="tsd-signature tsd-kind-icon">assembly<wbr>Timestamp<span class="tsd-signature-symbol">:</span> <a href="_models_.assemblytimestamp.html" class="tsd-signature-type">AssemblyTimestamp</a></div>
+					<a name="cpu" class="tsd-anchor"></a>
+					<h3>cpu</h3>
+					<div class="tsd-signature tsd-kind-icon">cpu<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/61734b9/models.ts#L267">models.ts:267</a></li>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/61734b9/liqid-observer.ts#L7">liqid-observer.ts:7</a></li>
 						</ul>
 					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-index-signature">
+								<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><a href="_models_.devicestatus.html" class="tsd-signature-type">DeviceStatus</a></h5>
+							</li>
+						</ul>
+					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-external">
-					<a name="machine" class="tsd-anchor"></a>
-					<h3>machine</h3>
-					<div class="tsd-signature tsd-kind-icon">machine<span class="tsd-signature-symbol">:</span> <a href="_models_.machine.html" class="tsd-signature-type">Machine</a></div>
+					<a name="gpu" class="tsd-anchor"></a>
+					<h3>gpu</h3>
+					<div class="tsd-signature tsd-kind-icon">gpu<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/61734b9/models.ts#L268">models.ts:268</a></li>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/61734b9/liqid-observer.ts#L8">liqid-observer.ts:8</a></li>
 						</ul>
 					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-index-signature">
+								<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><a href="_models_.devicestatus.html" class="tsd-signature-type">DeviceStatus</a></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-external">
+					<a name="nic" class="tsd-anchor"></a>
+					<h3>nic</h3>
+					<div class="tsd-signature tsd-kind-icon">nic<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/61734b9/liqid-observer.ts#L10">liqid-observer.ts:10</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-index-signature">
+								<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><a href="_models_.devicestatus.html" class="tsd-signature-type">DeviceStatus</a></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-external">
+					<a name="ssd" class="tsd-anchor"></a>
+					<h3>ssd</h3>
+					<div class="tsd-signature tsd-kind-icon">ssd<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/61734b9/liqid-observer.ts#L9">liqid-observer.ts:9</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-index-signature">
+								<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><a href="_models_.devicestatus.html" class="tsd-signature-type">DeviceStatus</a></h5>
+							</li>
+						</ul>
+					</div>
 				</section>
 			</section>
 		</div>
@@ -136,26 +190,35 @@
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_liqid_controller_.html">"liqid-<wbr>controller"</a>
 					</li>
-					<li class=" tsd-kind-external-module tsd-is-external">
+					<li class="current tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_liqid_observer_.html">"liqid-<wbr>observer"</a>
 					</li>
-					<li class="current tsd-kind-external-module tsd-is-external">
+					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_models_.html">"models"</a>
 					</li>
 				</ul>
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
+					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
+						<a href="../classes/_liqid_observer_.liqidobserver.html" class="tsd-kind-icon">Liqid<wbr>Observer</a>
+					</li>
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-interface tsd-parent-kind-external-module tsd-is-external">
-						<a href="_models_.machineassembly.html" class="tsd-kind-icon">Machine<wbr>Assembly</a>
+						<a href="_liqid_observer_.organizeddevicestatuses.html" class="tsd-kind-icon">Organized<wbr>Device<wbr>Statuses</a>
 						<ul>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-external">
-								<a href="_models_.machineassembly.html#assemblytimestamp" class="tsd-kind-icon">assembly<wbr>Timestamp</a>
+								<a href="_liqid_observer_.organizeddevicestatuses.html#cpu" class="tsd-kind-icon">cpu</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-external">
-								<a href="_models_.machineassembly.html#machine" class="tsd-kind-icon">machine</a>
+								<a href="_liqid_observer_.organizeddevicestatuses.html#gpu" class="tsd-kind-icon">gpu</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-external">
+								<a href="_liqid_observer_.organizeddevicestatuses.html#nic" class="tsd-kind-icon">nic</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-external">
+								<a href="_liqid_observer_.organizeddevicestatuses.html#ssd" class="tsd-kind-icon">ssd</a>
 							</li>
 						</ul>
 					</li>

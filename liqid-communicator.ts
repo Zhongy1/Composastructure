@@ -16,7 +16,8 @@ import {
     PendingGroupCommand,
     PendingMachineCommand,
     LiqidCoordinates,
-    PredeviceParams
+    PredeviceParams,
+    DeviceStatusParams
 } from './models';
 
 export interface Communicator {
@@ -34,19 +35,6 @@ export class LiqidCommunicator implements Communicator {
 
     constructor(private liqidIp: string) {
 
-    }
-
-    // format(): Promise<> {
-    //     return new Promise<>((resolve, reject) => {
-
-    //     });
-    // }
-
-    public getFullStatus = (): Promise<DeviceStatus[]> => {
-        return new Promise<DeviceStatus[]>((resolve, reject) => {
-            axios.get(this.liqidIp + '/status')
-                .then(res => { resolve(res.data.response.data); }, err => { reject(err); });
-        });
     }
 
     //Assembly Controller
@@ -84,9 +72,11 @@ export class LiqidCommunicator implements Communicator {
 
     //Device Status Controller
     //GET '/status' getStatus. Accepts a string criteria and an object parameters
-    public getStatus = (): Promise<DeviceStatus[]> => {
+    public getDeviceStats = (options?: DeviceStatusParams): Promise<DeviceStatus[]> => {
         return new Promise<DeviceStatus[]>((resolve, reject) => {
-            axios.get(this.liqidIp + '/status')
+            axios.get(this.liqidIp + '/status', {
+                params: options
+            })
                 .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -176,6 +166,16 @@ export class LiqidCommunicator implements Communicator {
         });
     }
     //GET '/fabric/id' Report the current fabric id.
+    public getFabricId = (): Promise<number> => {
+        return new Promise<number>((resolve, reject) => {
+            axios.get(this.liqidIp + '/fabric/id')
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/fabric/id/{id}' Switch to another fabric. EXPIREMENTAL. Accepts a number id 
     //POST '/fabric/reprogram' Reprogram the fabric. This will result in devices associated with a machine being electrically connected to the machine. This step MUST be done in order for a device to be added to a machine. Accepts Machine
     public reprogramFabric = (machine: Machine): Promise<Machine> => {
