@@ -1,4 +1,4 @@
 export * from './models';
 export { LiqidCommunicator } from './liqid-communicator';
-export { LiqidObserver } from './liqid-observer';
-export { LiqidController } from './liqid-controller';
+export { LiqidObserver, OrganizedDeviceStatuses } from './liqid-observer';
+export { LiqidController, ComposeOptions } from './liqid-controller';

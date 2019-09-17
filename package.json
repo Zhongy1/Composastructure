@@ -1,7 +1,7 @@
 {
-  "name": "liqid",
+  "name": "composastructure",
   "version": "0.0.1",
-  "description": "Module for Liqid API",
+  "description": "Module for Composable Infrastructure",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Zhongy1/Liqid.git"
+    "url": "git+https://github.com/Zhongy1/Composastructure.git"
   },
   "author": "Zhongyi Chen",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Zhongy1/Liqid/issues"
+    "url": "https://github.com/Zhongy1/Composastructure/issues"
   },
-  "homepage": "https://github.com/Zhongy1/Liqid#readme",
+  "homepage": "https://github.com/Zhongy1/Composastructure#readme",
   "devDependencies": {
     "typescript": "^3.5.3"
   },
