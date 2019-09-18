@@ -27,12 +27,18 @@ let controller = new LiqidController(ip);
 Stick to using only the observer and controller, as they are higher level abstractions of the communicator.
 
 ```ts
-import { LiqidObserver, LiqidController, ComposeOptions } from 'composastructure'
+import { LiqidObserver, LiqidController, ComposeOptions, Machine } from 'composastructure'
 
 let ip = 'ip/url to Liqid user interface';
 let observer = new LiqidObserver(ip);
 let controller = new LiqidController(ip);
 
+//----------Grab Components----------//
+
+
+
+//----------Compose Machine----------//
+//cpu, gpu, ssd, and nic can take either a count or an array of device names
 let options: ComposeOptions = {
     cpu: 1,
     gpu: ['gpu0', 'gpu1'],
@@ -40,6 +46,21 @@ let options: ComposeOptions = {
     nic: 1,
     name: 'SomeMachineName'
 }
+let createdMachine: Machine;
+controller.compose(options)
+    .then((machine) => {
+        console.log('Machine Composed!');
+        createdMachine = machine;
+    }, err => {
+        console.log(err);
+        createdMachine = null;
+    });
+
+//---------Decompose Machine---------//
+controller.decompose(createdMachine);
+
+
+
 
 
 ```
