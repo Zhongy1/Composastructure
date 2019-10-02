@@ -21,7 +21,7 @@ class LiqidObserver {
         this.liqidIp = liqidIp;
         this.fabricTracked = false;
         /**
-         * Deep diff between two object, using lodash
+         * Deep diff between two objects, using lodash.
          * @param  {Object} object Object compared
          * @param  {Object} base   Object to compare with
          * @return {Object}        Return a new object who represent the diff
@@ -36,18 +36,34 @@ class LiqidObserver {
             }
             return changes(object, base);
         };
+        /**
+         * Start tracking Liqid. Check for updates at one second intervals. Stops when encounters an error.
+         */
         this.start = () => {
+            if (this.fabricTracked)
+                return;
             this.fabricTracked = true;
             this.mainLoop = setInterval(() => {
-                let success = this.trackSystemChanges();
-                if (!success)
-                    this.stop();
+                this.trackSystemChanges()
+                    .then(success => {
+                    if (!success)
+                        this.stop();
+                });
             }, 1000);
         };
+        /**
+         * Stop tracking Liqid. Call start to resume.
+         */
         this.stop = () => {
+            if (!this.fabricTracked)
+                return;
             this.fabricTracked = false;
             clearInterval(this.mainLoop);
         };
+        /**
+         * Pulls up-to-date statistics from Liqid and compares/modifies existing statistics.
+         * @return {Promise<boolean>}    The success of the operation
+         */
         this.trackSystemChanges = () => __awaiter(this, void 0, void 0, function* () {
             var makeNecessaryUpdates = (update, target) => {
                 //check for necessary updates
@@ -80,6 +96,10 @@ class LiqidObserver {
             }
             return returnVal;
         });
+        /**
+         * Fetch group information
+         * @return {Promise<{ [key: string]: Group }}
+         */
         this.fetchGroups = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 let map = {};

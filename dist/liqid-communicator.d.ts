@@ -1,13 +1,11 @@
 import { DeviceStatus, ComputeDeviceStatus, FPGADeviceStatus, GPUDeviceStatus, LinkDeviceStatus, SsdDeviceStatus, Machine, PreDevice, Group, MachineDeviceRelator, MachineDetails, NodeStatus, PendingGroupCommand, PendingMachineCommand, LiqidCoordinates, PredeviceParams, DeviceStatusParams } from './models';
-export interface Communicator {
-}
 /**
  * Communicator for server and liqid system
 ```typescript
-const instance = new LiqidCommunicator(ip);
+const communicator = new LiqidCommunicator(ip);
 ```
  */
-export declare class LiqidCommunicator implements Communicator {
+export declare class LiqidCommunicator {
     private liqidIp;
     constructor(liqidIp: string);
     getDeviceStats: (options?: DeviceStatusParams) => Promise<DeviceStatus[]>;

@@ -68,6 +68,8 @@ class LiqidController {
                             throw new Error(`CPU ${options.cpu[i]} does not exist. Aborting Compose!`);
                     }
                 }
+                else
+                    throw new Error('CPU specification is neither a number nor a string array. Aborting Compose!');
                 if (typeof options.gpu === 'number' && options.gpu > 0) {
                     let deviceNames = Object.keys(deviceStats.gpu);
                     if (deviceNames.length < options.gpu)
@@ -83,6 +85,8 @@ class LiqidController {
                             throw new Error(`GPU ${options.gpu[i]} does not exist. Aborting Compose!`);
                     }
                 }
+                else
+                    throw new Error('GPU specification is neither a number nor a string array. Aborting Compose!');
                 if (typeof options.ssd === 'number' && options.ssd > 0) {
                     let deviceNames = Object.keys(deviceStats.ssd);
                     if (deviceNames.length < options.ssd)
@@ -98,6 +102,8 @@ class LiqidController {
                             throw new Error(`SSD ${options.ssd[i]} does not exist. Aborting Compose!`);
                     }
                 }
+                else
+                    throw new Error('SSD specification is neither a number nor a string array. Aborting Compose!');
                 if (typeof options.nic === 'number' && options.nic > 0) {
                     let deviceNames = Object.keys(deviceStats.nic);
                     if (deviceNames.length < options.nic)
@@ -113,6 +119,8 @@ class LiqidController {
                             throw new Error(`NIC ${options.nic[i]} does not exist. Aborting Compose!`);
                     }
                 }
+                else
+                    throw new Error('NIC specification is neither a number nor a string array. Aborting Compose!');
                 let transitionTime = new Promise((resolve) => { setTimeout(() => resolve(''), 500); });
                 //Create machine first
                 yield this.liqidComm.createMachine(machine);
@@ -141,14 +149,22 @@ class LiqidController {
                             break;
                     }
                     yield transitionTime;
-                    return true;
+                    let returnMachine = yield this.liqidObs.getMachineById(machine.mach_id);
+                    return returnMachine;
                 }
             }
             catch (err) {
                 throw new Error(err);
             }
         });
-        this.decompose = () => __awaiter(this, void 0, void 0, function* () {
+        this.decompose = (machine) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (machine)
+                    yield this.liqidComm.deleteMachine(machine.mach_id);
+            }
+            catch (err) {
+                throw new Error(err);
+            }
         });
         this.liqidComm = new liqid_communicator_1.LiqidCommunicator(liqidIp);
         this.liqidObs = new liqid_observer_1.LiqidObserver(liqidIp);

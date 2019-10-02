@@ -15,9 +15,9 @@ export interface ComposeOptions {
 
 
 /**
- * Decider for specific liqid tasks
+ * Controller for specific liqid tasks
 ```typescript
-const instance = new LiqidController(ip);
+const controller = new LiqidController(ip);
 ```
  */
 export class LiqidController {
@@ -33,6 +33,9 @@ export class LiqidController {
         this.identifyFabricId();
     }
 
+    /**
+     * Determine the current fabric id on which this controller is mounted
+     */
     private identifyFabricId = (): void => {
         this.liqidComm.getFabricId().then(id => {
             this.fabricId = id;
@@ -42,7 +45,12 @@ export class LiqidController {
         });
     }
 
-    public compose = async (options: ComposeOptions): Promise<boolean> => {
+    /**
+     * Compose a machine: specify the parts needed and the controller attempts to compose the machine. Aborts when an error is encountered.
+     * @param {ComposeOptions} options  Specify parts needed either by name or by how many
+     * @return {Machine}                Machine object, returned from Liqid
+     */
+    public compose = async (options: ComposeOptions): Promise<Machine> => {
         try {
             if (!this.ready)
                 throw new Error('Unready');
@@ -85,6 +93,7 @@ export class LiqidController {
                         throw new Error(`CPU ${options.cpu[i]} does not exist. Aborting Compose!`);
                 }
             }
+            else throw new Error('CPU specification is neither a number nor a string array. Aborting Compose!');
             if (typeof options.gpu === 'number' && options.gpu > 0) {
                 let deviceNames = Object.keys(deviceStats.gpu);
                 if (deviceNames.length < options.gpu)
@@ -100,6 +109,7 @@ export class LiqidController {
                         throw new Error(`GPU ${options.gpu[i]} does not exist. Aborting Compose!`);
                 }
             }
+            else throw new Error('GPU specification is neither a number nor a string array. Aborting Compose!');
             if (typeof options.ssd === 'number' && options.ssd > 0) {
                 let deviceNames = Object.keys(deviceStats.ssd);
                 if (deviceNames.length < options.ssd)
@@ -115,6 +125,7 @@ export class LiqidController {
                         throw new Error(`SSD ${options.ssd[i]} does not exist. Aborting Compose!`);
                 }
             }
+            else throw new Error('SSD specification is neither a number nor a string array. Aborting Compose!');
             if (typeof options.nic === 'number' && options.nic > 0) {
                 let deviceNames = Object.keys(deviceStats.nic);
                 if (deviceNames.length < options.nic)
@@ -130,6 +141,7 @@ export class LiqidController {
                         throw new Error(`NIC ${options.nic[i]} does not exist. Aborting Compose!`);
                 }
             }
+            else throw new Error('NIC specification is neither a number nor a string array. Aborting Compose!');
 
             let transitionTime = new Promise((resolve) => { setTimeout(() => resolve(''), 500) });
             //Create machine first
@@ -159,7 +171,8 @@ export class LiqidController {
                         break;
                 }
                 await transitionTime;
-                return true;
+                let returnMachine: Machine = await this.liqidObs.getMachineById(machine.mach_id);
+                return returnMachine;
             }
         }
         catch (err) {
@@ -167,7 +180,17 @@ export class LiqidController {
         }
     }
 
-    public decompose = async () => {
-
+    /**
+     * Decompose a machine
+     * @param {Machine} machine The machine to be decomposed
+     */
+    public decompose = async (machine: Machine): Promise<void> => {
+        try {
+            if (machine)
+                await this.liqidComm.deleteMachine(machine.mach_id);
+        }
+        catch (err) {
+            throw new Error(err);
+        }
     }
 }

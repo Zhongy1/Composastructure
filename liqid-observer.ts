@@ -13,7 +13,7 @@ export interface OrganizedDeviceStatuses {
 /**
  * Observer for liqid system state
 ```typescript
-const instance = new LiqidObserver(ip);
+const observer = new LiqidObserver(ip);
 ```
  */
 export class LiqidObserver {
@@ -40,7 +40,7 @@ export class LiqidObserver {
     }
 
     /**
-     * Deep diff between two object, using lodash
+     * Deep diff between two objects, using lodash.
      * @param  {Object} object Object compared
      * @param  {Object} base   Object to compare with
      * @return {Object}        Return a new object who represent the diff
@@ -56,19 +56,34 @@ export class LiqidObserver {
         return changes(object, base);
     }
 
+    /**
+     * Start tracking Liqid. Check for updates at one second intervals. Stops when encounters an error.
+     */
     public start = (): void => {
+        if (this.fabricTracked) return;
         this.fabricTracked = true;
         this.mainLoop = setInterval(() => {
-            let success = this.trackSystemChanges();
-            if (!success)
-                this.stop();
+            this.trackSystemChanges()
+                .then(success => {
+                    if (!success)
+                        this.stop();
+                });
         }, 1000);
     }
+
+    /**
+     * Stop tracking Liqid. Call start to resume.
+     */
     public stop = (): void => {
+        if (!this.fabricTracked) return;
         this.fabricTracked = false;
         clearInterval(this.mainLoop);
     }
 
+    /**
+     * Pulls up-to-date statistics from Liqid and compares/modifies existing statistics.
+     * @return {Promise<boolean>}    The success of the operation
+     */
     private trackSystemChanges = async (): Promise<boolean> => {
         var makeNecessaryUpdates = (update: { [key: string]: any }, target: { [key: string]: any }) => {
             //check for necessary updates
@@ -102,6 +117,10 @@ export class LiqidObserver {
         return returnVal;
     }
 
+    /**
+     * Fetch group information
+     * @return {Promise<{ [key: string]: Group }}   Group mapping with id as key
+     */
     private fetchGroups = async (): Promise<{ [key: string]: Group }> => {
         try {
             let map: { [key: string]: Group } = {};
@@ -115,6 +134,11 @@ export class LiqidObserver {
             throw new Error(err);
         }
     }
+
+    /**
+     * Fetch machine information
+     * @return {Promise<{ [key: string]: Machine }}   Machine mapping with id as key
+     */
     private fetchMachines = async (): Promise<{ [key: string]: Machine }> => {
         try {
             let map: { [key: string]: Machine } = {};
@@ -128,6 +152,11 @@ export class LiqidObserver {
             throw new Error(err);
         }
     }
+
+    /**
+     * Fetch device information
+     * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
+     */
     private fetchDevices = async (): Promise<{ [key: string]: PreDevice }> => {
         try {
             let map: { [key: string]: PreDevice } = {};
@@ -141,6 +170,11 @@ export class LiqidObserver {
             throw new Error(err);
         }
     }
+
+    /**
+     * Fetch device statuses
+     * @return {Promise<{ [key: string]: DeviceStatus }}   DeviceStatus mapping with name as key
+     */
     private fetchDevStatuses = async (): Promise<{ [key: string]: DeviceStatus }> => {
         try {
             let map: { [key: string]: DeviceStatus } = {};
@@ -155,18 +189,43 @@ export class LiqidObserver {
         }
     }
 
+    /**
+     * Get groups
+     * @return {Promise<{ [key: string]: Group }}   Group mapping with id as key
+     */
     public getGroups = (): { [key: string]: Group } => {
         return this.groups;
     }
+
+    /**
+     * Get machines
+     * @return {Promise<{ [key: string]: Machine }} Machine mapping with id as key
+     */
     public getMachines = (): { [key: string]: Machine } => {
         return this.machines;
     }
+
+    /**
+     * Get devices
+     * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
+     */
     public getDevices = (): { [key: string]: PreDevice } => {
         return this.devices;
     }
+
+    /**
+     * Get device statuses
+     * @return {Promise<{ [key: string]: DeviceStatus }}    DeviceStatus mapping with name as key
+     */
     public getDeviceSatuses = (): { [key: string]: DeviceStatus } => {
         return this.deviceStatuses;
     }
+
+    /**
+     * Get group by group id
+     * @param {string | number} [id]
+     * @return {Group}  Group that matches the given id or null; if id is not specified, then the first available Group or null if no Groups available
+     */
     public getGroupById = (id?: number | string): Group => {
         if (id) {
             return (this.groups.hasOwnProperty(id)) ? this.groups[id] : null;
@@ -176,6 +235,12 @@ export class LiqidObserver {
             return (keys.length > 0) ? this.groups[keys[0]] : null;
         }
     }
+
+    /**
+     * Get machine by machine id
+     * @param {string | number} [id]
+     * @return {Machine}    Machine that matches the given id or null; if id is not specified, then the first available Machine or null if no Machines available
+     */
     public getMachineById = (id?: number | string): Machine => {
         if (id) {
             return (this.machines.hasOwnProperty(id)) ? this.machines[id] : null;
@@ -185,6 +250,12 @@ export class LiqidObserver {
             return (keys.length > 0) ? this.machines[keys[0]] : null;
         }
     }
+
+    /**
+     * Get device by device name
+     * @param {string | number} [name]
+     * @return {Predevice}  Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
+     */
     public getDeviceByName = (name?: number | string): PreDevice => {
         if (name) {
             return (this.devices.hasOwnProperty(name)) ? this.devices[name] : null;
@@ -194,6 +265,12 @@ export class LiqidObserver {
             return (keys.length > 0) ? this.devices[keys[0]] : null;
         }
     }
+
+    /**
+     * Get device status by device name
+     * @param {string | number} [name]
+     * @return {DeviceStatus}   DeviceStatus that matches the given name or null; if name is not specified, then the first available DeviceStatus or null if no DeviceStatuses available
+     */
     public getDeviceStatusesByName = (name?: number | string): DeviceStatus => {
         if (name) {
             return (this.deviceStatuses.hasOwnProperty(name)) ? this.deviceStatuses[name] : null;
@@ -203,6 +280,11 @@ export class LiqidObserver {
             return (keys.length > 0) ? this.deviceStatuses[keys[0]] : null;
         }
     }
+
+    /**
+     * Get device statuses organized by type
+     * @return {OrganizedDeviceStatuses}    DeviceStatuses; grouped by cpu, gpu, ssd, or nic
+     */
     public getDeviceStatusesOrganized = (): OrganizedDeviceStatuses => {
         let statsOrganized: OrganizedDeviceStatuses = {
             cpu: {},
@@ -228,6 +310,12 @@ export class LiqidObserver {
         });
         return statsOrganized;
     }
+
+    /**
+     * Check if name is already in use
+     * @param {string} name
+     * @return {boolean}    True if name exists already
+     */
     public checkMachNameExists = (name: string): boolean => {
         Object.keys(this.machines).forEach((mach_id) => {
             if (this.machines.hasOwnProperty(mach_id) && this.machines[mach_id].mach_name == name)

@@ -1,3 +1,4 @@
+import { Machine } from './models';
 export interface ComposeOptions {
     cpu: number | string[];
     gpu: number | string[];
@@ -20,6 +21,6 @@ export declare class LiqidController {
     private ready;
     constructor(liqidIp: string);
     private identifyFabricId;
-    compose: (options: ComposeOptions) => Promise<boolean>;
-    decompose: () => Promise<void>;
+    compose: (options: ComposeOptions) => Promise<Machine>;
+    decompose: (machine: Machine) => Promise<void>;
 }

@@ -20,17 +20,13 @@ import {
     DeviceStatusParams
 } from './models';
 
-export interface Communicator {
-
-}
-
 /**
  * Communicator for server and liqid system
 ```typescript
-const instance = new LiqidCommunicator(ip);
+const communicator = new LiqidCommunicator(ip);
 ```
  */
-export class LiqidCommunicator implements Communicator {
+export class LiqidCommunicator {
 
 
     constructor(private liqidIp: string) {

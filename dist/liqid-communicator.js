@@ -4,7 +4,7 @@ const axios_1 = require("axios");
 /**
  * Communicator for server and liqid system
 ```typescript
-const instance = new LiqidCommunicator(ip);
+const communicator = new LiqidCommunicator(ip);
 ```
  */
 class LiqidCommunicator {

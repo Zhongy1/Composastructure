@@ -30,15 +30,29 @@ export declare class LiqidObserver {
     fabricTracked: boolean;
     constructor(liqidIp: string);
     /**
-     * Deep diff between two object, using lodash
+     * Deep diff between two objects, using lodash.
      * @param  {Object} object Object compared
      * @param  {Object} base   Object to compare with
      * @return {Object}        Return a new object who represent the diff
      */
     private difference;
+    /**
+     * Start tracking Liqid. Check for updates at one second intervals. Stops when encounters an error.
+     */
     start: () => void;
+    /**
+     * Stop tracking Liqid. Call start to resume.
+     */
     stop: () => void;
+    /**
+     * Pulls up-to-date statistics from Liqid and compares/modifies existing statistics.
+     * @return {Promise<boolean>}    The success of the operation
+     */
     private trackSystemChanges;
+    /**
+     * Fetch group information
+     * @return {Promise<{ [key: string]: Group }}
+     */
     private fetchGroups;
     private fetchMachines;
     private fetchDevices;
