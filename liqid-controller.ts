@@ -15,9 +15,9 @@ export interface ComposeOptions {
 
 
 /**
- * Decider for specific liqid tasks
+ * Controller for specific liqid tasks
 ```typescript
-const instance = new LiqidController(ip);
+const controller = new LiqidController(ip);
 ```
  */
 export class LiqidController {
@@ -33,6 +33,9 @@ export class LiqidController {
         this.identifyFabricId();
     }
 
+    /**
+     * Determine the current fabric id on which this controller is mounted
+     */
     private identifyFabricId = (): void => {
         this.liqidComm.getFabricId().then(id => {
             this.fabricId = id;
@@ -42,6 +45,11 @@ export class LiqidController {
         });
     }
 
+    /**
+     * Compose a machine: specify the parts needed and the controller attempts to compose the machine. Aborts when an error is encountered.
+     * @param {ComposeOptions} options  Specify parts needed either by name or by how many
+     * @return {Machine}                Machine object, returned from Liqid
+     */
     public compose = async (options: ComposeOptions): Promise<Machine> => {
         try {
             if (!this.ready)
@@ -172,6 +180,10 @@ export class LiqidController {
         }
     }
 
+    /**
+     * Decompose a machine
+     * @param {Machine} machine The machine to be decomposed
+     */
     public decompose = async (machine: Machine): Promise<void> => {
         try {
             if (machine)
