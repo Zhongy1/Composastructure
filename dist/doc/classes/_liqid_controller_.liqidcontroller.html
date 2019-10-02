@@ -72,8 +72,8 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<p>Decider for specific liqid tasks</p>
-						<pre><code class="language-typescript"><span class="hljs-keyword">const</span> instance = <span class="hljs-keyword">new</span> LiqidController(ip);</code></pre>
+						<p>Controller for specific liqid tasks</p>
+						<pre><code class="language-typescript"><span class="hljs-keyword">const</span> controller = <span class="hljs-keyword">new</span> LiqidController(ip);</code></pre>
 					</div>
 				</div>
 			</section>
@@ -128,7 +128,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L28">liqid-controller.ts:28</a></li>
+									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L28">liqid-controller.ts:28</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -150,7 +150,7 @@
 					<div class="tsd-signature tsd-kind-icon">fabric<wbr>Id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L27">liqid-controller.ts:27</a></li>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L27">liqid-controller.ts:27</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -160,7 +160,7 @@
 					<div class="tsd-signature tsd-kind-icon">liqid<wbr>Comm<span class="tsd-signature-symbol">:</span> <a href="_liqid_communicator_.liqidcommunicator.html" class="tsd-signature-type">LiqidCommunicator</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L25">liqid-controller.ts:25</a></li>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L25">liqid-controller.ts:25</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -170,7 +170,7 @@
 					<div class="tsd-signature tsd-kind-icon">liqid<wbr>Ip<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L30">liqid-controller.ts:30</a></li>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L30">liqid-controller.ts:30</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -180,7 +180,7 @@
 					<div class="tsd-signature tsd-kind-icon">liqid<wbr>Obs<span class="tsd-signature-symbol">:</span> <a href="_liqid_observer_.liqidobserver.html" class="tsd-signature-type">LiqidObserver</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L26">liqid-controller.ts:26</a></li>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L26">liqid-controller.ts:26</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -190,7 +190,7 @@
 					<div class="tsd-signature tsd-kind-icon">ready<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;false</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L28">liqid-controller.ts:28</a></li>
+							<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L28">liqid-controller.ts:28</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -207,16 +207,27 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L45">liqid-controller.ts:45</a></li>
+									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L53">liqid-controller.ts:53</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Compose a machine: specify the parts needed and the controller attempts to compose the machine. Aborts when an error is encountered.</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
 									<h5>options: <a href="../interfaces/_liqid_controller_.composeoptions.html" class="tsd-signature-type">ComposeOptions</a></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Specify parts needed either by name or by how many</p>
+										</div>
+									</div>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_models_.machine.html" class="tsd-signature-type">Machine</a><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Machine object, returned from Liqid</p>
 						</li>
 					</ul>
 				</section>
@@ -230,7 +241,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L175">liqid-controller.ts:175</a></li>
+									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L183">liqid-controller.ts:183</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -253,9 +264,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/09d771e/liqid-controller.ts#L36">liqid-controller.ts:36</a></li>
+									<li>Defined in <a href="https://github.com/Zhongy1/Liqid/blob/6bc1e65/liqid-controller.ts#L39">liqid-controller.ts:39</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Determine the current fabric id on which this controller is mounted</p>
+								</div>
+							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
 						</li>
 					</ul>
