@@ -41,7 +41,7 @@ class LiqidCommunicator {
         //GET '/status' getStatus. Accepts a string criteria and an object parameters
         this.getDeviceStats = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/status', {
+                axios_1.default.get(this.liqidUri + '/status', {
                     params: options
                 })
                     .then(res => {
@@ -54,7 +54,7 @@ class LiqidCommunicator {
         //GET '/status/compute' getComputeDeviceStats. Accepts a string criteria and an object parameters
         this.getComputeDeviceStats = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/status/compute')
+                axios_1.default.get(this.liqidUri + '/status/compute')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -65,7 +65,7 @@ class LiqidCommunicator {
         //GET '/status/compute/parents' getParentCpus.
         this.getParentCpus = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/status/compute/parents')
+                axios_1.default.get(this.liqidUri + '/status/compute/parents')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -76,7 +76,7 @@ class LiqidCommunicator {
         //GET '/status/fpga' getFpgaDeviceStats. Accepts a string criteria and an object parameters
         this.getFPGADeviceStats = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/status/fpga')
+                axios_1.default.get(this.liqidUri + '/status/fpga')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -87,7 +87,7 @@ class LiqidCommunicator {
         //GET '/status/gpu' getGpuDeviceStats. Accepts a string criteria and an object parameters
         this.getGpuDeviceStats = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/status/gpu')
+                axios_1.default.get(this.liqidUri + '/status/gpu')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -98,7 +98,7 @@ class LiqidCommunicator {
         //GET '/status/network' getLinkDeviceStats. Accepts a string criteria and an object parameters
         this.getLinkDeviceStats = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/status/network')
+                axios_1.default.get(this.liqidUri + '/status/network')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -109,7 +109,7 @@ class LiqidCommunicator {
         //GET '/status/storage' getTargetDeviceStats. Accepts a string criteria and an object parameters
         this.getTargetDeviceStats = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/status/storage')
+                axios_1.default.get(this.liqidUri + '/status/storage')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -122,7 +122,7 @@ class LiqidCommunicator {
         //POST '/fabric/edit' Enter fabric edit mode. Entering fabric edit mode allows the fabric to be electrically reconnected. The fabric MUST be put into edit mode before a device is added to a machine. Accepts Machine
         this.enterEditMode = (machine) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/fabric/edit', machine)
+                axios_1.default.post(this.liqidUri + '/fabric/edit', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                     console.log("entering edit mode");
@@ -134,7 +134,7 @@ class LiqidCommunicator {
         //GET '/fabric/id' Report the current fabric id.
         this.getFabricId = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/fabric/id')
+                axios_1.default.get(this.liqidUri + '/fabric/id')
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -146,7 +146,7 @@ class LiqidCommunicator {
         //POST '/fabric/reprogram' Reprogram the fabric. This will result in devices associated with a machine being electrically connected to the machine. This step MUST be done in order for a device to be added to a machine. Accepts Machine
         this.reprogramFabric = (machine) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/fabric/reprogram', machine)
+                axios_1.default.post(this.liqidUri + '/fabric/reprogram', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -161,7 +161,7 @@ class LiqidCommunicator {
         //GET '/group' List all available groups. Accepts an object parameters (cid|fabr_id|cluster_name)
         this.getGroupList = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/group')
+                axios_1.default.get(this.liqidUri + '/group')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -179,7 +179,7 @@ class LiqidCommunicator {
         //GET '/predevice' List devices found on system. Accepts a string mach_id, a dev_type (comp|targ|gpu|link), and a string cid
         this.getDeviceList = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/predevice', {
+                axios_1.default.get(this.liqidUri + '/predevice', {
                     params: options
                 })
                     .then(res => {
@@ -216,7 +216,7 @@ class LiqidCommunicator {
             if (mname)
                 parameters.mach_name = mname;
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/machine', { params: parameters })
+                axios_1.default.get(this.liqidUri + '/machine', { params: parameters })
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -227,7 +227,7 @@ class LiqidCommunicator {
         //POST /machine Create a new machine. Accepts Machine
         this.createMachine = (machine) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/machine', machine)
+                axios_1.default.post(this.liqidUri + '/machine', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -238,7 +238,7 @@ class LiqidCommunicator {
         //GET /machine/details/{id} Report the details associated with the machine. Requires id
         this.getMachineDetails = (id) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/machine/details/' + id)
+                axios_1.default.get(this.liqidUri + '/machine/details/' + id)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -249,7 +249,7 @@ class LiqidCommunicator {
         //GET /machine/nextid Report the next available machine id.
         this.getNextMachineId = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/machine/nextid')
+                axios_1.default.get(this.liqidUri + '/machine/nextid')
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -260,7 +260,7 @@ class LiqidCommunicator {
         //POST /machine/p2p Enable/disable P2P for a machine. Accepts Machine
         this.toggleP2P = (mach) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/machine/p2p', mach)
+                axios_1.default.post(this.liqidUri + '/machine/p2p', mach)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -271,7 +271,7 @@ class LiqidCommunicator {
         //DELETE /machine/{id} Delete a machine. Accepts id
         this.deleteMachine = (id) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.delete(this.liqidIp + '/machine/' + id)
+                axios_1.default.delete(this.liqidUri + '/machine/' + id)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -283,7 +283,7 @@ class LiqidCommunicator {
         //POST '/relate/compute' Add a CPU device to the Machine. Accepts MachineDeviceRelator
         this.addCpuToMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/relate/compute', options)
+                axios_1.default.post(this.liqidUri + '/relate/compute', options)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -294,7 +294,7 @@ class LiqidCommunicator {
         //DELETE '/relate/compute' Remove a CPU device from the Machine. Accepts MachineDeviceRelator
         this.removeCpuFromMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.delete(this.liqidIp + '/relate/compute', { params: options })
+                axios_1.default.delete(this.liqidUri + '/relate/compute', { params: options })
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -305,7 +305,7 @@ class LiqidCommunicator {
         //POST '/relate/fpga' Add a FPGA device to the Machine. Accepts MachineDeviceRelator
         this.addFpgaToMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/relate/fpga', options)
+                axios_1.default.post(this.liqidUri + '/relate/fpga', options)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -316,7 +316,7 @@ class LiqidCommunicator {
         //DELETE '/relate/fpga' Remove a FPGA device from the Machine. Accepts MachineDeviceRelator
         this.removeFpgaFromMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.delete(this.liqidIp + '/relate/fpga', { data: options })
+                axios_1.default.delete(this.liqidUri + '/relate/fpga', { data: options })
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -327,7 +327,7 @@ class LiqidCommunicator {
         //POST '/relate/gpu' Add a GPU device to the Machine. Accepts MachineDeviceRelator
         this.addGpuToMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/relate/gpu', options)
+                axios_1.default.post(this.liqidUri + '/relate/gpu', options)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -338,7 +338,7 @@ class LiqidCommunicator {
         //DELETE '/relate/gpu' Remove a GPU device from the Machine. Accepts MachineDeviceRelator
         this.removeGpuFromMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.delete(this.liqidIp + '/relate/gpu', { data: options })
+                axios_1.default.delete(this.liqidUri + '/relate/gpu', { data: options })
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -349,7 +349,7 @@ class LiqidCommunicator {
         //POST '/relate/network' Add a network device to the Machine. Accepts MachineDeviceRelator
         this.addNetCardToMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/relate/network', options)
+                axios_1.default.post(this.liqidUri + '/relate/network', options)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -360,7 +360,7 @@ class LiqidCommunicator {
         //DELETE '/relate/network' Remove a network device from the Machine. Accepts MachineDeviceRelator
         this.removeNetCardFromMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.delete(this.liqidIp + '/relate/network', { data: options })
+                axios_1.default.delete(this.liqidUri + '/relate/network', { data: options })
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -371,7 +371,7 @@ class LiqidCommunicator {
         //POST '/relate/storage' Add a storage device to the Machine. Accepts MachineDeviceRelator
         this.addStorageToMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/relate/storage', options)
+                axios_1.default.post(this.liqidUri + '/relate/storage', options)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -382,7 +382,7 @@ class LiqidCommunicator {
         //DELETE '/relate/storage' Remove a storage device from the Machine. Accepts MachineDeviceRelator
         this.removeStorageFromMach = (options) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.delete(this.liqidIp + '/relate/storage', { data: options })
+                axios_1.default.delete(this.liqidUri + '/relate/storage', { data: options })
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -396,7 +396,7 @@ class LiqidCommunicator {
         //GET '/node/status' Report all available nodes.
         this.getAllNodeStatus = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/node/status/')
+                axios_1.default.get(this.liqidUri + '/node/status/')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -407,7 +407,7 @@ class LiqidCommunicator {
         //GET '/node/bound'(old) '/node/status/bound'(new) Report the NodeStatus of the specified machine. The NodeStatus is primarily used to determine if the node is in a booted state. Accepts an object parameters; required attributes: fabr_id, cluster_id, mach_id, mach_name
         this.getNodeStatusByIds = (fid, cid, mid, mname) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/node/status/bound', {
+                axios_1.default.get(this.liqidUri + '/node/status/bound', {
                     params: {
                         fabr_id: fid,
                         cluster_id: cid,
@@ -425,7 +425,7 @@ class LiqidCommunicator {
         //GET '/node/status/{cpuName}' Report the status for the node associated with the specified cpu name. Accepts a string cpuName
         this.getNodeStatusByCpuName = (cpuName) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/node/status/' + cpuName)
+                axios_1.default.get(this.liqidUri + '/node/status/' + cpuName)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -436,7 +436,7 @@ class LiqidCommunicator {
         //GET '/node/status/{rack}/{shelf}/{node}' Report the status for the node which is located at the specified coordinates. Accepts rack, shelf, and node
         this.getNodeStatusByCoordinates = (coordinates) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/node/status/' + coordinates.rack + '/' + coordinates.shelf + '/' + coordinates.node)
+                axios_1.default.get(this.liqidUri + '/node/status/' + coordinates.rack + '/' + coordinates.shelf + '/' + coordinates.node)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -448,7 +448,7 @@ class LiqidCommunicator {
         //POST '/power/reboot' Reboot the node. Accepts Machine
         this.powerReboot = (machine) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/power/reboot', machine)
+                axios_1.default.post(this.liqidUri + '/power/reboot', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -459,7 +459,7 @@ class LiqidCommunicator {
         //POST '/power/restart' Restart the node. Accepts Machine
         this.powerRestart = (machine) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/power/restart', machine)
+                axios_1.default.post(this.liqidUri + '/power/restart', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -470,7 +470,7 @@ class LiqidCommunicator {
         //POST '/power/shutdown' Shutdown the node. Accepts Machine
         this.powerOff = (machine) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/power/shutdown', machine)
+                axios_1.default.post(this.liqidUri + '/power/shutdown', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -481,7 +481,7 @@ class LiqidCommunicator {
         //POST '/power/start' Start the node. Accepts Machine
         this.powerOn = (machine) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.post(this.liqidIp + '/power/start', machine)
+                axios_1.default.post(this.liqidUri + '/power/start', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -492,33 +492,33 @@ class LiqidCommunicator {
         //Sse Controller
         //GET /sse/device deviceStatusEmitter
         this.getDeviceStatusStream = () => {
-            return new EventSource(this.liqidIp + '/sse/device');
+            return new EventSource(this.liqidUri + '/sse/device');
         };
         //GET /sse/group groupEmitter
         this.getGroupStream = () => {
-            return new EventSource(this.liqidIp + '/sse/group');
+            return new EventSource(this.liqidUri + '/sse/group');
         };
         //GET /sse/group/details groupDetailsEmitter
         this.getGroupDetailsStream = () => {
-            return new EventSource(this.liqidIp + '/sse/group/details');
+            return new EventSource(this.liqidUri + '/sse/group/details');
         };
         //GET /sse/machine machineEmitter
         this.getMachineStream = () => {
-            return new EventSource(this.liqidIp + '/sse/machine');
+            return new EventSource(this.liqidUri + '/sse/machine');
         };
         //GET /sse/machine/details machineDetailsEmitter
         this.getMachDetailsStream = () => {
-            return new EventSource(this.liqidIp + '/sse/machine/details');
+            return new EventSource(this.liqidUri + '/sse/machine/details');
         };
         //GET /sse/predevice predeviceEmitter
         this.getPredeviceStream = () => {
-            return new EventSource(this.liqidIp + '/sse/predevice');
+            return new EventSource(this.liqidUri + '/sse/predevice');
         };
         //State Controller
         //GET /state/flags List all existing Liqid flags.
         this.getFlags = () => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/state/flags')
+                axios_1.default.get(this.liqidUri + '/state/flags')
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -529,7 +529,7 @@ class LiqidCommunicator {
         //GET /state/{fabric} List all pending fabric commands. Requires a number farbic
         this.getPendingFabricCommands = (fid) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/state/' + fid)
+                axios_1.default.get(this.liqidUri + '/state/' + fid)
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -540,7 +540,7 @@ class LiqidCommunicator {
         //GET /state/{fabric}/{group} List all pending group commands. Requires a number fabric and a number group
         this.getPendingGroupCommands = (fid, cid) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/state/' + fid + '/' + cid)
+                axios_1.default.get(this.liqidUri + '/state/' + fid + '/' + cid)
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -551,7 +551,7 @@ class LiqidCommunicator {
         //GET /state/{fabric}/{group}/{machine} List all pending machine commands. Requires a number fabric, a number group, amd a number machine
         this.getPendingMachineCommands = (fid, cid, mid) => {
             return new Promise((resolve, reject) => {
-                axios_1.default.get(this.liqidIp + '/state/' + fid + '/' + cid + '/' + mid)
+                axios_1.default.get(this.liqidUri + '/state/' + fid + '/' + cid + '/' + mid)
                     .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
@@ -559,6 +559,7 @@ class LiqidCommunicator {
                 });
             });
         };
+        this.liqidUri = 'http://' + this.liqidIp + ':8080/liqidui';
     }
 }
 exports.LiqidCommunicator = LiqidCommunicator;

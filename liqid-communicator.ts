@@ -31,7 +31,6 @@ export class LiqidCommunicator {
 
     constructor(private liqidIp: string) {
         this.liqidUri = 'http://' + this.liqidIp + ':8080/liqidui';
-        console.log(this.liqidUri);
     }
 
     //Assembly Controller
