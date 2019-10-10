@@ -21,6 +21,7 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
+    "@kubernetes/client-node": "^0.10.3",
     "@types/lodash": "^4.14.137",
     "axios": "^0.19.0",
     "lodash": "^4.17.15",

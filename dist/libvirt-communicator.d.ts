@@ -1,0 +1,78 @@
+/**
+ *
+ *
+ */
+export declare class LibvirtCommunicator {
+    private hypervisor;
+    private ready;
+    constructor(hostname: any, port: any);
+    connect: () => void;
+    disconnect: () => void;
+    getCapabilities: () => void;
+    getHostname: () => void;
+    getSysInfo: () => void;
+    getType: () => void;
+    getConnectionUri: () => void;
+    getVersion: () => void;
+    getLibvirtVersion: () => void;
+    isConnectionEncrypted: () => void;
+    isConnectionSecure: () => void;
+    isConnectionAlive: () => void;
+    getMaxVcpus: () => void;
+    setKeepAlive: () => void;
+    getBaselineCpu: () => void;
+    compareCPU: () => void;
+    listDefinedDomains: () => void;
+    listDefinedNetworks: () => void;
+    listDefinedStoragePools: () => void;
+    listDefinedInterfaces: () => void;
+    listActiveDomains: () => void;
+    listActiveInterfaces: () => void;
+    listActiveNetworks: () => void;
+    ListActiveStoragePools: () => void;
+    listNetworkFilters: () => void;
+    listSecrets: () => void;
+    getNumberOfDefinedDomains: () => void;
+    getNumberOfDefinedInterfaces: () => void;
+    getNumberOfDefinedNetworks: () => void;
+    getNumberOfDefinedStoragePools: () => void;
+    getNumberOfActiveDomains: () => void;
+    getNumberOfActiveInterfaces: () => void;
+    getNumberOfActiveNetworks: () => void;
+    getNumberOfNetworkFilters: () => void;
+    getNumberOfSecrets: () => void;
+    getNumberOfActiveStoragePools: () => void;
+    listNodeDevices: () => void;
+    getNodeSecurityModel: () => void;
+    getNodeInfo: () => void;
+    getNodeFreeMemory: () => void;
+    getNodeMemoryStats: () => void;
+    lookupInterfaceByName: () => void;
+    lookupInterfaceByMacAddress: () => void;
+    defineInterface: () => void;
+    createNetwork: () => void;
+    lookupNetworkByName: () => void;
+    lookupNetworkByUUID: () => void;
+    defineNetwork: () => void;
+    defineNetworkFilter: () => void;
+    lookupNetworkFilterByName: () => void;
+    lookupNetworkFilterByUUID: () => void;
+    createStoragePool: () => void;
+    defineStoragePool: () => void;
+    lookupStoragePoolByName: () => void;
+    lookupStoragePoolByUUID: () => void;
+    lookupStoragePoolByVolume: () => void;
+    lookupStorageVolumeByKey: () => void;
+    lookupStorageVolumeByPath: () => void;
+    defineSecret: () => void;
+    lookupSecretByUsage: () => void;
+    lookupSecretByUUID: () => void;
+    lookupNodeDeviceByName: () => void;
+    createNodeDevice: () => void;
+    createDomain: () => void;
+    defineDomain: () => void;
+    restoreDomain: () => void;
+    lookupDomainById: () => void;
+    lookupDomainByName: () => void;
+    lookupDomainByUUID: () => void;
+}

@@ -13,7 +13,7 @@ const liqid_communicator_1 = require("./liqid-communicator");
 /**
  * Observer for liqid system state
 ```typescript
-const instance = new LiqidObserver(ip);
+const observer = new LiqidObserver(ip);
 ```
  */
 class LiqidObserver {
@@ -98,7 +98,7 @@ class LiqidObserver {
         });
         /**
          * Fetch group information
-         * @return {Promise<{ [key: string]: Group }}
+         * @return {Promise<{ [key: string]: Group }}   Group mapping with id as key
          */
         this.fetchGroups = () => __awaiter(this, void 0, void 0, function* () {
             try {
@@ -113,6 +113,10 @@ class LiqidObserver {
                 throw new Error(err);
             }
         });
+        /**
+         * Fetch machine information
+         * @return {Promise<{ [key: string]: Machine }}   Machine mapping with id as key
+         */
         this.fetchMachines = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 let map = {};
@@ -126,6 +130,10 @@ class LiqidObserver {
                 throw new Error(err);
             }
         });
+        /**
+         * Fetch device information
+         * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
+         */
         this.fetchDevices = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 let map = {};
@@ -139,6 +147,10 @@ class LiqidObserver {
                 throw new Error(err);
             }
         });
+        /**
+         * Fetch device statuses
+         * @return {Promise<{ [key: string]: DeviceStatus }}   DeviceStatus mapping with name as key
+         */
         this.fetchDevStatuses = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 let map = {};
@@ -152,18 +164,39 @@ class LiqidObserver {
                 throw new Error(err);
             }
         });
+        /**
+         * Get groups
+         * @return {Promise<{ [key: string]: Group }}   Group mapping with id as key
+         */
         this.getGroups = () => {
             return this.groups;
         };
+        /**
+         * Get machines
+         * @return {Promise<{ [key: string]: Machine }} Machine mapping with id as key
+         */
         this.getMachines = () => {
             return this.machines;
         };
+        /**
+         * Get devices
+         * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
+         */
         this.getDevices = () => {
             return this.devices;
         };
+        /**
+         * Get device statuses
+         * @return {Promise<{ [key: string]: DeviceStatus }}    DeviceStatus mapping with name as key
+         */
         this.getDeviceSatuses = () => {
             return this.deviceStatuses;
         };
+        /**
+         * Get group by group id
+         * @param {string | number} [id]
+         * @return {Group}  Group that matches the given id or null; if id is not specified, then the first available Group or null if no Groups available
+         */
         this.getGroupById = (id) => {
             if (id) {
                 return (this.groups.hasOwnProperty(id)) ? this.groups[id] : null;
@@ -173,6 +206,11 @@ class LiqidObserver {
                 return (keys.length > 0) ? this.groups[keys[0]] : null;
             }
         };
+        /**
+         * Get machine by machine id
+         * @param {string | number} [id]
+         * @return {Machine}    Machine that matches the given id or null; if id is not specified, then the first available Machine or null if no Machines available
+         */
         this.getMachineById = (id) => {
             if (id) {
                 return (this.machines.hasOwnProperty(id)) ? this.machines[id] : null;
@@ -182,6 +220,11 @@ class LiqidObserver {
                 return (keys.length > 0) ? this.machines[keys[0]] : null;
             }
         };
+        /**
+         * Get device by device name
+         * @param {string | number} [name]
+         * @return {Predevice}  Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
+         */
         this.getDeviceByName = (name) => {
             if (name) {
                 return (this.devices.hasOwnProperty(name)) ? this.devices[name] : null;
@@ -191,6 +234,11 @@ class LiqidObserver {
                 return (keys.length > 0) ? this.devices[keys[0]] : null;
             }
         };
+        /**
+         * Get device status by device name
+         * @param {string | number} [name]
+         * @return {DeviceStatus}   DeviceStatus that matches the given name or null; if name is not specified, then the first available DeviceStatus or null if no DeviceStatuses available
+         */
         this.getDeviceStatusesByName = (name) => {
             if (name) {
                 return (this.deviceStatuses.hasOwnProperty(name)) ? this.deviceStatuses[name] : null;
@@ -200,6 +248,10 @@ class LiqidObserver {
                 return (keys.length > 0) ? this.deviceStatuses[keys[0]] : null;
             }
         };
+        /**
+         * Get device statuses organized by type
+         * @return {OrganizedDeviceStatuses}    DeviceStatuses; grouped by cpu, gpu, ssd, or nic
+         */
         this.getDeviceStatusesOrganized = () => {
             let statsOrganized = {
                 cpu: {},
@@ -225,6 +277,11 @@ class LiqidObserver {
             });
             return statsOrganized;
         };
+        /**
+         * Check if name is already in use
+         * @param {string} name
+         * @return {boolean}    True if name exists already
+         */
         this.checkMachNameExists = (name) => {
             Object.keys(this.machines).forEach((mach_id) => {
                 if (this.machines.hasOwnProperty(mach_id) && this.machines[mach_id].mach_name == name)
