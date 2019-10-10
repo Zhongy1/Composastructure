@@ -11,15 +11,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const liqid_communicator_1 = require("./liqid-communicator");
 const liqid_observer_1 = require("./liqid-observer");
 /**
- * Decider for specific liqid tasks
+ * Controller for specific liqid tasks
 ```typescript
-const instance = new LiqidController(ip);
+const controller = new LiqidController(ip);
 ```
  */
 class LiqidController {
     constructor(liqidIp) {
         this.liqidIp = liqidIp;
         this.ready = false;
+        /**
+         * Determine the current fabric id on which this controller is mounted
+         */
         this.identifyFabricId = () => {
             this.liqidComm.getFabricId().then(id => {
                 this.fabricId = id;
@@ -28,6 +31,11 @@ class LiqidController {
                 setTimeout(() => { this.identifyFabricId(); }, 1000);
             });
         };
+        /**
+         * Compose a machine: specify the parts needed and the controller attempts to compose the machine. Aborts when an error is encountered.
+         * @param {ComposeOptions} options  Specify parts needed either by name or by how many
+         * @return {Machine}                Machine object, returned from Liqid
+         */
         this.compose = (options) => __awaiter(this, void 0, void 0, function* () {
             try {
                 if (!this.ready)
@@ -157,6 +165,10 @@ class LiqidController {
                 throw new Error(err);
             }
         });
+        /**
+         * Decompose a machine
+         * @param {Machine} machine The machine to be decomposed
+         */
         this.decompose = (machine) => __awaiter(this, void 0, void 0, function* () {
             try {
                 if (machine)
