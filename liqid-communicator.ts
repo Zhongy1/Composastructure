@@ -30,8 +30,8 @@ export class LiqidCommunicator {
     private liqidUri: string;
 
     constructor(private liqidIp: string) {
-        this.liqidUri = `http://${liqidIp}:8080/liqidui`
-
+        this.liqidUri = 'http://' + this.liqidIp + ':8080/liqidui';
+        console.log(this.liqidUri);
     }
 
     //Assembly Controller
