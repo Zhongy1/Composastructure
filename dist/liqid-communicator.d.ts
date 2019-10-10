@@ -7,6 +7,7 @@ const communicator = new LiqidCommunicator(ip);
  */
 export declare class LiqidCommunicator {
     private liqidIp;
+    private liqidUri;
     constructor(liqidIp: string);
     getDeviceStats: (options?: DeviceStatusParams) => Promise<DeviceStatus[]>;
     getComputeDeviceStats: () => Promise<ComputeDeviceStatus[]>;
