@@ -8,18 +8,16 @@ Use npm to install composastructure
 npm install composastructure
 ```
 
-## Main Features
+## Main Components
 
 ```ts
-//Liqid Communicator - allows direct commuication with Liqid
-let communicator = new LiqidCommunicator(ip);
+import { LiqidObserver, LiqidController } from 'composastructure'
 
-//Liqid Observer - allows retrieving updated data from Liqid
+//Liqid Observer - For retrieving information from Liqid
 let observer = new LiqidObserver(ip);
 
-//Liqid Controller - allows easy manipulation of Liqid state
+//Liqid Controller - For manipulating the Liqid system
 let controller = new LiqidController(ip);
-
 ```
 
 ## Main Usage
@@ -29,7 +27,7 @@ Stick to using only the observer and controller, as they are higher level abstra
 ```ts
 import { LiqidObserver, LiqidController, ComposeOptions, Machine, OrganizedDeviceStatuses } from 'composastructure'
 
-let ip = 'ip/url to Liqid user interface';
+let ip = 'ip to Liqid system';
 let observer = new LiqidObserver(ip);
 let controller = new LiqidController(ip);
 
@@ -62,3 +60,8 @@ controller.compose(options)
 //---------Decompose Machine---------//
 controller.decompose(createdMachine);
 ```
+
+## Docs
+Documentation is generated using typedoc.
+
+Docs have been pregenerated; open dist/docs/index.html with your browser to view them
