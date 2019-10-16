@@ -17,7 +17,8 @@ import {
     PendingMachineCommand,
     LiqidCoordinates,
     PredeviceParams,
-    DeviceStatusParams
+    DeviceStatusParams,
+    GroupPool
 } from './models';
 
 /**
@@ -149,13 +150,22 @@ export class LiqidCommunicator {
 
     //Fabric Controller
     //POST '/fabric/cancel' Exit fabric edit mode. Exiting fabric edit mode before a reprogram is issued will result in all device connections being reverted. Accepts Machine
+    public cancelFabricEdit = (machine: Machine): Promise<Machine> => {
+        return new Promise<Machine>((resolve, reject) => {
+            axios.post(this.liqidUri + '/fabric/cancel', machine)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/fabric/edit' Enter fabric edit mode. Entering fabric edit mode allows the fabric to be electrically reconnected. The fabric MUST be put into edit mode before a device is added to a machine. Accepts Machine
-    public enterEditMode = (machine: Machine): Promise<Machine> => {
+    public enterFabricEditMode = (machine: Machine): Promise<Machine> => {
         return new Promise<Machine>((resolve, reject) => {
             axios.post(this.liqidUri + '/fabric/edit', machine)
                 .then(res => {
                     resolve(res.data.response.data[0]);
-                    console.log("entering edit mode");
                 }, err => {
                     reject(err);
                 });
@@ -237,8 +247,38 @@ export class LiqidCommunicator {
 
     //Group Pool Controller
     //POST '/pool/cancel' Cancel editing a group pool. This action will result in all devices either added/removed to/from a Group will be reverted. Requires GroupPool
+    public cancelPoolEdit = (clusterPool: GroupPool): Promise<GroupPool> => {
+        return new Promise<GroupPool>((resolve, reject) => {
+            axios.post(this.liqidUri + '/pool/cancel', clusterPool)
+                .then(res => {
+                    resolve(res.data.response.data);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/pool/done' Finish editing a group pool. Edit mode MUST be completed in order for devices to be added/removed to/from a group. Requires GroupPool
+    public savePoolEdit = (clusterPool: GroupPool): Promise<GroupPool> => {
+        return new Promise<GroupPool>((resolve, reject) => {
+            axios.post(this.liqidUri + '/pool/done', clusterPool)
+                .then(res => {
+                    resolve(res.data.response.data);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/pool/edit' Edit a group pool. Edit mode MUST be entered before adding/removing device(s) to/from a Group. Requires GroupPool
+    public enterPoolEditMode = (clusterPool: GroupPool): Promise<GroupPool> => {
+        return new Promise<GroupPool>((resolve, reject) => {
+            axios.post(this.liqidUri + '/pool/edit', clusterPool)
+                .then(res => {
+                    resolve(res.data.response.data);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
 
     //Liqid Node Names Controller
     //GET '/node-names' getNodeNames. Accepts a string criteria and an object parameters

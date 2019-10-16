@@ -25,24 +25,42 @@ export class LiqidController {
     private liqidComm: LiqidCommunicator;
     private liqidObs: LiqidObserver;
     private fabricId: number;
-    private ready: boolean = false;
+    private ready: boolean;
+    private busy: boolean;
 
     constructor(private liqidIp: string) {
         this.liqidComm = new LiqidCommunicator(liqidIp);
         this.liqidObs = new LiqidObserver(liqidIp);
-        this.identifyFabricId();
+        this.ready = false;
+        this.busy = false;
+    }
+
+    public start = async (): Promise<boolean> => {
+        try {
+            if (!this.ready) {
+                let obsStart = await this.liqidObs.start();
+                this.fabricId = await this.identifyFabricId();
+                this.ready = true;
+            }
+            return this.ready;
+        }
+        catch (err) {
+            this.ready = false;
+            throw new Error('LiqidController start unsuccessful: unable to communicate with Liqid.');
+        }
     }
 
     /**
-     * Determine the current fabric id on which this controller is mounted
+     * Determine the current fabric ID on which this controller is mounted
+     * @return  {Promise<number>}    The ID
      */
-    private identifyFabricId = (): void => {
-        this.liqidComm.getFabricId().then(id => {
-            this.fabricId = id;
-            this.ready = true;
-        }, err => {
-            setTimeout(() => { this.identifyFabricId() }, 1000);
-        });
+    private identifyFabricId = async (): Promise<number> => {
+        try {
+            return await this.liqidComm.getFabricId();
+        }
+        catch (err) {
+            throw new Error('Unable to retrieve fabric ID.');
+        }
     }
 
     /**
@@ -50,10 +68,15 @@ export class LiqidController {
      * @param {ComposeOptions} options  Specify parts needed either by name or by how many
      * @return {Machine}                Machine object, returned from Liqid
      */
-    public compose = async (options: ComposeOptions): Promise<Machine> => {
+    public composeV1 = async (options: ComposeOptions): Promise<Machine> => {
         try {
             if (!this.ready)
-                throw new Error('Unready');
+                throw new Error('Can not compose: controller has not started.');
+
+            if (this.busy)
+                throw new Error('Can not compose: a compose, task is currently running.')
+            else
+                this.busy = true;
 
             if (options.hasOwnProperty('groupId')) {
                 var group: Group = await this.liqidObs.getGroupById(options.groupId);
@@ -176,7 +199,58 @@ export class LiqidController {
             }
         }
         catch (err) {
+            this.busy = false;
             throw new Error(err);
+        }
+    }
+
+    public composeV2 = async (options: ComposeOptions): Promise<Machine> => {
+        let transitionTime = new Promise((resolve) => { setTimeout(() => resolve(''), 500) });
+        try {
+            if (!this.ready)
+                throw new Error('Controller Error: Controller has not started.');
+
+            if (this.busy)
+                throw new Error('Controller Busy Error: A compose task is currently running.')
+            else
+                this.busy = true;
+
+            //determine groub
+            if (options.groupId) {
+                var group = this.liqidObs.getGroupById(options.groupId);
+                if (!group)
+                    throw new Error(`Group Assignment Error: The group with id ${options.groupId} does not exist.`)
+            }
+            else {
+                var group = this.liqidObs.getGroupById();
+                if (!group)
+                    throw new Error('Group Assignment Error: There are currently no available groups (You should create one first).')
+            }
+
+            //grab all current devices
+            let deviceStatuses: DeviceStatus[] = await this.liqidObs.gatherRequiredDeviceStatuses({
+                cpu: options.cpu,
+                gpu: options.gpu,
+                ssd: options.ssd,
+                nic: options.nic,
+                gatherUnused: true
+            });
+
+            //move all devices to machine's group
+
+            //create machine
+            //individually add each device to machine, wait it to attach, verify that it worked
+            //if there's an issue, abort and get rid of created machine
+
+
+            this.busy = false;
+            return null;
+        }
+        catch (err) {
+            this.busy = false;
+            // if (poolEditMode) this.liqidComm.cancelPoolEdit();
+            // if (fabricEditMode) this.liqidComm.cancelFabricEdit();
+            throw new Error(err + ' Aborting Compose!');
         }
     }
 

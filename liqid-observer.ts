@@ -10,6 +10,14 @@ export interface OrganizedDeviceStatuses {
     nic: { [key: string]: DeviceStatus }
 }
 
+export interface GatheringDevStatsOptions {
+    cpu: number | string[],
+    gpu: number | string[],
+    ssd: number | string[],
+    nic: number | string[],
+    gatherUnused: boolean
+}
+
 /**
  * Observer for liqid system state
 ```typescript
@@ -18,7 +26,7 @@ const observer = new LiqidObserver(ip);
  */
 export class LiqidObserver {
 
-    private Comm: LiqidCommunicator;
+    private liqidComm: LiqidCommunicator;
     private mainLoop: any;
 
     private groups: { [key: string]: Group };
@@ -26,17 +34,17 @@ export class LiqidObserver {
     private devices: { [key: string]: PreDevice };
     private deviceStatuses: { [key: string]: DeviceStatus }
 
-    public fabricTracked: boolean = false;
+    public fabricTracked: boolean;
 
     constructor(private liqidIp: string) {
-        this.Comm = new LiqidCommunicator(liqidIp);
+        this.liqidComm = new LiqidCommunicator(liqidIp);
 
         this.groups = {};
         this.machines = {};
         this.devices = {};
         this.deviceStatuses = {};
 
-        this.start();
+        this.fabricTracked = false;
     }
 
     /**
@@ -58,17 +66,27 @@ export class LiqidObserver {
 
     /**
      * Start tracking Liqid. Check for updates at one second intervals. Stops when encounters an error.
+     * @return  {Promise<boolean>}   Return true if start is successful, false if observer is already in an on state
      */
-    public start = (): void => {
-        if (this.fabricTracked) return;
-        this.fabricTracked = true;
-        this.mainLoop = setInterval(() => {
-            this.trackSystemChanges()
-                .then(success => {
-                    if (!success)
-                        this.stop();
-                });
-        }, 1000);
+    public start = async (): Promise<boolean> => {
+        try {
+            if (!this.fabricTracked) {
+                this.fabricTracked = await this.trackSystemChanges();
+                if (this.fabricTracked)
+                    this.mainLoop = setInterval(() => {
+                        this.trackSystemChanges()
+                            .then(success => {
+                                if (!success)
+                                    this.stop();
+                            });
+                    }, 1000);
+            }
+            return this.fabricTracked;
+        }
+        catch (err) {
+            this.fabricTracked = false;
+            throw new Error('LiqidObserver start unsuccessful: unable to communicate with Liqid.');
+        }
     }
 
     /**
@@ -99,7 +117,6 @@ export class LiqidObserver {
                 delete target[key];
             });
         }
-        var returnVal = true;
         try {
             let groups = await this.fetchGroups();
             let machines = await this.fetchMachines();
@@ -109,12 +126,11 @@ export class LiqidObserver {
             makeNecessaryUpdates(machines, this.machines);
             makeNecessaryUpdates(devices, this.devices);
             makeNecessaryUpdates(devStatuses, this.deviceStatuses);
+            return true;
         }
         catch (err) {
-            console.log('Issue with trackSystemChanges; halting tracking');
-            returnVal = false;
+            throw new Error('Issue with trackSystemChanges; halting tracking');
         }
-        return returnVal;
     }
 
     /**
@@ -124,7 +140,7 @@ export class LiqidObserver {
     private fetchGroups = async (): Promise<{ [key: string]: Group }> => {
         try {
             let map: { [key: string]: Group } = {};
-            let groupArray = await this.Comm.getGroupList();
+            let groupArray = await this.liqidComm.getGroupList();
             groupArray.forEach((group) => {
                 map[group.cid] = group;
             });
@@ -142,7 +158,7 @@ export class LiqidObserver {
     private fetchMachines = async (): Promise<{ [key: string]: Machine }> => {
         try {
             let map: { [key: string]: Machine } = {};
-            let machineArray = await this.Comm.getMachineList();
+            let machineArray = await this.liqidComm.getMachineList();
             machineArray.forEach((machine) => {
                 map[machine.mach_id] = machine;
             });
@@ -160,7 +176,7 @@ export class LiqidObserver {
     private fetchDevices = async (): Promise<{ [key: string]: PreDevice }> => {
         try {
             let map: { [key: string]: PreDevice } = {};
-            let deviceArray = await this.Comm.getDeviceList();
+            let deviceArray = await this.liqidComm.getDeviceList();
             deviceArray.forEach((device) => {
                 map[device.name] = device;
             });
@@ -178,7 +194,7 @@ export class LiqidObserver {
     private fetchDevStatuses = async (): Promise<{ [key: string]: DeviceStatus }> => {
         try {
             let map: { [key: string]: DeviceStatus } = {};
-            let devStatusArray = await this.Comm.getDeviceStats();
+            let devStatusArray = await this.liqidComm.getDeviceStats();
             devStatusArray.forEach((status) => {
                 map[status.name] = status;
             });
@@ -271,7 +287,7 @@ export class LiqidObserver {
      * @param {string | number} [name]
      * @return {DeviceStatus}   DeviceStatus that matches the given name or null; if name is not specified, then the first available DeviceStatus or null if no DeviceStatuses available
      */
-    public getDeviceStatusesByName = (name?: number | string): DeviceStatus => {
+    public getDeviceStatusByName = (name?: number | string): DeviceStatus => {
         if (name) {
             return (this.deviceStatuses.hasOwnProperty(name)) ? this.deviceStatuses[name] : null;
         }
@@ -322,5 +338,170 @@ export class LiqidObserver {
                 return true;
         });
         return false;
+    }
+
+    public gatherRequiredDeviceStatuses = async (options: GatheringDevStatsOptions): Promise<DeviceStatus[]> => {
+        try {
+            let devices: DeviceStatus[] = [];
+            let deviceStats: OrganizedDeviceStatuses = this.getDeviceStatusesOrganized();
+            let count = 0;
+
+            if (typeof options.cpu === 'number' && options.cpu > 0) {
+                let deviceNames = Object.keys(deviceStats.cpu);
+                if (deviceNames.length < options.cpu)
+                    throw new Error('The specified number of CPUs is more than what is currently available.');
+                if (options.gatherUnused) {
+                    count = options.cpu;
+                    for (let i = 0; i < deviceNames.length; i++) {
+                        if (count <= 0) break;
+                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        if (predevice == null || predevice.mach_id == 'n/a') {
+                            devices.push(deviceStats.cpu[deviceNames[i]]);
+                            count--;
+                        }
+                    }
+                    if (count > 0) throw new Error('The specified number of CPUs is more than the number of CPUs that are unused.');
+                }
+                else {
+                    for (let i = 0; i < options.cpu; i++)
+                        devices.push(deviceStats.cpu[deviceNames[i]]);
+                }
+            }
+            else if (Array.isArray(options.cpu)) {
+                for (let i = 0; i < options.cpu.length; i++) {
+                    if (deviceStats.cpu.hasOwnProperty(options.cpu[i])) {
+                        if (options.gatherUnused) {
+                            let predevice: PreDevice = this.getDeviceByName(options.cpu[i]);
+                            if (predevice == null || predevice.mach_id == 'n/a')
+                                devices.push(deviceStats.cpu[options.cpu[i]]);
+                            else throw new Error(`CPU ${options.cpu[i]} is currently in use by machine ${predevice.mname}.`);
+                        }
+                        else
+                            devices.push(deviceStats.cpu[options.cpu[i]]);
+                    }
+                    else
+                        throw new Error(`CPU ${options.cpu[i]} does not exist.`);
+                }
+            }
+            else throw new Error('CPU specification is neither a number nor a string array.');
+            if (typeof options.gpu === 'number' && options.gpu > 0) {
+                let deviceNames = Object.keys(deviceStats.gpu);
+                if (deviceNames.length < options.gpu)
+                    throw new Error('The specified number of GPUs is more than what is currently available.');
+                if (options.gatherUnused) {
+                    count = options.gpu;
+                    for (let i = 0; i < deviceNames.length; i++) {
+                        if (count <= 0) break;
+                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        if (predevice == null || predevice.mach_id == 'n/a') {
+                            devices.push(deviceStats.gpu[deviceNames[i]]);
+                            count--;
+                        }
+                    }
+                    if (count > 0) throw new Error('The specified number of GPUs is more than the number of GPUs that are unused.');
+                }
+                else {
+                    for (let i = 0; i < options.gpu; i++)
+                        devices.push(deviceStats.gpu[deviceNames[i]]);
+                }
+            }
+            else if (Array.isArray(options.gpu)) {
+                for (let i = 0; i < options.gpu.length; i++) {
+                    if (deviceStats.gpu.hasOwnProperty(options.gpu[i])) {
+                        if (options.gatherUnused) {
+                            let predevice: PreDevice = this.getDeviceByName(options.gpu[i]);
+                            if (predevice == null || predevice.mach_id == 'n/a')
+                                devices.push(deviceStats.gpu[options.gpu[i]]);
+                            else throw new Error(`GPU ${options.gpu[i]} is currently in use by machine ${predevice.mname}.`);
+                        }
+                        else
+                            devices.push(deviceStats.gpu[options.gpu[i]]);
+                    }
+                    else
+                        throw new Error(`GPU ${options.gpu[i]} does not exist.`);
+                }
+            }
+            else throw new Error('GPU specification is neither a number nor a string array.');
+            if (typeof options.ssd === 'number' && options.ssd > 0) {
+                let deviceNames = Object.keys(deviceStats.ssd);
+                if (deviceNames.length < options.ssd)
+                    throw new Error('The specified number of SSDs is more than what is currently available.');
+                if (options.gatherUnused) {
+                    count = options.ssd;
+                    for (let i = 0; i < deviceNames.length; i++) {
+                        if (count <= 0) break;
+                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        if (predevice == null || predevice.mach_id == 'n/a') {
+                            devices.push(deviceStats.ssd[deviceNames[i]]);
+                            count--;
+                        }
+                    }
+                    if (count > 0) throw new Error('The specified number of SSDs is more than the number of SSDs that are unused.');
+                }
+                else {
+                    for (let i = 0; i < options.ssd; i++)
+                        devices.push(deviceStats.ssd[deviceNames[i]]);
+                }
+            }
+            else if (Array.isArray(options.ssd)) {
+                for (let i = 0; i < options.ssd.length; i++) {
+                    if (deviceStats.ssd.hasOwnProperty(options.ssd[i])) {
+                        if (options.gatherUnused) {
+                            let predevice: PreDevice = this.getDeviceByName(options.ssd[i]);
+                            if (predevice == null || predevice.mach_id == 'n/a')
+                                devices.push(deviceStats.ssd[options.ssd[i]]);
+                            else throw new Error(`SSD ${options.ssd[i]} is currently in use by machine ${predevice.mname}.`);
+                        }
+                        else
+                            devices.push(deviceStats.ssd[options.ssd[i]]);
+                    }
+                    else
+                        throw new Error(`SSD ${options.ssd[i]} does not exist.`);
+                }
+            }
+            else throw new Error('SSD specification is neither a number nor a string array.');
+            if (typeof options.nic === 'number' && options.nic > 0) {
+                let deviceNames = Object.keys(deviceStats.nic);
+                if (deviceNames.length < options.nic)
+                    throw new Error('The specified number of of NICs is more than what is currently available.');
+                if (options.gatherUnused) {
+                    count = options.nic;
+                    for (let i = 0; i < deviceNames.length; i++) {
+                        if (count <= 0) break;
+                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        if (predevice == null || predevice.mach_id == 'n/a') {
+                            devices.push(deviceStats.nic[deviceNames[i]]);
+                            count--;
+                        }
+                    }
+                    if (count > 0) throw new Error('The specified number of NICs is more than the number of NICs that are unused.');
+                }
+                else {
+                    for (let i = 0; i < options.nic; i++)
+                        devices.push(deviceStats.nic[deviceNames[i]]);
+                }
+            }
+            else if (Array.isArray(options.nic)) {
+                for (let i = 0; i < options.nic.length; i++) {
+                    if (deviceStats.nic.hasOwnProperty(options.nic[i])) {
+                        if (options.gatherUnused) {
+                            let predevice: PreDevice = this.getDeviceByName(options.nic[i]);
+                            if (predevice == null || predevice.mach_id == 'n/a')
+                                devices.push(deviceStats.nic[options.nic[i]]);
+                            else throw new Error(`NIC ${options.nic[i]} is currently in use by machine ${predevice.mname}.`);
+                        }
+                        else
+                            devices.push(deviceStats.nic[options.nic[i]]);
+                    }
+                    else
+                        throw new Error(`NIC ${options.nic[i]} does not exist.`);
+                }
+            }
+            else throw new Error('NIC specification is neither a number nor a string array.');
+            return devices;
+        }
+        catch (err) {
+            throw new Error('Device Specification Error: ' + err);
+        }
     }
 }
