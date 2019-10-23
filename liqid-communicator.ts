@@ -18,7 +18,8 @@ import {
     LiqidCoordinates,
     PredeviceParams,
     DeviceStatusParams,
-    GroupPool
+    GroupPool,
+    GroupDeviceRelator
 } from './models';
 
 /**
@@ -233,17 +234,116 @@ export class LiqidCommunicator {
                 });
         });
     }
-
     //POST '/predevice/compute' Add a CPU device to the Group. Accepts GroupDeviceRelator
+    public addCpuToPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.post(this.liqidUri + '/predevice/compute', options)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //DELETE '/predevice/compute' Remove a CPU device from the Group. Accepts GroupDeviceRelator
+    public removeCpuFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.delete(this.liqidUri + '/predevice/compute', { params: options })
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/predevice/fpga' Add a FPGA device to the Group. Accepts GroupDeviceRelator
+    public addFpgaToPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.post(this.liqidUri + '/predevice/fpga', options)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //DELETE '/predevice/fpga' Remove a FPGA device from the Group. Accepts GroupDeviceRelator
+    public removeFpgaFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.delete(this.liqidUri + '/predevice/fpga', { params: options })
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/predevice/gpu' Add a GPU device to the Group. Accepts GroupDeviceRelator
+    public addGpuToPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.post(this.liqidUri + '/predevice/gpu', options)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //DELETE '/predevice/gpu' Remove a GPU device from the Group. Accepts GroupDeviceRelator
+    public removeGpuFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.delete(this.liqidUri + '/predevice/gpu', { params: options })
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/predevice/network' Add a network device to the Group. Accepts GroupDeviceRelator
+    public addNetCardToPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.post(this.liqidUri + '/predevice/network', options)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //DELETE '/predevice/network' Remove a network device from the Group. Accepts GroupDeviceRelator
+    public removeNetCardFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.delete(this.liqidUri + '/predevice/network', { params: options })
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/predevice/storage' Add a storage device to the Group. Accepts GroupDeviceRelator
+    public addStorageToPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.post(this.liqidUri + '/predevice/storage', options)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        })
+    }
     //DELETE '/predevice/storage' Remove a storage device from the Group. Accepts GroupDeviceRelator
+    public removeStorageFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
+        return new Promise<GroupDeviceRelator>((resolve, reject) => {
+            axios.delete(this.liqidUri + '/predevice/storage', { params: options })
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
 
     //Group Pool Controller
     //POST '/pool/cancel' Cancel editing a group pool. This action will result in all devices either added/removed to/from a Group will be reverted. Requires GroupPool
@@ -251,7 +351,7 @@ export class LiqidCommunicator {
         return new Promise<GroupPool>((resolve, reject) => {
             axios.post(this.liqidUri + '/pool/cancel', clusterPool)
                 .then(res => {
-                    resolve(res.data.response.data);
+                    resolve(res.data.response.data[0]);
                 }, err => {
                     reject(err);
                 });
@@ -262,7 +362,7 @@ export class LiqidCommunicator {
         return new Promise<GroupPool>((resolve, reject) => {
             axios.post(this.liqidUri + '/pool/done', clusterPool)
                 .then(res => {
-                    resolve(res.data.response.data);
+                    resolve(res.data.response.data[0]);
                 }, err => {
                     reject(err);
                 });
@@ -273,7 +373,7 @@ export class LiqidCommunicator {
         return new Promise<GroupPool>((resolve, reject) => {
             axios.post(this.liqidUri + '/pool/edit', clusterPool)
                 .then(res => {
-                    resolve(res.data.response.data);
+                    resolve(res.data.response.data[0]);
                 }, err => {
                     reject(err);
                 });

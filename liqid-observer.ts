@@ -233,7 +233,7 @@ export class LiqidObserver {
      * Get device statuses
      * @return {Promise<{ [key: string]: DeviceStatus }}    DeviceStatus mapping with name as key
      */
-    public getDeviceSatuses = (): { [key: string]: DeviceStatus } => {
+    public getDeviceStatuses = (): { [key: string]: DeviceStatus } => {
         return this.deviceStatuses;
     }
 
