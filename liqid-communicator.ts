@@ -248,7 +248,7 @@ export class LiqidCommunicator {
     //DELETE '/predevice/compute' Remove a CPU device from the Group. Accepts GroupDeviceRelator
     public removeCpuFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
         return new Promise<GroupDeviceRelator>((resolve, reject) => {
-            axios.delete(this.liqidUri + '/predevice/compute', { params: options })
+            axios.delete(this.liqidUri + '/predevice/compute', { data: options })
                 .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -270,7 +270,7 @@ export class LiqidCommunicator {
     //DELETE '/predevice/fpga' Remove a FPGA device from the Group. Accepts GroupDeviceRelator
     public removeFpgaFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
         return new Promise<GroupDeviceRelator>((resolve, reject) => {
-            axios.delete(this.liqidUri + '/predevice/fpga', { params: options })
+            axios.delete(this.liqidUri + '/predevice/fpga', { data: options })
                 .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -292,7 +292,7 @@ export class LiqidCommunicator {
     //DELETE '/predevice/gpu' Remove a GPU device from the Group. Accepts GroupDeviceRelator
     public removeGpuFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
         return new Promise<GroupDeviceRelator>((resolve, reject) => {
-            axios.delete(this.liqidUri + '/predevice/gpu', { params: options })
+            axios.delete(this.liqidUri + '/predevice/gpu', { data: options })
                 .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -314,7 +314,7 @@ export class LiqidCommunicator {
     //DELETE '/predevice/network' Remove a network device from the Group. Accepts GroupDeviceRelator
     public removeNetCardFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
         return new Promise<GroupDeviceRelator>((resolve, reject) => {
-            axios.delete(this.liqidUri + '/predevice/network', { params: options })
+            axios.delete(this.liqidUri + '/predevice/network', { data: options })
                 .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
@@ -336,7 +336,7 @@ export class LiqidCommunicator {
     //DELETE '/predevice/storage' Remove a storage device from the Group. Accepts GroupDeviceRelator
     public removeStorageFromPool = (options: GroupDeviceRelator): Promise<GroupDeviceRelator> => {
         return new Promise<GroupDeviceRelator>((resolve, reject) => {
-            axios.delete(this.liqidUri + '/predevice/storage', { params: options })
+            axios.delete(this.liqidUri + '/predevice/storage', { data: options })
                 .then(res => {
                     resolve(res.data.response.data[0]);
                 }, err => {
