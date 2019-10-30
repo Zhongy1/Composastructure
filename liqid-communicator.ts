@@ -214,7 +214,27 @@ export class LiqidCommunicator {
     }
 
     //POST '/group' Create a group. Accepts Group
+    public createGroup = (group: Group): Promise<Group> => {
+        return new Promise<Group>((resolve, reject) => {
+            axios.post(this.liqidUri + '/group', group)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //DELETE '/group/{id}' Remove a group. Accepts an id
+    public deleteGroup = (id: number | string): Promise<Group> => {
+        return new Promise<Group>((resolve, reject) => {
+            axios.delete(this.liqidUri + '/group/' + id)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //POST '/group/clear' Perform a reset without rediscovering devices.
     //GET '/group/details/{id}' Report the details for an individual group. Accepts an id
     //GET '/group/mapper' Maps a group name to group id. Accepts a string group-name

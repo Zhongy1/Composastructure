@@ -1,7 +1,7 @@
 import _ = require('lodash');
 import { LiqidCommunicator } from './liqid-communicator';
 import { LiqidObserver, OrganizedDeviceStatuses } from './liqid-observer';
-import { MachineDeviceRelator, DeviceStatus, Group, Machine } from './models';
+import { MachineDeviceRelator, DeviceStatus, Group, Machine, GroupPool } from './models';
 
 
 export interface ComposeOptions {
@@ -92,7 +92,7 @@ export class LiqidController {
             if (this.liqidObs.checkMachNameExists(options.name))
                 throw new Error(`The machine name '${options.name}' already exists. Aborting Compose!`);
             let machine: Machine = {
-                cid: group.cid,
+                grp_id: group.grp_id,
                 fabr_gid: '-1',
                 fabr_id: this.fabricId,
                 mach_id: parseInt(await this.liqidComm.getNextMachineId()),
@@ -251,6 +251,56 @@ export class LiqidController {
             // if (poolEditMode) this.liqidComm.cancelPoolEdit();
             // if (fabricEditMode) this.liqidComm.cancelFabricEdit();
             throw new Error(err + ' Aborting Compose!');
+        }
+    }
+
+    /**
+     * Move specified devices to group/pool
+     * If device is already in pool, will leave it alone
+     * @param {DeviceStatus[]}  devices Array of devices that will be moved
+     * @param {number}          grpId   gid/cid: The target group's ID
+     */
+    public moveDevicesToGroup = async (devices: DeviceStatus[], grpId: number) => {
+        let transitionTime = new Promise((resolve) => { setTimeout(() => resolve(''), 500) });
+        try {
+            var grpsInEditMode: { [key: string]: GroupPool } = {};
+            var targetGroup = this.liqidObs.getGroupById(grpId);
+            if (!targetGroup) throw new Error('');
+            grpsInEditMode[grpId] = {
+                grp_id: grpId,
+                coordinates: devices[0].location,
+                fabr_id: this.fabricId
+            };
+            await this.liqidComm.enterPoolEditMode(grpsInEditMode[grpId]);
+
+            for (let i = 0; i < devices.length; i++) {
+                let predevice = this.liqidObs.getDeviceByName(devices[i].name);
+                if (predevice.mach_id != 'n/a') throw new Error(`Move Device Error: Device ${devices[i].name} is currently in use by machine ${predevice.mname}.`);
+                if (predevice && !grpsInEditMode.hasOwnProperty(predevice.grp_id)) {
+                    grpsInEditMode[predevice.grp_id] = {
+                        grp_id: predevice.grp_id,
+                        coordinates: devices[i].location,
+                        fabr_id: this.fabricId
+                    };
+                    await this.liqidComm.enterPoolEditMode(grpsInEditMode[grpId]);
+                }
+            }
+            await transitionTime;
+            //pull out of pool
+            for (let i = 0; i < devices.length; i++) {
+                let predevice = this.liqidObs.getDeviceByName(devices[i].name);
+                if (predevice && predevice.grp_id != grpId) {
+                    //await this.liqidComm.
+                }
+            }
+
+        }
+        catch (err) {
+            var grpIds = Object.keys(grpsInEditMode);
+            for (let i = 0; i < grpIds.length; i++) {
+                await this.liqidComm.cancelPoolEdit(grpsInEditMode[grpIds[i]]);
+            }
+            throw new Error(err);
         }
     }
 

@@ -142,7 +142,7 @@ export class LiqidObserver {
             let map: { [key: string]: Group } = {};
             let groupArray = await this.liqidComm.getGroupList();
             groupArray.forEach((group) => {
-                map[group.cid] = group;
+                map[group.grp_id] = group;
             });
             return map;
         }
