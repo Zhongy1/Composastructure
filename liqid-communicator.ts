@@ -19,7 +19,8 @@ import {
     PredeviceParams,
     DeviceStatusParams,
     GroupPool,
-    GroupDeviceRelator
+    GroupDeviceRelator,
+    GroupDetails
 } from './models';
 
 /**
@@ -237,8 +238,28 @@ export class LiqidCommunicator {
     }
     //POST '/group/clear' Perform a reset without rediscovering devices.
     //GET '/group/details/{id}' Report the details for an individual group. Accepts an id
+    public getGroupDetails = (id: number | string): Promise<GroupDetails> => {
+        return new Promise<GroupDetails>((resolve, reject) => {
+            axios.get(this.liqidUri + '/group/details/' + id)
+                .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
     //GET '/group/mapper' Maps a group name to group id. Accepts a string group-name
     //GET '/group/nextid' Report the next available group id.
+    public getNextGroupId = (): Promise<number> => {
+        return new Promise<number>((resolve, reject) => {
+            axios.get(this.liqidUri + '/group/nextid')
+                .then(res => {
+                    resolve(parseInt(res.data.response.data[0]));
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
 
     //Group Device Relator Contoller
     //GET '/predevice' List devices found on system. Accepts a string mach_id, a dev_type (comp|targ|gpu|link), and a string cid

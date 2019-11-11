@@ -1,7 +1,7 @@
 import _ = require('lodash');
 import { LiqidCommunicator } from './liqid-communicator';
 import { LiqidObserver, OrganizedDeviceStatuses } from './liqid-observer';
-import { MachineDeviceRelator, DeviceStatus, Group, Machine, GroupPool } from './models';
+import { MachineDeviceRelator, DeviceStatus, Group, Machine, GroupPool, GroupDeviceRelator, PreDevice } from './models';
 
 
 export interface ComposeOptions {
@@ -9,6 +9,7 @@ export interface ComposeOptions {
     gpu: number | string[],
     ssd: number | string[],
     nic: number | string[],
+    fpga: number | string[],
     name: string,
     groupId?: number | string
 }
@@ -60,6 +61,22 @@ export class LiqidController {
         }
         catch (err) {
             throw new Error('Unable to retrieve fabric ID.');
+        }
+    }
+
+
+    public createGroup = async (name: string): Promise<Group> => {
+        try {
+            var group: Group = {
+                fabr_id: this.fabricId,
+                group_name: name,
+                grp_id: await this.liqidComm.getNextGroupId(),
+                pod_id: -1
+            }
+            return await this.liqidComm.createGroup(group);
+        }
+        catch (err) {
+            throw new Error('Unable to create group with name ' + name + '.');
         }
     }
 
@@ -205,17 +222,19 @@ export class LiqidController {
     }
 
     public composeV2 = async (options: ComposeOptions): Promise<Machine> => {
-        let transitionTime = new Promise((resolve) => { setTimeout(() => resolve(''), 500) });
+        let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
         try {
             if (!this.ready)
                 throw new Error('Controller Error: Controller has not started.');
+
+            await this.liqidObs.refresh();
 
             if (this.busy)
                 throw new Error('Controller Busy Error: A compose task is currently running.')
             else
                 this.busy = true;
 
-            //determine groub
+            //determine group
             if (options.groupId) {
                 var group = this.liqidObs.getGroupById(options.groupId);
                 if (!group)
@@ -233,18 +252,46 @@ export class LiqidController {
                 gpu: options.gpu,
                 ssd: options.ssd,
                 nic: options.nic,
+                fpga: options.fpga,
                 gatherUnused: true
             });
-
             //move all devices to machine's group
+            await this.moveDevicesToGroup(deviceStatuses, group.grp_id);
 
             //create machine
-            //individually add each device to machine, wait it to attach, verify that it worked
-            //if there's an issue, abort and get rid of created machine
+            var machine: Machine = {
+                fabr_gid: '-1',
+                fabr_id: this.fabricId,
+                grp_id: group.grp_id,
+                mach_id: parseInt(await this.liqidComm.getNextMachineId()),
+                mach_name: options.name
+            }
+            var machineId: number = (await this.liqidComm.createMachine(machine)).mach_id;
 
+            //move all devices to machine
+            await this.moveDevicesToMachine(deviceStatuses, machineId);
+
+            //verify all devices exist in machine
+            let assembleSuccessful = true;
+            await this.liqidObs.refresh();
+            for (let i = 0; i < deviceStatuses.length; i++) {
+                let predevice = this.liqidObs.getDeviceByName(deviceStatuses[i].name);
+                if (predevice.mach_id != machineId.toString()) {
+                    assembleSuccessful = false;
+                    break;
+                }
+            }
+
+            //if there's an issue, abort and get rid of created machine
+            if (!assembleSuccessful) {
+                await this.liqidComm.deleteMachine(machineId);
+                delay(1000);
+                throw new Error('Move Device To Machine Error: One or more devices were not properly moved to new machine. Removing Machine.');
+            }
 
             this.busy = false;
-            return null;
+            await this.liqidObs.refresh();
+            return this.liqidObs.getMachineById(machine.mach_id);
         }
         catch (err) {
             this.busy = false;
@@ -260,46 +307,190 @@ export class LiqidController {
      * @param {DeviceStatus[]}  devices Array of devices that will be moved
      * @param {number}          grpId   gid/cid: The target group's ID
      */
-    public moveDevicesToGroup = async (devices: DeviceStatus[], grpId: number) => {
-        let transitionTime = new Promise((resolve) => { setTimeout(() => resolve(''), 500) });
+    public moveDevicesToGroup = async (devices: DeviceStatus[], grpId: number): Promise<void> => {
+        let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
         try {
+            if (devices.length == 0) return;
+            await this.liqidObs.refresh();
+            //place target group in edit mode
             var grpsInEditMode: { [key: string]: GroupPool } = {};
             var targetGroup = this.liqidObs.getGroupById(grpId);
-            if (!targetGroup) throw new Error('');
+            if (!targetGroup) throw new Error(`Group Destination Error: Target group with group ID ${grpId} does not exist.`);
             grpsInEditMode[grpId] = {
                 grp_id: grpId,
                 coordinates: devices[0].location,
                 fabr_id: this.fabricId
             };
             await this.liqidComm.enterPoolEditMode(grpsInEditMode[grpId]);
-
+            //only devices outside of target group will be moved
+            var transDevices: DeviceStatus[] = [];
             for (let i = 0; i < devices.length; i++) {
                 let predevice = this.liqidObs.getDeviceByName(devices[i].name);
-                if (predevice.mach_id != 'n/a') throw new Error(`Move Device Error: Device ${devices[i].name} is currently in use by machine ${predevice.mname}.`);
-                if (predevice && !grpsInEditMode.hasOwnProperty(predevice.grp_id)) {
+                if (!predevice) continue;
+                if (predevice.mach_id != 'n/a') throw new Error(`Move Device To Group Error: Device ${devices[i].name} is currently in use by machine ${predevice.mname}.`);
+                if (predevice.grp_id == grpId) continue;
+                transDevices.push(devices[i]);
+            }
+            //enter edit mode for transitioning devices
+            for (let i = 0; i < transDevices.length; i++) {
+                let predevice = this.liqidObs.getDeviceByName(transDevices[i].name);
+                if (!grpsInEditMode.hasOwnProperty(predevice.grp_id)) {
                     grpsInEditMode[predevice.grp_id] = {
                         grp_id: predevice.grp_id,
-                        coordinates: devices[i].location,
+                        coordinates: transDevices[i].location,
                         fabr_id: this.fabricId
                     };
-                    await this.liqidComm.enterPoolEditMode(grpsInEditMode[grpId]);
+                    await this.liqidComm.enterPoolEditMode(grpsInEditMode[predevice.grp_id]);
+                    await delay(500);
                 }
             }
-            await transitionTime;
             //pull out of pool
-            for (let i = 0; i < devices.length; i++) {
-                let predevice = this.liqidObs.getDeviceByName(devices[i].name);
-                if (predevice && predevice.grp_id != grpId) {
-                    //await this.liqidComm.
+            for (let i = 0; i < transDevices.length; i++) {
+                let predevice = this.liqidObs.getDeviceByName(transDevices[i].name);
+                if (!predevice) continue;
+                let groupDeviceRelator: GroupDeviceRelator = {
+                    deviceStatus: transDevices[i],
+                    group: this.liqidObs.getGroupById(predevice.grp_id)
+                }
+                switch (transDevices[i].type) {
+                    case 'ComputeDeviceStatus':
+                        await this.liqidComm.removeCpuFromPool(groupDeviceRelator);
+                        break;
+                    case 'GpuDeviceStatus':
+                        await this.liqidComm.removeGpuFromPool(groupDeviceRelator);
+                        break;
+                    case 'SsdDeviceStatus':
+                        await this.liqidComm.removeStorageFromPool(groupDeviceRelator);
+                        break;
+                    case 'LinkDeviceStatus':
+                        await this.liqidComm.removeNetCardFromPool(groupDeviceRelator);
+                        break;
+                    case 'FpgaDeviceStatus':
+                        await this.liqidComm.removeFpgaFromPool(groupDeviceRelator);
+                        break;
+                }
+                await delay(500);
+            }
+            await this.liqidObs.refresh();
+            //complete removal process (save edit)
+            let gids = Object.keys(grpsInEditMode);
+            for (let i = 0; i < gids.length; i++) {
+                if (gids[i] == grpId.toString()) {
+                    console.log('Something is severely wrong: attempting to save target group edit when not supposed to!');
+                    continue;
+                }
+                if (grpsInEditMode.hasOwnProperty(gids[i])) {
+                    await this.liqidComm.savePoolEdit(grpsInEditMode[gids[i]]);
+                    await delay(500);
+                    delete grpsInEditMode[gids[i]];
                 }
             }
-
+            await delay(1000);
+            //move from fabric to target pool
+            for (let i = 0; i < transDevices.length; i++) {
+                let groupDeviceRelator: GroupDeviceRelator = {
+                    deviceStatus: transDevices[i],
+                    group: this.liqidObs.getGroupById(grpId)
+                }
+                switch (transDevices[i].type) {
+                    case 'ComputeDeviceStatus':
+                        await this.liqidComm.addCpuToPool(groupDeviceRelator);
+                        break;
+                    case 'GpuDeviceStatus':
+                        await this.liqidComm.addGpuToPool(groupDeviceRelator);
+                        break;
+                    case 'SsdDeviceStatus':
+                        await this.liqidComm.addStorageToPool(groupDeviceRelator);
+                        break;
+                    case 'LinkDeviceStatus':
+                        await this.liqidComm.addNetCardToPool(groupDeviceRelator);
+                        break;
+                    case 'FpgaDeviceStatus':
+                        await this.liqidComm.addFpgaToPool(groupDeviceRelator);
+                        break;
+                }
+                await delay(500);
+            }
+            await this.liqidComm.savePoolEdit(grpsInEditMode[grpId]);
+            delete grpsInEditMode[grpId];
+            await this.liqidObs.refresh();
         }
         catch (err) {
-            var grpIds = Object.keys(grpsInEditMode);
-            for (let i = 0; i < grpIds.length; i++) {
-                await this.liqidComm.cancelPoolEdit(grpsInEditMode[grpIds[i]]);
+            // var grpIds = Object.keys(grpsInEditMode);
+            // for (let i = 0; i < grpIds.length; i++) {
+            //     await this.liqidComm.cancelPoolEdit(grpsInEditMode[grpIds[i]]);
+            // }
+            throw new Error(err);
+        }
+    }
+
+    /**
+     * Move specified devices to machine; devices must be in the machine's pool, or errors out
+     * If device is already in machine, will leave it alone
+     * @param {DeviceStatus[]}  devices Array of devices that will be moved
+     * @param {number}          machId  mach_id: The target machine's ID
+     */
+    public moveDevicesToMachine = async (devices: DeviceStatus[], machId: number): Promise<void> => {
+        let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
+        try {
+            if (devices.length == 0) return;
+            await this.liqidObs.refresh();
+            //gather all neccessary pieces and enter edit mode
+            var machine: Machine = this.liqidObs.getMachineById(machId);
+            if (!machine)
+                throw new Error(`Machine Destination Error: Target machine with machine ID ${machId} does not exist.`)
+            var group: Group = this.liqidObs.getGroupById(machine.grp_id);
+            var groupPool: GroupPool = {
+                coordinates: devices[0].location,
+                fabr_id: this.fabricId,
+                grp_id: machine.grp_id
             }
+            await this.liqidComm.enterPoolEditMode(groupPool);
+            await delay(500);
+            //select only the devices that needs to be moved
+            var transDevices: DeviceStatus[] = [];
+            for (let i = 0; i < devices.length; i++) {
+                let predevice = this.liqidObs.getDeviceByName(devices[i].name);
+                if (!predevice || predevice.grp_id != machine.grp_id)
+                    throw new Error(`Move Device To Machine Error: Device ${devices[i].name} is not in the same group as machine.`);
+                if (predevice.mach_id != 'n/a') {
+                    if (parseInt(predevice.mach_id) == machine.mach_id) continue;
+                    throw new Error(`Move Device To Machine Error: Device ${devices[i].name} is currently in use by machine ${predevice.mname}.`);
+                }
+                transDevices.push(devices[i]);
+            }
+            //move devices to machine
+            for (let i = 0; i < transDevices.length; i++) {
+                let machDeviceRelator: MachineDeviceRelator = {
+                    groupDeviceRelator: {
+                        deviceStatus: transDevices[i],
+                        group: group
+                    },
+                    machine: machine
+                }
+                switch (transDevices[i].type) {
+                    case 'ComputeDeviceStatus':
+                        await this.liqidComm.addCpuToMach(machDeviceRelator);
+                        break;
+                    case 'GpuDeviceStatus':
+                        await this.liqidComm.addGpuToMach(machDeviceRelator);
+                        break;
+                    case 'SsdDeviceStatus':
+                        await this.liqidComm.addStorageToMach(machDeviceRelator);
+                        break;
+                    case 'LinkDeviceStatus':
+                        await this.liqidComm.addNetCardToMach(machDeviceRelator);
+                        break;
+                    case 'FpgaDeviceStatus':
+                        await this.liqidComm.addFpgaToMach(machDeviceRelator);
+                        break;
+                }
+                await delay(500);
+            }
+            await this.liqidComm.savePoolEdit(groupPool);
+            await this.liqidObs.refresh();
+        }
+        catch (err) {
             throw new Error(err);
         }
     }

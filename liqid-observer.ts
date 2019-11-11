@@ -15,6 +15,7 @@ export interface GatheringDevStatsOptions {
     gpu: number | string[],
     ssd: number | string[],
     nic: number | string[],
+    fpga: number | string[],
     gatherUnused: boolean
 }
 
@@ -78,6 +79,9 @@ export class LiqidObserver {
                             .then(success => {
                                 if (!success)
                                     this.stop();
+                            }, err => {
+                                if (err)
+                                    this.stop();
                             });
                     }, 1000);
             }
@@ -85,7 +89,7 @@ export class LiqidObserver {
         }
         catch (err) {
             this.fabricTracked = false;
-            throw new Error('LiqidObserver start unsuccessful: unable to communicate with Liqid.');
+            throw new Error('LiqidObserver start unsuccessful: possibly unable to communicate with Liqid.');
         }
     }
 
@@ -96,6 +100,20 @@ export class LiqidObserver {
         if (!this.fabricTracked) return;
         this.fabricTracked = false;
         clearInterval(this.mainLoop);
+    }
+
+    /**
+     * Refresh observer to get the lastest Liqid system state.
+     */
+    public refresh = async (): Promise<void> => {
+        try {
+            let success = await this.trackSystemChanges();
+            if (!success)
+                throw new Error('');
+        }
+        catch (err) {
+            throw new Error('Observer Refresh Error: refresh unsuccessful.');
+        }
     }
 
     /**
