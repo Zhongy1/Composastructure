@@ -364,7 +364,7 @@ export class LiqidObserver {
             let deviceStats: OrganizedDeviceStatuses = this.getDeviceStatusesOrganized();
             let count = 0;
 
-            if (typeof options.cpu === 'number' && options.cpu > 0) {
+            if (typeof options.cpu === 'number') {
                 let deviceNames = Object.keys(deviceStats.cpu);
                 if (deviceNames.length < options.cpu)
                     throw new Error('The specified number of CPUs is more than what is currently available.');
@@ -402,7 +402,7 @@ export class LiqidObserver {
                 }
             }
             else throw new Error('CPU specification is neither a number nor a string array.');
-            if (typeof options.gpu === 'number' && options.gpu > 0) {
+            if (typeof options.gpu === 'number') {
                 let deviceNames = Object.keys(deviceStats.gpu);
                 if (deviceNames.length < options.gpu)
                     throw new Error('The specified number of GPUs is more than what is currently available.');
@@ -440,7 +440,7 @@ export class LiqidObserver {
                 }
             }
             else throw new Error('GPU specification is neither a number nor a string array.');
-            if (typeof options.ssd === 'number' && options.ssd > 0) {
+            if (typeof options.ssd === 'number') {
                 let deviceNames = Object.keys(deviceStats.ssd);
                 if (deviceNames.length < options.ssd)
                     throw new Error('The specified number of SSDs is more than what is currently available.');
@@ -478,7 +478,7 @@ export class LiqidObserver {
                 }
             }
             else throw new Error('SSD specification is neither a number nor a string array.');
-            if (typeof options.nic === 'number' && options.nic > 0) {
+            if (typeof options.nic === 'number') {
                 let deviceNames = Object.keys(deviceStats.nic);
                 if (deviceNames.length < options.nic)
                     throw new Error('The specified number of of NICs is more than what is currently available.');
