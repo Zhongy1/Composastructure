@@ -316,24 +316,23 @@ export class LiqidController {
             var grpsInEditMode: { [key: string]: GroupPool } = {};
             var targetGroup = this.liqidObs.getGroupById(grpId);
             if (!targetGroup) throw new Error(`Group Destination Error: Target group with group ID ${grpId} does not exist.`);
-            grpsInEditMode[grpId] = {
+            var targetGroupPool: GroupPool = {
                 grp_id: grpId,
                 coordinates: devices[0].location,
                 fabr_id: this.fabricId
             };
-            await this.liqidComm.enterPoolEditMode(grpsInEditMode[grpId]);
+            await this.liqidComm.enterPoolEditMode(targetGroupPool);
             //only devices outside of target group will be moved
             var transDevices: DeviceStatus[] = [];
             for (let i = 0; i < devices.length; i++) {
                 let predevice = this.liqidObs.getDeviceByName(devices[i].name);
-                if (!predevice) continue;
-                if (predevice.mach_id != 'n/a') throw new Error(`Move Device To Group Error: Device ${devices[i].name} is currently in use by machine ${predevice.mname}.`);
-                if (predevice.grp_id == grpId) continue;
-                transDevices.push(devices[i]);
+                if (!predevice || predevice.grp_id != grpId) transDevices.push(devices[i]);
+                if (predevice && predevice.mach_id != 'n/a') throw new Error(`Move Device To Group Error: Device ${devices[i].name} is currently in use by machine ${predevice.mname}.`);
             }
             //enter edit mode for transitioning devices
             for (let i = 0; i < transDevices.length; i++) {
                 let predevice = this.liqidObs.getDeviceByName(transDevices[i].name);
+                if (!predevice) continue;
                 if (!grpsInEditMode.hasOwnProperty(predevice.grp_id)) {
                     grpsInEditMode[predevice.grp_id] = {
                         grp_id: predevice.grp_id,
@@ -390,7 +389,7 @@ export class LiqidController {
             for (let i = 0; i < transDevices.length; i++) {
                 let groupDeviceRelator: GroupDeviceRelator = {
                     deviceStatus: transDevices[i],
-                    group: this.liqidObs.getGroupById(grpId)
+                    group: targetGroup
                 }
                 switch (transDevices[i].type) {
                     case 'ComputeDeviceStatus':
@@ -411,8 +410,7 @@ export class LiqidController {
                 }
                 await delay(500);
             }
-            await this.liqidComm.savePoolEdit(grpsInEditMode[grpId]);
-            delete grpsInEditMode[grpId];
+            await this.liqidComm.savePoolEdit(targetGroupPool);
             await this.liqidObs.refresh();
         }
         catch (err) {
@@ -435,17 +433,12 @@ export class LiqidController {
         try {
             if (devices.length == 0) return;
             await this.liqidObs.refresh();
-            //gather all neccessary pieces and enter edit mode
+            //gather all neccessary pieces and enter fabric edit mode
             var machine: Machine = this.liqidObs.getMachineById(machId);
             if (!machine)
                 throw new Error(`Machine Destination Error: Target machine with machine ID ${machId} does not exist.`)
             var group: Group = this.liqidObs.getGroupById(machine.grp_id);
-            var groupPool: GroupPool = {
-                coordinates: devices[0].location,
-                fabr_id: this.fabricId,
-                grp_id: machine.grp_id
-            }
-            await this.liqidComm.enterPoolEditMode(groupPool);
+            await this.liqidComm.enterFabricEditMode(machine);
             await delay(500);
             //select only the devices that needs to be moved
             var transDevices: DeviceStatus[] = [];
@@ -487,7 +480,7 @@ export class LiqidController {
                 }
                 await delay(500);
             }
-            await this.liqidComm.savePoolEdit(groupPool);
+            await this.liqidComm.reprogramFabric(machine);
             await this.liqidObs.refresh();
         }
         catch (err) {
