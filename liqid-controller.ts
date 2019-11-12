@@ -340,7 +340,7 @@ export class LiqidController {
                         fabr_id: this.fabricId
                     };
                     await this.liqidComm.enterPoolEditMode(grpsInEditMode[predevice.grp_id]);
-                    await delay(500);
+                    await delay(300);
                 }
             }
             //pull out of pool
@@ -368,7 +368,7 @@ export class LiqidController {
                         await this.liqidComm.removeFpgaFromPool(groupDeviceRelator);
                         break;
                 }
-                await delay(500);
+                //await delay(300);
             }
             await this.liqidObs.refresh();
             //complete removal process (save edit)
@@ -380,7 +380,7 @@ export class LiqidController {
                 }
                 if (grpsInEditMode.hasOwnProperty(gids[i])) {
                     await this.liqidComm.savePoolEdit(grpsInEditMode[gids[i]]);
-                    await delay(500);
+                    await delay(300);
                     delete grpsInEditMode[gids[i]];
                 }
             }
@@ -408,10 +408,10 @@ export class LiqidController {
                         await this.liqidComm.addFpgaToPool(groupDeviceRelator);
                         break;
                 }
-                await delay(500);
+                //await delay(300);
             }
-            await this.liqidComm.savePoolEdit(targetGroupPool);
             await this.liqidObs.refresh();
+            await this.liqidComm.savePoolEdit(targetGroupPool);
         }
         catch (err) {
             // var grpIds = Object.keys(grpsInEditMode);
@@ -439,7 +439,7 @@ export class LiqidController {
                 throw new Error(`Machine Destination Error: Target machine with machine ID ${machId} does not exist.`)
             var group: Group = this.liqidObs.getGroupById(machine.grp_id);
             await this.liqidComm.enterFabricEditMode(machine);
-            await delay(500);
+            await delay(300);
             //select only the devices that needs to be moved
             var transDevices: DeviceStatus[] = [];
             for (let i = 0; i < devices.length; i++) {
@@ -478,10 +478,11 @@ export class LiqidController {
                         await this.liqidComm.addFpgaToMach(machDeviceRelator);
                         break;
                 }
-                await delay(500);
+                //await delay(500);
             }
-            await this.liqidComm.reprogramFabric(machine);
             await this.liqidObs.refresh();
+            var response = await this.liqidComm.reprogramFabric(machine);
+            console.log('Reprogramming; response: ' + response);
         }
         catch (err) {
             throw new Error(err);
