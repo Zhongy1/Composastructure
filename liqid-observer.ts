@@ -7,7 +7,8 @@ export interface OrganizedDeviceStatuses {
     cpu: { [key: string]: DeviceStatus },
     gpu: { [key: string]: DeviceStatus },
     ssd: { [key: string]: DeviceStatus },
-    nic: { [key: string]: DeviceStatus }
+    nic: { [key: string]: DeviceStatus },
+    fpga: { [key: string]: DeviceStatus }
 }
 
 export interface GatheringDevStatsOptions {
@@ -52,7 +53,7 @@ export class LiqidObserver {
      * Deep diff between two objects, using lodash.
      * @param  {Object} object Object compared
      * @param  {Object} base   Object to compare with
-     * @return {Object}        Return a new object who represent the diff
+     * @return {Object}        Return a new object that represent the difference
      */
     private difference = (object: any, base: any): any => {
         function changes(object: any, base: any) {
@@ -67,13 +68,14 @@ export class LiqidObserver {
 
     /**
      * Start tracking Liqid. Check for updates at one second intervals. Stops when encounters an error.
-     * @return  {Promise<boolean>}   Return true if start is successful, false if observer is already in an on state
+     * The checking for updates at one second intervals is just a work around until a better solution is known.
+     * @return  {Promise<boolean>}   Return true if start is successful; false if observer is already in an on state
      */
     public start = async (): Promise<boolean> => {
         try {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
-                if (this.fabricTracked)
+                if (this.fabricTracked) {
                     this.mainLoop = setInterval(() => {
                         this.trackSystemChanges()
                             .then(success => {
@@ -84,8 +86,10 @@ export class LiqidObserver {
                                     this.stop();
                             });
                     }, 1000);
+                    return true;
+                }
             }
-            return this.fabricTracked;
+            return false;
         }
         catch (err) {
             this.fabricTracked = false;
@@ -117,7 +121,7 @@ export class LiqidObserver {
     }
 
     /**
-     * Pulls up-to-date statistics from Liqid and compares/modifies existing statistics.
+     * Pulls up-to-date information from Liqid and compares/modifies existing information.
      * @return {Promise<boolean>}    The success of the operation
      */
     private trackSystemChanges = async (): Promise<boolean> => {
@@ -225,7 +229,7 @@ export class LiqidObserver {
 
     /**
      * Get groups
-     * @return {Promise<{ [key: string]: Group }}   Group mapping with id as key
+     * @return {{ [key: string]: Group }}   Group mapping with id as key
      */
     public getGroups = (): { [key: string]: Group } => {
         return this.groups;
@@ -233,7 +237,7 @@ export class LiqidObserver {
 
     /**
      * Get machines
-     * @return {Promise<{ [key: string]: Machine }} Machine mapping with id as key
+     * @return {{ [key: string]: Machine }} Machine mapping with id as key
      */
     public getMachines = (): { [key: string]: Machine } => {
         return this.machines;
@@ -241,7 +245,7 @@ export class LiqidObserver {
 
     /**
      * Get devices
-     * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
+     * @return {{ [key: string]: Predevice }}   Predevice mapping with name as key
      */
     public getDevices = (): { [key: string]: PreDevice } => {
         return this.devices;
@@ -249,16 +253,16 @@ export class LiqidObserver {
 
     /**
      * Get device statuses
-     * @return {Promise<{ [key: string]: DeviceStatus }}    DeviceStatus mapping with name as key
+     * @return {{ [key: string]: DeviceStatus }}    DeviceStatus mapping with name as key
      */
     public getDeviceStatuses = (): { [key: string]: DeviceStatus } => {
         return this.deviceStatuses;
     }
 
     /**
-     * Get group by group id
-     * @param {string | number} [id]
-     * @return {Group}  Group that matches the given id or null; if id is not specified, then the first available Group or null if no Groups available
+     * Get group by group ID
+     * @param {string | number} [id]    Optional ID used to select group
+     * @return {Group}                  Group that matches the given id or null; if id is not specified, then the first available Group or null if no Groups available
      */
     public getGroupById = (id?: number | string): Group => {
         if (id) {
@@ -271,9 +275,9 @@ export class LiqidObserver {
     }
 
     /**
-     * Get machine by machine id
-     * @param {string | number} [id]
-     * @return {Machine}    Machine that matches the given id or null; if id is not specified, then the first available Machine or null if no Machines available
+     * Get machine by machine ID
+     * @param {string | number} [id]    Optional ID used to select machine
+     * @return {Machine}                Machine that matches the given id or null; if id is not specified, then the first available Machine or null if no Machines available
      */
     public getMachineById = (id?: number | string): Machine => {
         if (id) {
@@ -287,8 +291,8 @@ export class LiqidObserver {
 
     /**
      * Get device by device name
-     * @param {string | number} [name]
-     * @return {Predevice}  Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
+     * @param {string | number} [name]  Optional name used to select predevice
+     * @return {Predevice}              Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
      */
     public getDeviceByName = (name?: number | string): PreDevice => {
         if (name) {
@@ -302,8 +306,8 @@ export class LiqidObserver {
 
     /**
      * Get device status by device name
-     * @param {string | number} [name]
-     * @return {DeviceStatus}   DeviceStatus that matches the given name or null; if name is not specified, then the first available DeviceStatus or null if no DeviceStatuses available
+     * @param {string | number} [name]  Optional name used to select device status
+     * @return {DeviceStatus}           DeviceStatus that matches the given name or null; if name is not specified, then the first available DeviceStatus or null if no DeviceStatuses available
      */
     public getDeviceStatusByName = (name?: number | string): DeviceStatus => {
         if (name) {
@@ -316,15 +320,16 @@ export class LiqidObserver {
     }
 
     /**
-     * Get device statuses organized by type
-     * @return {OrganizedDeviceStatuses}    DeviceStatuses; grouped by cpu, gpu, ssd, or nic
+     * Get all device statuses organized by type
+     * @return {OrganizedDeviceStatuses}    DeviceStatuses; grouped by cpu, gpu, ssd, nic, or fpga
      */
     public getDeviceStatusesOrganized = (): OrganizedDeviceStatuses => {
         let statsOrganized: OrganizedDeviceStatuses = {
             cpu: {},
             gpu: {},
             ssd: {},
-            nic: {}
+            nic: {},
+            fpga: {}
         };
         Object.keys(this.deviceStatuses).forEach((devName) => {
             switch (this.deviceStatuses[devName].type) {
@@ -346,8 +351,8 @@ export class LiqidObserver {
     }
 
     /**
-     * Check if name is already in use
-     * @param {string} name
+     * Check if machine name is already in use
+     * @param {string} name Name that will be checked
      * @return {boolean}    True if name exists already
      */
     public checkMachNameExists = (name: string): boolean => {
@@ -358,6 +363,11 @@ export class LiqidObserver {
         return false;
     }
 
+    /**
+     * Primarily for the controller. Used to select the devices that will be used to compose a machine
+     * @param {GatheringDevStatsOptions} options    Options for what devices to be gathered
+     * @return {Promise<DeviceStatus[]>}            An array of the gathered devices
+     */
     public gatherRequiredDeviceStatuses = async (options: GatheringDevStatsOptions): Promise<DeviceStatus[]> => {
         try {
             let devices: DeviceStatus[] = [];
@@ -481,7 +491,7 @@ export class LiqidObserver {
             if (typeof options.nic === 'number') {
                 let deviceNames = Object.keys(deviceStats.nic);
                 if (deviceNames.length < options.nic)
-                    throw new Error('The specified number of of NICs is more than what is currently available.');
+                    throw new Error('The specified number of NICs is more than what is currently available.');
                 if (options.gatherUnused) {
                     count = options.nic;
                     for (let i = 0; i < deviceNames.length; i++) {
@@ -516,6 +526,44 @@ export class LiqidObserver {
                 }
             }
             else throw new Error('NIC specification is neither a number nor a string array.');
+            if (typeof options.fpga === 'number') {
+                let deviceNames = Object.keys(deviceStats.fpga);
+                if (deviceNames.length < options.fpga)
+                    throw new Error('The specified number of FPGAs is more than what is currently available.');
+                if (options.gatherUnused) {
+                    count = options.fpga;
+                    for (let i = 0; i < deviceNames.length; i++) {
+                        if (count <= 0) break;
+                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        if (predevice == null || predevice.mach_id == 'n/a') {
+                            devices.push(deviceStats.fpga[deviceNames[i]]);
+                            count--;
+                        }
+                    }
+                    if (count > 0) throw new Error('The specified number of FPGAs is more than the number of FPGAs that are unused.');
+                }
+                else {
+                    for (let i = 0; i < options.fpga; i++)
+                        devices.push(deviceStats.fpga[deviceNames[i]]);
+                }
+            }
+            else if (Array.isArray(options.fpga)) {
+                for (let i = 0; i < options.fpga.length; i++) {
+                    if (deviceStats.fpga.hasOwnProperty(options.fpga[i])) {
+                        if (options.gatherUnused) {
+                            let predevice: PreDevice = this.getDeviceByName(options.fpga[i]);
+                            if (predevice == null || predevice.mach_id == 'n/a')
+                                devices.push(deviceStats.fpga[options.fpga[i]]);
+                            else throw new Error(`FPGA ${options.fpga[i]} is currently in use by machine ${predevice.mname}.`);
+                        }
+                        else
+                            devices.push(deviceStats.fpga[options.fpga[i]]);
+                    }
+                    else
+                        throw new Error(`FPGA ${options.fpga[i]} does not exist.`);
+                }
+            }
+            else throw new Error('FPGA specification is neither a number nor a string array.');
             return devices;
         }
         catch (err) {

@@ -34,12 +34,12 @@ let controller = new LiqidController(ip);
 observer.start()
     .then(success => {
         //... Grab Components
-    }, err => {
-        //...
-    });
-controller.start()
-    .then(success => {
-        //... Compose Machine
+        controller.start()
+            .then(success => {
+                //... Compose Machine
+            }, err => {
+                //...
+            });
     }, err => {
         //...
     });
@@ -77,4 +77,4 @@ controller.decompose(createdMachine);
 ## Docs
 Documentation is generated using typedoc.
 
-Docs have been pregenerated; open dist/docs/index.html with your browser to view them
+Docs have been pregenerated; open docs/index.html with your browser to view them

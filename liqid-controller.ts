@@ -36,14 +36,19 @@ export class LiqidController {
         this.busy = false;
     }
 
+    /**
+     * Start the controller. This is to confirm that the controller can connect to Liqid system.
+     * @return  {Promise<boolean>}   Return true if start is successful, false if controller has already been started
+     */
     public start = async (): Promise<boolean> => {
         try {
             if (!this.ready) {
                 let obsStart = await this.liqidObs.start();
                 this.fabricId = await this.identifyFabricId();
                 this.ready = true;
+                return true;
             }
-            return this.ready;
+            return false;
         }
         catch (err) {
             this.ready = false;
@@ -64,7 +69,11 @@ export class LiqidController {
         }
     }
 
-
+    /**
+     * Create a group/pool
+     * @param   {string}    name    The name the new group will use
+     * @return  {Promise<Group>}    The created group
+     */
     public createGroup = async (name: string): Promise<Group> => {
         try {
             var group: Group = {
@@ -85,143 +94,7 @@ export class LiqidController {
      * @param {ComposeOptions} options  Specify parts needed either by name or by how many
      * @return {Machine}                Machine object, returned from Liqid
      */
-    public composeV1 = async (options: ComposeOptions): Promise<Machine> => {
-        try {
-            if (!this.ready)
-                throw new Error('Can not compose: controller has not started.');
-
-            if (this.busy)
-                throw new Error('Can not compose: a compose, task is currently running.')
-            else
-                this.busy = true;
-
-            if (options.hasOwnProperty('groupId')) {
-                var group: Group = await this.liqidObs.getGroupById(options.groupId);
-                if (group == null)
-                    throw new Error('Specified groupId does not exist. Aborting Compose!');
-            }
-            else {
-                var group: Group = await this.liqidObs.getGroupById();
-                if (group == null)
-                    throw new Error('There are currently no existing groups. Aborting Compose! Maybe create group in this step?');
-            }
-
-            if (this.liqidObs.checkMachNameExists(options.name))
-                throw new Error(`The machine name '${options.name}' already exists. Aborting Compose!`);
-            let machine: Machine = {
-                grp_id: group.grp_id,
-                fabr_gid: '-1',
-                fabr_id: this.fabricId,
-                mach_id: parseInt(await this.liqidComm.getNextMachineId()),
-                mach_name: options.name
-            };
-            let devices: DeviceStatus[] = [];
-            let deviceStats: OrganizedDeviceStatuses = this.liqidObs.getDeviceStatusesOrganized();
-
-            if (typeof options.cpu === 'number' && options.cpu > 0) {
-                let deviceNames = Object.keys(deviceStats.cpu);
-                if (deviceNames.length < options.cpu)
-                    throw new Error('Not enough available CPUs to use. Aborting Compose!');
-                for (let i = 0; i < options.cpu; i++)
-                    devices.push(deviceStats.cpu[deviceNames[i]]);
-            }
-            else if (Array.isArray(options.cpu)) {
-                for (let i = 0; i < options.cpu.length; i++) {
-                    if (deviceStats.cpu.hasOwnProperty(options.cpu[i]))
-                        devices.push(deviceStats.cpu[options.cpu[i]]);
-                    else
-                        throw new Error(`CPU ${options.cpu[i]} does not exist. Aborting Compose!`);
-                }
-            }
-            else throw new Error('CPU specification is neither a number nor a string array. Aborting Compose!');
-            if (typeof options.gpu === 'number' && options.gpu > 0) {
-                let deviceNames = Object.keys(deviceStats.gpu);
-                if (deviceNames.length < options.gpu)
-                    throw new Error('Not enough available GPUs to use. Aborting Compose!');
-                for (let i = 0; i < options.gpu; i++)
-                    devices.push(deviceStats.gpu[deviceNames[i]]);
-            }
-            else if (Array.isArray(options.gpu)) {
-                for (let i = 0; i < options.gpu.length; i++) {
-                    if (deviceStats.gpu.hasOwnProperty(options.gpu[i]))
-                        devices.push(deviceStats.gpu[options.gpu[i]]);
-                    else
-                        throw new Error(`GPU ${options.gpu[i]} does not exist. Aborting Compose!`);
-                }
-            }
-            else throw new Error('GPU specification is neither a number nor a string array. Aborting Compose!');
-            if (typeof options.ssd === 'number' && options.ssd > 0) {
-                let deviceNames = Object.keys(deviceStats.ssd);
-                if (deviceNames.length < options.ssd)
-                    throw new Error('Not enough available SSDs to use. Aborting Compose!');
-                for (let i = 0; i < options.ssd; i++)
-                    devices.push(deviceStats.ssd[deviceNames[i]]);
-            }
-            else if (Array.isArray(options.ssd)) {
-                for (let i = 0; i < options.ssd.length; i++) {
-                    if (deviceStats.ssd.hasOwnProperty(options.ssd[i]))
-                        devices.push(deviceStats.ssd[options.ssd[i]]);
-                    else
-                        throw new Error(`SSD ${options.ssd[i]} does not exist. Aborting Compose!`);
-                }
-            }
-            else throw new Error('SSD specification is neither a number nor a string array. Aborting Compose!');
-            if (typeof options.nic === 'number' && options.nic > 0) {
-                let deviceNames = Object.keys(deviceStats.nic);
-                if (deviceNames.length < options.nic)
-                    throw new Error('Not enough available NICs to use. Aborting Compose!');
-                for (let i = 0; i < options.nic; i++)
-                    devices.push(deviceStats.nic[deviceNames[i]]);
-            }
-            else if (Array.isArray(options.nic)) {
-                for (let i = 0; i < options.nic.length; i++) {
-                    if (deviceStats.nic.hasOwnProperty(options.nic[i]))
-                        devices.push(deviceStats.nic[options.nic[i]]);
-                    else
-                        throw new Error(`NIC ${options.nic[i]} does not exist. Aborting Compose!`);
-                }
-            }
-            else throw new Error('NIC specification is neither a number nor a string array. Aborting Compose!');
-
-            let transitionTime = new Promise((resolve) => { setTimeout(() => resolve(''), 500) });
-            //Create machine first
-            await this.liqidComm.createMachine(machine);
-            await transitionTime;
-            //Add devices to machine
-            for (let i = 0; i < devices.length; i++) {
-                let machDevRelator: MachineDeviceRelator = {
-                    groupDeviceRelator: {
-                        deviceStatus: devices[i],
-                        group: group
-                    },
-                    machine: machine
-                }
-                switch (devices[i].type) {
-                    case 'ComputeDeviceStatus':
-                        await this.liqidComm.addCpuToMach(machDevRelator);
-                        break;
-                    case 'GpuDeviceStatus':
-                        await this.liqidComm.addGpuToMach(machDevRelator);
-                        break;
-                    case 'SsdDeviceStatus':
-                        await this.liqidComm.addStorageToMach(machDevRelator);
-                        break;
-                    case 'LinkDeviceStatus':
-                        await this.liqidComm.addNetCardToMach(machDevRelator);
-                        break;
-                }
-                await transitionTime;
-                let returnMachine: Machine = await this.liqidObs.getMachineById(machine.mach_id);
-                return returnMachine;
-            }
-        }
-        catch (err) {
-            this.busy = false;
-            throw new Error(err);
-        }
-    }
-
-    public composeV2 = async (options: ComposeOptions): Promise<Machine> => {
+    public compose = async (options: ComposeOptions): Promise<Machine> => {
         let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
         try {
             if (!this.ready)
@@ -244,6 +117,11 @@ export class LiqidController {
                 var group = this.liqidObs.getGroupById();
                 if (!group)
                     throw new Error('Group Assignment Error: There are currently no available groups (You should create one first).')
+            }
+
+            //check machine name
+            if (this.liqidObs.checkMachNameExists(options.name)) {
+                throw new Error('Machine Name Error: The given machine name is already in use.')
             }
 
             //grab all current devices
@@ -481,8 +359,7 @@ export class LiqidController {
                 //await delay(500);
             }
             await this.liqidObs.refresh();
-            var response = await this.liqidComm.reprogramFabric(machine);
-            console.log('Reprogramming; response: ' + response);
+            await this.liqidComm.reprogramFabric(machine);
         }
         catch (err) {
             throw new Error(err);

@@ -119,13 +119,22 @@ class LiqidCommunicator {
         };
         //Fabric Controller
         //POST '/fabric/cancel' Exit fabric edit mode. Exiting fabric edit mode before a reprogram is issued will result in all device connections being reverted. Accepts Machine
+        this.cancelFabricEdit = (machine) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/fabric/cancel', machine)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/fabric/edit' Enter fabric edit mode. Entering fabric edit mode allows the fabric to be electrically reconnected. The fabric MUST be put into edit mode before a device is added to a machine. Accepts Machine
-        this.enterEditMode = (machine) => {
+        this.enterFabricEditMode = (machine) => {
             return new Promise((resolve, reject) => {
                 axios_1.default.post(this.liqidUri + '/fabric/edit', machine)
                     .then(res => {
                     resolve(res.data.response.data[0]);
-                    console.log("entering edit mode");
                 }, err => {
                     reject(err);
                 });
@@ -170,11 +179,51 @@ class LiqidCommunicator {
             });
         };
         //POST '/group' Create a group. Accepts Group
+        this.createGroup = (group) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/group', group)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //DELETE '/group/{id}' Remove a group. Accepts an id
+        this.deleteGroup = (id) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.delete(this.liqidUri + '/group/' + id)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/group/clear' Perform a reset without rediscovering devices.
         //GET '/group/details/{id}' Report the details for an individual group. Accepts an id
+        this.getGroupDetails = (id) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.get(this.liqidUri + '/group/details/' + id)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //GET '/group/mapper' Maps a group name to group id. Accepts a string group-name
         //GET '/group/nextid' Report the next available group id.
+        this.getNextGroupId = () => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.get(this.liqidUri + '/group/nextid')
+                    .then(res => {
+                    resolve(parseInt(res.data.response.data[0]));
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //Group Device Relator Contoller
         //GET '/predevice' List devices found on system. Accepts a string mach_id, a dev_type (comp|targ|gpu|link), and a string cid
         this.getDeviceList = (options) => {
@@ -190,19 +239,149 @@ class LiqidCommunicator {
             });
         };
         //POST '/predevice/compute' Add a CPU device to the Group. Accepts GroupDeviceRelator
+        this.addCpuToPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/predevice/compute', options)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //DELETE '/predevice/compute' Remove a CPU device from the Group. Accepts GroupDeviceRelator
+        this.removeCpuFromPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.delete(this.liqidUri + '/predevice/compute', { data: options })
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/predevice/fpga' Add a FPGA device to the Group. Accepts GroupDeviceRelator
+        this.addFpgaToPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/predevice/fpga', options)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //DELETE '/predevice/fpga' Remove a FPGA device from the Group. Accepts GroupDeviceRelator
+        this.removeFpgaFromPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.delete(this.liqidUri + '/predevice/fpga', { data: options })
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/predevice/gpu' Add a GPU device to the Group. Accepts GroupDeviceRelator
+        this.addGpuToPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/predevice/gpu', options)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //DELETE '/predevice/gpu' Remove a GPU device from the Group. Accepts GroupDeviceRelator
+        this.removeGpuFromPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.delete(this.liqidUri + '/predevice/gpu', { data: options })
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/predevice/network' Add a network device to the Group. Accepts GroupDeviceRelator
+        this.addNetCardToPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/predevice/network', options)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //DELETE '/predevice/network' Remove a network device from the Group. Accepts GroupDeviceRelator
+        this.removeNetCardFromPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.delete(this.liqidUri + '/predevice/network', { data: options })
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/predevice/storage' Add a storage device to the Group. Accepts GroupDeviceRelator
+        this.addStorageToPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/predevice/storage', options)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //DELETE '/predevice/storage' Remove a storage device from the Group. Accepts GroupDeviceRelator
+        this.removeStorageFromPool = (options) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.delete(this.liqidUri + '/predevice/storage', { data: options })
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //Group Pool Controller
         //POST '/pool/cancel' Cancel editing a group pool. This action will result in all devices either added/removed to/from a Group will be reverted. Requires GroupPool
+        this.cancelPoolEdit = (clusterPool) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/pool/cancel', clusterPool)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/pool/done' Finish editing a group pool. Edit mode MUST be completed in order for devices to be added/removed to/from a group. Requires GroupPool
+        this.savePoolEdit = (clusterPool) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/pool/done', clusterPool)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //POST '/pool/edit' Edit a group pool. Edit mode MUST be entered before adding/removing device(s) to/from a Group. Requires GroupPool
+        this.enterPoolEditMode = (clusterPool) => {
+            return new Promise((resolve, reject) => {
+                axios_1.default.post(this.liqidUri + '/pool/edit', clusterPool)
+                    .then(res => {
+                    resolve(res.data.response.data[0]);
+                }, err => {
+                    reject(err);
+                });
+            });
+        };
         //Liqid Node Names Controller
         //GET '/node-names' getNodeNames. Accepts a string criteria and an object parameters
         //Machine Controller
