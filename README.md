@@ -13,6 +13,8 @@ npm install composastructure
 ```ts
 import { LiqidObserver, LiqidController } from 'composastructure'
 
+let ip = 'IP to Liqid system';
+
 //Liqid Observer - For retrieving information from Liqid
 let observer = new LiqidObserver(ip);
 
@@ -22,14 +24,25 @@ let controller = new LiqidController(ip);
 
 ## Main Usage
 
-Stick to using only the observer and controller, as they are higher level abstractions of the communicator.
-
 ```ts
 import { LiqidObserver, LiqidController, ComposeOptions, Machine, OrganizedDeviceStatuses } from 'composastructure'
 
-let ip = 'ip to Liqid system';
+//-------Initialize Components-------//
+let ip = 'IP to Liqid system';
 let observer = new LiqidObserver(ip);
 let controller = new LiqidController(ip);
+observer.start()
+    .then(success => {
+        //... Grab Components
+        controller.start()
+            .then(success => {
+                //... Compose Machine
+            }, err => {
+                //...
+            });
+    }, err => {
+        //...
+    });
 
 
 //----------Grab Components----------//
@@ -64,4 +77,4 @@ controller.decompose(createdMachine);
 ## Docs
 Documentation is generated using typedoc.
 
-Docs have been pregenerated; open dist/docs/index.html with your browser to view them
+Docs have been pregenerated; open docs/index.html with your browser to view them
