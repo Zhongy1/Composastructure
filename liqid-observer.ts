@@ -350,6 +350,10 @@ export class LiqidObserver {
         return statsOrganized;
     }
 
+    public getMiniTopology = (): any => {
+        
+    }
+
     /**
      * Check if machine name is already in use
      * @param {string} name Name that will be checked
