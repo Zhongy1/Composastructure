@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -54,7 +55,7 @@ class LiqidObserver {
                                 if (err)
                                     this.stop();
                             });
-                        }, 1000);
+                        }, 5000);
                         return true;
                     }
                 }
@@ -109,7 +110,7 @@ class LiqidObserver {
             try {
                 let groups = yield this.fetchGroups();
                 let machines = yield this.fetchMachines();
-                let devices = yield this.fetchDevices();
+                let devices = yield this.fetchPreDevices();
                 let devStatuses = yield this.fetchDevStatuses();
                 makeNecessaryUpdates(groups, this.groups);
                 makeNecessaryUpdates(machines, this.machines);
@@ -159,7 +160,7 @@ class LiqidObserver {
          * Fetch device information
          * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
          */
-        this.fetchDevices = () => __awaiter(this, void 0, void 0, function* () {
+        this.fetchPreDevices = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 let map = {};
                 let deviceArray = yield this.liqidComm.getDeviceList();
@@ -207,7 +208,7 @@ class LiqidObserver {
          * Get devices
          * @return {{ [key: string]: Predevice }}   Predevice mapping with name as key
          */
-        this.getDevices = () => {
+        this.getPreDevices = () => {
             return this.devices;
         };
         /**
@@ -250,7 +251,7 @@ class LiqidObserver {
          * @param {string | number} [name]  Optional name used to select predevice
          * @return {Predevice}              Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
          */
-        this.getDeviceByName = (name) => {
+        this.getPreDeviceByName = (name) => {
             if (name) {
                 return (this.devices.hasOwnProperty(name)) ? this.devices[name] : null;
             }
@@ -303,6 +304,9 @@ class LiqidObserver {
             });
             return statsOrganized;
         };
+        this.getMiniTopology = () => {
+            return {};
+        };
         /**
          * Check if machine name is already in use
          * @param {string} name Name that will be checked
@@ -334,7 +338,7 @@ class LiqidObserver {
                         for (let i = 0; i < deviceNames.length; i++) {
                             if (count <= 0)
                                 break;
-                            let predevice = this.getDeviceByName(deviceNames[i]);
+                            let predevice = this.getPreDeviceByName(deviceNames[i]);
                             if (predevice == null || predevice.mach_id == 'n/a') {
                                 devices.push(deviceStats.cpu[deviceNames[i]]);
                                 count--;
@@ -352,7 +356,7 @@ class LiqidObserver {
                     for (let i = 0; i < options.cpu.length; i++) {
                         if (deviceStats.cpu.hasOwnProperty(options.cpu[i])) {
                             if (options.gatherUnused) {
-                                let predevice = this.getDeviceByName(options.cpu[i]);
+                                let predevice = this.getPreDeviceByName(options.cpu[i]);
                                 if (predevice == null || predevice.mach_id == 'n/a')
                                     devices.push(deviceStats.cpu[options.cpu[i]]);
                                 else
@@ -376,7 +380,7 @@ class LiqidObserver {
                         for (let i = 0; i < deviceNames.length; i++) {
                             if (count <= 0)
                                 break;
-                            let predevice = this.getDeviceByName(deviceNames[i]);
+                            let predevice = this.getPreDeviceByName(deviceNames[i]);
                             if (predevice == null || predevice.mach_id == 'n/a') {
                                 devices.push(deviceStats.gpu[deviceNames[i]]);
                                 count--;
@@ -394,7 +398,7 @@ class LiqidObserver {
                     for (let i = 0; i < options.gpu.length; i++) {
                         if (deviceStats.gpu.hasOwnProperty(options.gpu[i])) {
                             if (options.gatherUnused) {
-                                let predevice = this.getDeviceByName(options.gpu[i]);
+                                let predevice = this.getPreDeviceByName(options.gpu[i]);
                                 if (predevice == null || predevice.mach_id == 'n/a')
                                     devices.push(deviceStats.gpu[options.gpu[i]]);
                                 else
@@ -418,7 +422,7 @@ class LiqidObserver {
                         for (let i = 0; i < deviceNames.length; i++) {
                             if (count <= 0)
                                 break;
-                            let predevice = this.getDeviceByName(deviceNames[i]);
+                            let predevice = this.getPreDeviceByName(deviceNames[i]);
                             if (predevice == null || predevice.mach_id == 'n/a') {
                                 devices.push(deviceStats.ssd[deviceNames[i]]);
                                 count--;
@@ -436,7 +440,7 @@ class LiqidObserver {
                     for (let i = 0; i < options.ssd.length; i++) {
                         if (deviceStats.ssd.hasOwnProperty(options.ssd[i])) {
                             if (options.gatherUnused) {
-                                let predevice = this.getDeviceByName(options.ssd[i]);
+                                let predevice = this.getPreDeviceByName(options.ssd[i]);
                                 if (predevice == null || predevice.mach_id == 'n/a')
                                     devices.push(deviceStats.ssd[options.ssd[i]]);
                                 else
@@ -460,7 +464,7 @@ class LiqidObserver {
                         for (let i = 0; i < deviceNames.length; i++) {
                             if (count <= 0)
                                 break;
-                            let predevice = this.getDeviceByName(deviceNames[i]);
+                            let predevice = this.getPreDeviceByName(deviceNames[i]);
                             if (predevice == null || predevice.mach_id == 'n/a') {
                                 devices.push(deviceStats.nic[deviceNames[i]]);
                                 count--;
@@ -478,7 +482,7 @@ class LiqidObserver {
                     for (let i = 0; i < options.nic.length; i++) {
                         if (deviceStats.nic.hasOwnProperty(options.nic[i])) {
                             if (options.gatherUnused) {
-                                let predevice = this.getDeviceByName(options.nic[i]);
+                                let predevice = this.getPreDeviceByName(options.nic[i]);
                                 if (predevice == null || predevice.mach_id == 'n/a')
                                     devices.push(deviceStats.nic[options.nic[i]]);
                                 else
@@ -502,7 +506,7 @@ class LiqidObserver {
                         for (let i = 0; i < deviceNames.length; i++) {
                             if (count <= 0)
                                 break;
-                            let predevice = this.getDeviceByName(deviceNames[i]);
+                            let predevice = this.getPreDeviceByName(deviceNames[i]);
                             if (predevice == null || predevice.mach_id == 'n/a') {
                                 devices.push(deviceStats.fpga[deviceNames[i]]);
                                 count--;
@@ -520,7 +524,7 @@ class LiqidObserver {
                     for (let i = 0; i < options.fpga.length; i++) {
                         if (deviceStats.fpga.hasOwnProperty(options.fpga[i])) {
                             if (options.gatherUnused) {
-                                let predevice = this.getDeviceByName(options.fpga[i]);
+                                let predevice = this.getPreDeviceByName(options.fpga[i]);
                                 if (predevice == null || predevice.mach_id == 'n/a')
                                     devices.push(deviceStats.fpga[options.fpga[i]]);
                                 else

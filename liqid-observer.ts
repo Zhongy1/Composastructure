@@ -85,7 +85,7 @@ export class LiqidObserver {
                                 if (err)
                                     this.stop();
                             });
-                    }, 1000);
+                    }, 5000);
                     return true;
                 }
             }
@@ -142,7 +142,7 @@ export class LiqidObserver {
         try {
             let groups = await this.fetchGroups();
             let machines = await this.fetchMachines();
-            let devices = await this.fetchDevices();
+            let devices = await this.fetchPreDevices();
             let devStatuses = await this.fetchDevStatuses();
             makeNecessaryUpdates(groups, this.groups);
             makeNecessaryUpdates(machines, this.machines);
@@ -195,7 +195,7 @@ export class LiqidObserver {
      * Fetch device information
      * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
      */
-    private fetchDevices = async (): Promise<{ [key: string]: PreDevice }> => {
+    private fetchPreDevices = async (): Promise<{ [key: string]: PreDevice }> => {
         try {
             let map: { [key: string]: PreDevice } = {};
             let deviceArray = await this.liqidComm.getDeviceList();
@@ -247,7 +247,7 @@ export class LiqidObserver {
      * Get devices
      * @return {{ [key: string]: Predevice }}   Predevice mapping with name as key
      */
-    public getDevices = (): { [key: string]: PreDevice } => {
+    public getPreDevices = (): { [key: string]: PreDevice } => {
         return this.devices;
     }
 
@@ -294,7 +294,7 @@ export class LiqidObserver {
      * @param {string | number} [name]  Optional name used to select predevice
      * @return {Predevice}              Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
      */
-    public getDeviceByName = (name?: number | string): PreDevice => {
+    public getPreDeviceByName = (name?: number | string): PreDevice => {
         if (name) {
             return (this.devices.hasOwnProperty(name)) ? this.devices[name] : null;
         }
@@ -351,7 +351,7 @@ export class LiqidObserver {
     }
 
     public getMiniTopology = (): any => {
-        
+        return {};
     }
 
     /**
@@ -386,7 +386,7 @@ export class LiqidObserver {
                     count = options.cpu;
                     for (let i = 0; i < deviceNames.length; i++) {
                         if (count <= 0) break;
-                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        let predevice: PreDevice = this.getPreDeviceByName(deviceNames[i]);
                         if (predevice == null || predevice.mach_id == 'n/a') {
                             devices.push(deviceStats.cpu[deviceNames[i]]);
                             count--;
@@ -403,7 +403,7 @@ export class LiqidObserver {
                 for (let i = 0; i < options.cpu.length; i++) {
                     if (deviceStats.cpu.hasOwnProperty(options.cpu[i])) {
                         if (options.gatherUnused) {
-                            let predevice: PreDevice = this.getDeviceByName(options.cpu[i]);
+                            let predevice: PreDevice = this.getPreDeviceByName(options.cpu[i]);
                             if (predevice == null || predevice.mach_id == 'n/a')
                                 devices.push(deviceStats.cpu[options.cpu[i]]);
                             else throw new Error(`CPU ${options.cpu[i]} is currently in use by machine ${predevice.mname}.`);
@@ -424,7 +424,7 @@ export class LiqidObserver {
                     count = options.gpu;
                     for (let i = 0; i < deviceNames.length; i++) {
                         if (count <= 0) break;
-                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        let predevice: PreDevice = this.getPreDeviceByName(deviceNames[i]);
                         if (predevice == null || predevice.mach_id == 'n/a') {
                             devices.push(deviceStats.gpu[deviceNames[i]]);
                             count--;
@@ -441,7 +441,7 @@ export class LiqidObserver {
                 for (let i = 0; i < options.gpu.length; i++) {
                     if (deviceStats.gpu.hasOwnProperty(options.gpu[i])) {
                         if (options.gatherUnused) {
-                            let predevice: PreDevice = this.getDeviceByName(options.gpu[i]);
+                            let predevice: PreDevice = this.getPreDeviceByName(options.gpu[i]);
                             if (predevice == null || predevice.mach_id == 'n/a')
                                 devices.push(deviceStats.gpu[options.gpu[i]]);
                             else throw new Error(`GPU ${options.gpu[i]} is currently in use by machine ${predevice.mname}.`);
@@ -462,7 +462,7 @@ export class LiqidObserver {
                     count = options.ssd;
                     for (let i = 0; i < deviceNames.length; i++) {
                         if (count <= 0) break;
-                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        let predevice: PreDevice = this.getPreDeviceByName(deviceNames[i]);
                         if (predevice == null || predevice.mach_id == 'n/a') {
                             devices.push(deviceStats.ssd[deviceNames[i]]);
                             count--;
@@ -479,7 +479,7 @@ export class LiqidObserver {
                 for (let i = 0; i < options.ssd.length; i++) {
                     if (deviceStats.ssd.hasOwnProperty(options.ssd[i])) {
                         if (options.gatherUnused) {
-                            let predevice: PreDevice = this.getDeviceByName(options.ssd[i]);
+                            let predevice: PreDevice = this.getPreDeviceByName(options.ssd[i]);
                             if (predevice == null || predevice.mach_id == 'n/a')
                                 devices.push(deviceStats.ssd[options.ssd[i]]);
                             else throw new Error(`SSD ${options.ssd[i]} is currently in use by machine ${predevice.mname}.`);
@@ -500,7 +500,7 @@ export class LiqidObserver {
                     count = options.nic;
                     for (let i = 0; i < deviceNames.length; i++) {
                         if (count <= 0) break;
-                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        let predevice: PreDevice = this.getPreDeviceByName(deviceNames[i]);
                         if (predevice == null || predevice.mach_id == 'n/a') {
                             devices.push(deviceStats.nic[deviceNames[i]]);
                             count--;
@@ -517,7 +517,7 @@ export class LiqidObserver {
                 for (let i = 0; i < options.nic.length; i++) {
                     if (deviceStats.nic.hasOwnProperty(options.nic[i])) {
                         if (options.gatherUnused) {
-                            let predevice: PreDevice = this.getDeviceByName(options.nic[i]);
+                            let predevice: PreDevice = this.getPreDeviceByName(options.nic[i]);
                             if (predevice == null || predevice.mach_id == 'n/a')
                                 devices.push(deviceStats.nic[options.nic[i]]);
                             else throw new Error(`NIC ${options.nic[i]} is currently in use by machine ${predevice.mname}.`);
@@ -538,7 +538,7 @@ export class LiqidObserver {
                     count = options.fpga;
                     for (let i = 0; i < deviceNames.length; i++) {
                         if (count <= 0) break;
-                        let predevice: PreDevice = this.getDeviceByName(deviceNames[i]);
+                        let predevice: PreDevice = this.getPreDeviceByName(deviceNames[i]);
                         if (predevice == null || predevice.mach_id == 'n/a') {
                             devices.push(deviceStats.fpga[deviceNames[i]]);
                             count--;
@@ -555,7 +555,7 @@ export class LiqidObserver {
                 for (let i = 0; i < options.fpga.length; i++) {
                     if (deviceStats.fpga.hasOwnProperty(options.fpga[i])) {
                         if (options.gatherUnused) {
-                            let predevice: PreDevice = this.getDeviceByName(options.fpga[i]);
+                            let predevice: PreDevice = this.getPreDeviceByName(options.fpga[i]);
                             if (predevice == null || predevice.mach_id == 'n/a')
                                 devices.push(deviceStats.fpga[options.fpga[i]]);
                             else throw new Error(`FPGA ${options.fpga[i]} is currently in use by machine ${predevice.mname}.`);

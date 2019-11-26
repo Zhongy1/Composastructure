@@ -26,8 +26,45 @@ export class RestServer {
     }
 
     private generateGetHandlers = (): void => {
-        app.get("/DeviceStatus", (req, res, next) => {
+        // /observer/getGroups
+        app.get('/observer/getGroups', (req, res, next) => {
+            res.json(this.liqidObs.getGroups());
+        });
+        // /observer/getMachines
+        app.get('/observer/getMachines', (req, res, next) => {
+            res.json(this.liqidObs.getMachines());
+        });
+        // /observer/getPreDevices
+        app.get('/observer/getPreDevices', (req, res, next) => {
+            res.json(this.liqidObs.getPreDevices());
+        });
+        // /observer/getDeviceStatuses
+        app.get('/observer/getDeviceStatuses', (req, res, next) => {
             res.json(this.liqidObs.getDeviceStatuses());
+        });
+        // /observer/getGroupById/:grp_id
+        app.get('/observer/getGroupById/:grp_id', (req, res, next) => {
+            res.json(this.liqidObs.getGroupById(req.params.grp_id));
+        });
+        // /observer/getMachineById/:mach_id
+        app.get('/observer/getMachineById/:mach_id', (req, res, next) => {
+            res.json(this.liqidObs.getMachineById(req.params.mach_id));
+        });
+        // /observer/getDeviceByName/:name
+        app.get('/observer/getPreDeviceByName/:name', (req, res, next) => {
+            res.json(this.liqidObs.getPreDeviceByName(req.params.name));
+        });
+        // /observer/getDeviceStatusByName/:name
+        app.get('/observer/getDeviceStatusByName/:name', (req, res, next) => {
+            res.json(this.liqidObs.getDeviceStatusByName(req.params.name));
+        });
+        // /observer/getDeviceStatusesOrganized
+        app.get('/observer/getDeviceStatusesOrganized', (req, res, next) => {
+            res.json(this.liqidObs.getDeviceStatusesOrganized());
+        });
+        // /observer/getMiniTopology
+        app.get('/observer/getMiniTopology', (req, res, next) => {
+            res.json(this.liqidObs.getMiniTopology());
         });
     }
 

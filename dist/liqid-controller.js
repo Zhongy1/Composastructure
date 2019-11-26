@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -125,7 +126,7 @@ class LiqidController {
                 let assembleSuccessful = true;
                 yield this.liqidObs.refresh();
                 for (let i = 0; i < deviceStatuses.length; i++) {
-                    let predevice = this.liqidObs.getDeviceByName(deviceStatuses[i].name);
+                    let predevice = this.liqidObs.getPreDeviceByName(deviceStatuses[i].name);
                     if (predevice.mach_id != machineId.toString()) {
                         assembleSuccessful = false;
                         break;
@@ -174,7 +175,7 @@ class LiqidController {
                 //only devices outside of target group will be moved
                 var transDevices = [];
                 for (let i = 0; i < devices.length; i++) {
-                    let predevice = this.liqidObs.getDeviceByName(devices[i].name);
+                    let predevice = this.liqidObs.getPreDeviceByName(devices[i].name);
                     if (!predevice || predevice.grp_id != grpId)
                         transDevices.push(devices[i]);
                     if (predevice && predevice.mach_id != 'n/a')
@@ -182,7 +183,7 @@ class LiqidController {
                 }
                 //enter edit mode for transitioning devices
                 for (let i = 0; i < transDevices.length; i++) {
-                    let predevice = this.liqidObs.getDeviceByName(transDevices[i].name);
+                    let predevice = this.liqidObs.getPreDeviceByName(transDevices[i].name);
                     if (!predevice)
                         continue;
                     if (!grpsInEditMode.hasOwnProperty(predevice.grp_id)) {
@@ -197,7 +198,7 @@ class LiqidController {
                 }
                 //pull out of pool
                 for (let i = 0; i < transDevices.length; i++) {
-                    let predevice = this.liqidObs.getDeviceByName(transDevices[i].name);
+                    let predevice = this.liqidObs.getPreDeviceByName(transDevices[i].name);
                     if (!predevice)
                         continue;
                     let groupDeviceRelator = {
@@ -296,7 +297,7 @@ class LiqidController {
                 //select only the devices that needs to be moved
                 var transDevices = [];
                 for (let i = 0; i < devices.length; i++) {
-                    let predevice = this.liqidObs.getDeviceByName(devices[i].name);
+                    let predevice = this.liqidObs.getPreDeviceByName(devices[i].name);
                     if (!predevice || predevice.grp_id != machine.grp_id)
                         throw new Error(`Move Device To Machine Error: Device ${devices[i].name} is not in the same group as machine.`);
                     if (predevice.mach_id != 'n/a') {

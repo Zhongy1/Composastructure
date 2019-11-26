@@ -80,7 +80,7 @@ export declare class LiqidObserver {
      * Fetch device information
      * @return {Promise<{ [key: string]: Predevice }}   Predevice mapping with name as key
      */
-    private fetchDevices;
+    private fetchPreDevices;
     /**
      * Fetch device statuses
      * @return {Promise<{ [key: string]: DeviceStatus }}   DeviceStatus mapping with name as key
@@ -104,7 +104,7 @@ export declare class LiqidObserver {
      * Get devices
      * @return {{ [key: string]: Predevice }}   Predevice mapping with name as key
      */
-    getDevices: () => {
+    getPreDevices: () => {
         [key: string]: PreDevice;
     };
     /**
@@ -131,7 +131,7 @@ export declare class LiqidObserver {
      * @param {string | number} [name]  Optional name used to select predevice
      * @return {Predevice}              Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
      */
-    getDeviceByName: (name?: string | number) => PreDevice;
+    getPreDeviceByName: (name?: string | number) => PreDevice;
     /**
      * Get device status by device name
      * @param {string | number} [name]  Optional name used to select device status
@@ -143,6 +143,7 @@ export declare class LiqidObserver {
      * @return {OrganizedDeviceStatuses}    DeviceStatuses; grouped by cpu, gpu, ssd, nic, or fpga
      */
     getDeviceStatusesOrganized: () => OrganizedDeviceStatuses;
+    getMiniTopology: () => any;
     /**
      * Check if machine name is already in use
      * @param {string} name Name that will be checked
