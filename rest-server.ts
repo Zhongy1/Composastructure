@@ -1,78 +1,248 @@
 import * as express from 'express';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController } from './liqid-controller';
-var app = express();
+import { Group, Machine, PreDevice, DeviceStatus } from './models';
 
-app.listen(3000, () => {
-    console.log("Server running on port 3000");
-});
+export interface RestServerConfig {
+    ips: string[],
+    hostPort: number
+}
 
-app.get("/url", (req, res, next) => {
-    res.json(["Tony", "Lisa", "Michael", "Ginger", "Food"]);
-});
+export enum DeviceType {
+    cpu = 'cpu',
+    gpu = 'gpu',
+    ssd = 'ssd',
+    nic = 'nic',
+    optane = 'optane',
+    fpga = 'fpga'
+}
+export interface Device {
+    id: string,
+    type: DeviceType,
+    fabr_id: number,
+    grp_id: number,
+    gname: string,
+    mach_id: number,
+    mname: string,
+    lanes: number
+}
 
 export class RestServer {
 
-    private liqidObs: LiqidObserver;
-    private liqidCtl: LiqidController;
+    private liqidObservers: { [key: string]: LiqidObserver };
+    private liqidControllers: { [key: string]: LiqidController };
     private app: any;
     private ready;
 
-    constructor(private liqidIp: string) {
-        this.liqidObs = new LiqidObserver(liqidIp);
-        this.liqidCtl = new LiqidController(liqidIp);
+    constructor(private config: RestServerConfig) {
+        this.liqidObservers = {};
+        this.liqidControllers = {};
         this.app = express();
         this.ready = false;
+
     }
 
+    /*
     private generateGetHandlers = (): void => {
         // /observer/getGroups
-        app.get('/observer/getGroups', (req, res, next) => {
+        this.app.get('/observer/getGroups', (req, res, next) => {
             res.json(this.liqidObs.getGroups());
         });
         // /observer/getMachines
-        app.get('/observer/getMachines', (req, res, next) => {
+        this.app.get('/observer/getMachines', (req, res, next) => {
             res.json(this.liqidObs.getMachines());
         });
         // /observer/getPreDevices
-        app.get('/observer/getPreDevices', (req, res, next) => {
+        this.app.get('/observer/getPreDevices', (req, res, next) => {
             res.json(this.liqidObs.getPreDevices());
         });
         // /observer/getDeviceStatuses
-        app.get('/observer/getDeviceStatuses', (req, res, next) => {
+        this.app.get('/observer/getDeviceStatuses', (req, res, next) => {
             res.json(this.liqidObs.getDeviceStatuses());
         });
         // /observer/getGroupById/:grp_id
-        app.get('/observer/getGroupById/:grp_id', (req, res, next) => {
+        this.app.get('/observer/getGroupById/:grp_id', (req, res, next) => {
             res.json(this.liqidObs.getGroupById(req.params.grp_id));
         });
         // /observer/getMachineById/:mach_id
-        app.get('/observer/getMachineById/:mach_id', (req, res, next) => {
+        this.app.get('/observer/getMachineById/:mach_id', (req, res, next) => {
             res.json(this.liqidObs.getMachineById(req.params.mach_id));
         });
         // /observer/getDeviceByName/:name
-        app.get('/observer/getPreDeviceByName/:name', (req, res, next) => {
+        this.app.get('/observer/getPreDeviceByName/:name', (req, res, next) => {
             res.json(this.liqidObs.getPreDeviceByName(req.params.name));
         });
         // /observer/getDeviceStatusByName/:name
-        app.get('/observer/getDeviceStatusByName/:name', (req, res, next) => {
+        this.app.get('/observer/getDeviceStatusByName/:name', (req, res, next) => {
             res.json(this.liqidObs.getDeviceStatusByName(req.params.name));
         });
         // /observer/getDeviceStatusesOrganized
-        app.get('/observer/getDeviceStatusesOrganized', (req, res, next) => {
+        this.app.get('/observer/getDeviceStatusesOrganized', (req, res, next) => {
             res.json(this.liqidObs.getDeviceStatusesOrganized());
         });
         // /observer/getMiniTopology
-        app.get('/observer/getMiniTopology', (req, res, next) => {
+        this.app.get('/observer/getMiniTopology', (req, res, next) => {
             res.json(this.liqidObs.getMiniTopology());
         });
+    }*/
+
+    private initializeCollectionsHandlers = (): void => {
+        this.app.get('/api/groups', (req, res, next) => {
+            let groups: { [key: string]: { [key: string]: Group } } = {};
+            Object.keys(this.liqidObservers).forEach((fabr_id) => {
+                groups[fabr_id] = this.liqidObservers[fabr_id].getGroups();
+            });
+            res.json(groups);
+        });
+        this.app.get('/api/machines', (req, res, next) => {
+            let machines: { [key: string]: { [key: string]: Machine } } = {};
+            Object.keys(this.liqidObservers).forEach((fabr_id) => {
+                machines[fabr_id] = this.liqidObservers[fabr_id].getMachines();
+            });
+            res.json(machines);
+        });
+        this.app.get('/api/predevices', (req, res, next) => {
+            let predevices: { [key: string]: { [key: string]: PreDevice } } = {};
+            Object.keys(this.liqidObservers).forEach((fabr_id) => {
+                predevices[fabr_id] = this.liqidObservers[fabr_id].getPreDevices();
+            });
+            res.json(predevices);
+        });
+        this.app.get('/api/devicestatuses', (req, res, next) => {
+            let devicestatuses: { [key: string]: { [key: string]: DeviceStatus } } = {};
+            Object.keys(this.liqidObservers).forEach((fabr_id) => {
+                devicestatuses[fabr_id] = this.liqidObservers[fabr_id].getDeviceStatuses();
+            });
+            res.json(devicestatuses);
+        });
+        this.app.get('/api/devices', (req, res, next) => {
+            let devices: { [key: string]: { [key: string]: Device } } = {};
+            Object.keys(this.liqidObservers).forEach((fabr_id) => {
+                devices[fabr_id] = this.summarizeAllDevices(parseInt(fabr_id));
+            });
+            res.json(devices);
+        });
+        this.app.get('/api/fabrics', (req, res, next) => {
+            let categorizedDevices = {};
+            Object.keys(this.liqidObservers).forEach((fabr_id) => {
+                categorizedDevices[fabr_id] = {
+                    unassigned: {},
+                    assigned: {}
+                };
+                let summedDevices = this.summarizeAllDevices(parseInt(fabr_id));
+                Object.keys(summedDevices).forEach((dev_name) => {
+                    let device = summedDevices[dev_name];
+                    if (device.gname)
+                        categorizedDevices[fabr_id].assigned[dev_name] = device;
+                    else categorizedDevices[fabr_id].unassigned[dev_name] = device;
+                });
+            });
+            res.json(categorizedDevices);
+        });
+    }
+
+    private initializeLoopupHandlers = (): void => {
+        this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
+                res.json(this.liqidObservers[req.fabr_id].getGroupById(req.id));
+            else
+                res.json(null);
+        });
+        this.app.get('/api/machine/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
+                res.json(this.liqidObservers[req.fabr_id].getMachineById(req.id));
+            else
+                res.json(null);
+        });
+        this.app.get('/api/devicestatus/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
+                res.json(this.liqidObservers[req.fabr_id].getDeviceStatusByName(req.id));
+            else
+                res.json(null);
+        });
+        this.app.get('/api/predevice/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
+                res.json(this.liqidObservers[req.fabr_id].getPreDeviceByName(req.id));
+            else
+                res.json(null);
+        });
+        this.app.get('/api/device/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
+                res.json(this.summarizeDevice(req.fabr_id, req.id));
+            else
+                res.json(null);
+        });
+    }
+
+    private summarizeDevice = (fabr_id: number, name: string): Device => {
+        let device: Device = {
+            id: name,
+            type: null,
+            fabr_id: fabr_id,
+            grp_id: null,
+            gname: null,
+            mach_id: null,
+            mname: null,
+            lanes: 0
+        };
+        let deviceStatus: DeviceStatus = this.liqidObservers[fabr_id].getDeviceStatusByName(name);
+        let preDevice: PreDevice = this.liqidObservers[fabr_id].getPreDeviceByName(name);
+        if (!deviceStatus) return null;
+        switch (deviceStatus.type) {
+            case 'ComputeDeviceStatus':
+                device.type = DeviceType.cpu
+                break;
+            case 'GpuDeviceStatus':
+                device.type = DeviceType.gpu
+                break;
+            case 'SsdDeviceStatus':
+                if (deviceStatus.name.indexOf('ssd') >= 0)
+                    device.type = DeviceType.ssd;
+                else
+                    device.type = DeviceType.optane;
+                break;
+            case 'LinkDeviceStatus':
+                device.type = DeviceType.nic;
+                break;
+            case 'FpgaDeviceStatus':
+                device.type = DeviceType.fpga;
+                break;
+        }
+        device.lanes = deviceStatus.lanes;
+        if (!preDevice) return device;
+        device.grp_id = preDevice.grp_id;
+        device.gname = preDevice.gname;
+        if (preDevice.mach_id != 'n/a') {
+            device.mach_id = parseInt(preDevice.mach_id);
+            device.mname = preDevice.mname;
+        }
+        return device;
+    }
+
+    private summarizeAllDevices = (fabr_id: number): { [key: string]: Device } => {
+        let devices: { [key: string]: Device } = {};
+        let deviceStatuses = this.liqidObservers[fabr_id].getDeviceStatuses();
+        Object.keys(deviceStatuses).forEach((dev_name) => {
+            devices[dev_name] = this.summarizeDevice(fabr_id, dev_name);
+        });
+        return devices;
     }
 
     public start = async (): Promise<void> => {
         try {
-            let res = await this.liqidObs.start();
-            res = await this.liqidCtl.start();
-            this.generateGetHandlers();
+            for (let i = 0; i < this.config.ips.length; i++) {
+                let obs = new LiqidObserver(this.config.ips[i]);
+                let res = await obs.start();
+                this.liqidObservers[obs.getFabricId()] = obs;
+                let ctrl = new LiqidController(this.config.ips[i]);
+                res = await ctrl.start();
+                this.liqidControllers[ctrl.getFabricId()] = ctrl;
+            }
+            this.app.listen(this.config.hostPort, () => {
+                console.log(`Server running on port ${this.config.hostPort}`);
+            });
+            this.initializeCollectionsHandlers();
+            this.initializeLoopupHandlers();
             this.ready = true;
         }
         catch (err) {

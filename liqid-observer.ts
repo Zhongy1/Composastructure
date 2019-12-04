@@ -29,6 +29,7 @@ const observer = new LiqidObserver(ip);
 export class LiqidObserver {
 
     private liqidComm: LiqidCommunicator;
+    private fabricId: number;
     private mainLoop: any;
 
     private groups: { [key: string]: Group };
@@ -75,6 +76,7 @@ export class LiqidObserver {
         try {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
+                this.fabricId = await this.identifyFabricId();
                 if (this.fabricTracked) {
                     this.mainLoop = setInterval(() => {
                         this.trackSystemChanges()
@@ -95,6 +97,23 @@ export class LiqidObserver {
             this.fabricTracked = false;
             throw new Error('LiqidObserver start unsuccessful: possibly unable to communicate with Liqid.');
         }
+    }
+
+    /**
+     * Determine the current fabric ID on which this observer is mounted
+     * @return  {Promise<number>}    The ID
+     */
+    private identifyFabricId = async (): Promise<number> => {
+        try {
+            return await this.liqidComm.getFabricId();
+        }
+        catch (err) {
+            throw new Error('Unable to retrieve fabric ID.');
+        }
+    }
+
+    public getFabricId = (): number => {
+        return this.fabricId
     }
 
     /**
@@ -344,6 +363,9 @@ export class LiqidObserver {
                     break;
                 case 'LinkDeviceStatus':
                     statsOrganized.nic[devName] = this.deviceStatuses[devName];
+                    break;
+                case 'FpgaDeviceStatus':
+                    statsOrganized.fpga[devName] = this.deviceStatuses[devName];
                     break;
             }
         });

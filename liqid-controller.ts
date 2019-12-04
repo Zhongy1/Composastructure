@@ -69,6 +69,10 @@ export class LiqidController {
         }
     }
 
+    public getFabricId = (): number => {
+        return this.fabricId
+    }
+
     /**
      * Create a group/pool
      * @param   {string}    name    The name the new group will use
