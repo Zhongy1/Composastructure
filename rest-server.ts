@@ -123,25 +123,45 @@ export class RestServer {
             res.json(devices);
         });
         this.app.get('/api/fabrics', (req, res, next) => {
-            let categorizedDevices = {};
+            let categorizedItems = {};
             Object.keys(this.liqidObservers).forEach((fabr_id) => {
-                categorizedDevices[fabr_id] = {
-                    unassigned: {},
-                    assigned: {}
+                categorizedItems[fabr_id] = {
+                    unassignedDevices: {},
+                    assignedPoolDevices: {},
+                    assignedMachineDevices: {},
+                    machines: {},
+                    pools: {}
                 };
+                let groups = this.liqidObservers[fabr_id].getGroups();
+                Object.keys(groups).forEach((grp_id) => {
+                    categorizedItems[fabr_id].pools[grp_id] = { unassignedDevices: {} };
+                });
+                let machines = this.liqidObservers[fabr_id].getMachines();
+                Object.keys(machines).forEach((mach_id) => {
+                    categorizedItems[fabr_id].machines[mach_id] = {};
+                    categorizedItems[fabr_id].pools[machines[mach_id].grp_id][mach_id] = {};
+                });
                 let summedDevices = this.summarizeAllDevices(parseInt(fabr_id));
                 Object.keys(summedDevices).forEach((dev_name) => {
                     let device = summedDevices[dev_name];
-                    if (device.gname)
-                        categorizedDevices[fabr_id].assigned[dev_name] = device;
-                    else categorizedDevices[fabr_id].unassigned[dev_name] = device;
+                    if (!device.gname)
+                        categorizedItems[fabr_id].unassignedDevices[dev_name] = device;
+                    else if (!device.mname) {
+                        categorizedItems[fabr_id].assignedPoolDevices[dev_name] = device;
+                        categorizedItems[fabr_id].pools[device.grp_id].unassignedDevices[dev_name] = device;
+                    }
+                    else {
+                        categorizedItems[fabr_id].assignedMachineDevices[dev_name] = device;
+                        categorizedItems[fabr_id].pools[device.grp_id][device.mach_id][dev_name] = device;
+                        categorizedItems[fabr_id].machines[device.mach_id][dev_name] = device;
+                    }
                 });
             });
-            res.json(categorizedDevices);
+            res.json(categorizedItems);
         });
     }
 
-    private initializeLoopupHandlers = (): void => {
+    private initializeLookupHandlers = (): void => {
         this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
             if (this.liqidObservers.hasOwnProperty(req.fabr_id))
                 res.json(this.liqidObservers[req.fabr_id].getGroupById(req.id));
@@ -242,7 +262,7 @@ export class RestServer {
                 console.log(`Server running on port ${this.config.hostPort}`);
             });
             this.initializeCollectionsHandlers();
-            this.initializeLoopupHandlers();
+            this.initializeLookupHandlers();
             this.ready = true;
         }
         catch (err) {
