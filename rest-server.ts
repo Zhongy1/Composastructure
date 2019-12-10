@@ -27,6 +27,36 @@ export interface Device {
     lanes: number
 }
 
+export interface SimplifiedMachine {
+    mach_id: number,
+    mname: string,
+    grp_id: number,
+    devices: Device[]
+}
+
+export interface Pool {
+    grp_id: number,
+    gname: string,
+    unusedDevices: Device[]
+    usedDevices: Device[]
+    machines: SimplifiedMachine[]
+}
+
+export interface Fabric {
+    fabricId: number,
+    unassigned: Device[],
+    assigned: {
+        unusedDevices: Device[],
+        usedDevices: Device[]
+    },
+    machines: SimplifiedMachine[],
+    pools: Pool[]
+}
+
+export interface MainResponse {
+    fabrics: Fabric[]
+}
+
 export class RestServer {
 
     private liqidObservers: { [key: string]: LiqidObserver };
@@ -123,41 +153,17 @@ export class RestServer {
             res.json(devices);
         });
         this.app.get('/api/fabrics', (req, res, next) => {
-            let categorizedItems = {};
-            Object.keys(this.liqidObservers).forEach((fabr_id) => {
-                categorizedItems[fabr_id] = {
-                    unassignedDevices: {},
-                    assignedPoolDevices: {},
-                    assignedMachineDevices: {},
-                    machines: {},
-                    pools: {}
-                };
-                let groups = this.liqidObservers[fabr_id].getGroups();
-                Object.keys(groups).forEach((grp_id) => {
-                    categorizedItems[fabr_id].pools[grp_id] = { unassignedDevices: {} };
-                });
-                let machines = this.liqidObservers[fabr_id].getMachines();
-                Object.keys(machines).forEach((mach_id) => {
-                    categorizedItems[fabr_id].machines[mach_id] = {};
-                    categorizedItems[fabr_id].pools[machines[mach_id].grp_id][mach_id] = {};
-                });
-                let summedDevices = this.summarizeAllDevices(parseInt(fabr_id));
-                Object.keys(summedDevices).forEach((dev_name) => {
-                    let device = summedDevices[dev_name];
-                    if (!device.gname)
-                        categorizedItems[fabr_id].unassignedDevices[dev_name] = device;
-                    else if (!device.mname) {
-                        categorizedItems[fabr_id].assignedPoolDevices[dev_name] = device;
-                        categorizedItems[fabr_id].pools[device.grp_id].unassignedDevices[dev_name] = device;
-                    }
-                    else {
-                        categorizedItems[fabr_id].assignedMachineDevices[dev_name] = device;
-                        categorizedItems[fabr_id].pools[device.grp_id][device.mach_id][dev_name] = device;
-                        categorizedItems[fabr_id].machines[device.mach_id][dev_name] = device;
-                    }
-                });
+            let response: MainResponse = {
+                fabrics: []
+            }
+            Object.keys(this.liqidObservers).forEach(fabr_id => {
+                let fabric: Fabric = this.getInfoFromFabric(parseInt(fabr_id));
+                if (!fabric)
+                    return null
+                else
+                    response.fabrics.push(fabric);
             });
-            res.json(categorizedItems);
+            res.json(response);
         });
     }
 
@@ -246,6 +252,69 @@ export class RestServer {
             devices[dev_name] = this.summarizeDevice(fabr_id, dev_name);
         });
         return devices;
+    }
+
+    private getInfoFromFabric = (fabr_id: number): Fabric => {
+        if (!this.liqidObservers.hasOwnProperty(fabr_id))
+            return null;
+        let fabric: Fabric = {
+            fabricId: fabr_id,
+            unassigned: [],
+            assigned: {
+                unusedDevices: [],
+                usedDevices: []
+            },
+            machines: [],
+            pools: []
+        }
+        let summedDevices = this.summarizeAllDevices(fabr_id);
+        Object.keys(summedDevices).forEach(id => {
+            if (summedDevices[id].grp_id) {
+                if (summedDevices[id].mach_id)
+                    fabric.assigned.usedDevices.push(summedDevices[id]);
+                else
+                    fabric.assigned.unusedDevices.push(summedDevices[id]);
+            }
+            else
+                fabric.unassigned.push(summedDevices[id]);
+        });
+        let machines = this.liqidObservers[fabr_id].getMachines();
+        Object.keys(machines).forEach((mach_id) => {
+            let machine: SimplifiedMachine = {
+                mach_id: machines[mach_id].mach_id,
+                mname: machines[mach_id].mach_name,
+                grp_id: machines[mach_id].grp_id,
+                devices: []
+            }
+            fabric.assigned.usedDevices.forEach(device => {
+                if (device.mach_id == parseInt(mach_id))
+                    machine.devices.push(device);
+            });
+        });
+        let groups = this.liqidObservers[fabr_id].getGroups();
+        Object.keys(groups).forEach((grp_id) => {
+            let pool: Pool = {
+                grp_id: groups[grp_id].grp_id,
+                gname: groups[grp_id].group_name,
+                unusedDevices: [],
+                usedDevices: [],
+                machines: []
+            }
+            Object.keys(summedDevices).forEach(id => {
+                if (summedDevices[id].grp_id == parseInt(grp_id)) {
+                    if (summedDevices[id].mach_id)
+                        pool.usedDevices.push(summedDevices[id]);
+                    else
+                        pool.unusedDevices.push(summedDevices[id]);
+                }
+            });
+            fabric.machines.forEach(machine => {
+                if (machine.grp_id == parseInt(grp_id))
+                    pool.machines.push(machine);
+            });
+            fabric.pools.push(pool);
+        });
+        return fabric;
     }
 
     public start = async (): Promise<void> => {
