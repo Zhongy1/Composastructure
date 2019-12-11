@@ -153,6 +153,7 @@ export class RestServer {
             res.json(devices);
         });
         this.app.get('/api/fabrics', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/json');
             let response: MainResponse = {
                 fabrics: []
             }
