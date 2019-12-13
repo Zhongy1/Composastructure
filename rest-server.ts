@@ -291,6 +291,7 @@ export class RestServer {
                 if (device.mach_id == parseInt(mach_id))
                     machine.devices.push(device);
             });
+            fabric.machines.push(machine);
         });
         let groups = this.liqidObservers[fabr_id].getGroups();
         Object.keys(groups).forEach((grp_id) => {
