@@ -33,6 +33,7 @@ const observer = new LiqidObserver(ip);
 export declare class LiqidObserver {
     private liqidIp;
     private liqidComm;
+    private fabricId;
     private mainLoop;
     private groups;
     private machines;
@@ -53,6 +54,12 @@ export declare class LiqidObserver {
      * @return  {Promise<boolean>}   Return true if start is successful; false if observer is already in an on state
      */
     start: () => Promise<boolean>;
+    /**
+     * Determine the current fabric ID on which this observer is mounted
+     * @return  {Promise<number>}    The ID
+     */
+    private identifyFabricId;
+    getFabricId: () => number;
     /**
      * Stop tracking Liqid. Call start to resume.
      */

@@ -51,6 +51,9 @@ class LiqidController {
                 throw new Error('Unable to retrieve fabric ID.');
             }
         });
+        this.getFabricId = () => {
+            return this.fabricId;
+        };
         /**
          * Create a group/pool
          * @param   {string}    name    The name the new group will use

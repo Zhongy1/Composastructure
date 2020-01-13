@@ -45,6 +45,7 @@ class LiqidObserver {
             try {
                 if (!this.fabricTracked) {
                     this.fabricTracked = yield this.trackSystemChanges();
+                    this.fabricId = yield this.identifyFabricId();
                     if (this.fabricTracked) {
                         this.mainLoop = setInterval(() => {
                             this.trackSystemChanges()
@@ -66,6 +67,21 @@ class LiqidObserver {
                 throw new Error('LiqidObserver start unsuccessful: possibly unable to communicate with Liqid.');
             }
         });
+        /**
+         * Determine the current fabric ID on which this observer is mounted
+         * @return  {Promise<number>}    The ID
+         */
+        this.identifyFabricId = () => __awaiter(this, void 0, void 0, function* () {
+            try {
+                return yield this.liqidComm.getFabricId();
+            }
+            catch (err) {
+                throw new Error('Unable to retrieve fabric ID.');
+            }
+        });
+        this.getFabricId = () => {
+            return this.fabricId;
+        };
         /**
          * Stop tracking Liqid. Call start to resume.
          */
@@ -299,6 +315,9 @@ class LiqidObserver {
                         break;
                     case 'LinkDeviceStatus':
                         statsOrganized.nic[devName] = this.deviceStatuses[devName];
+                        break;
+                    case 'FpgaDeviceStatus':
+                        statsOrganized.fpga[devName] = this.deviceStatuses[devName];
                         break;
                 }
             });
