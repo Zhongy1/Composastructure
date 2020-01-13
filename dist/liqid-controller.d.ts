@@ -32,6 +32,7 @@ export declare class LiqidController {
      * @return  {Promise<number>}    The ID
      */
     private identifyFabricId;
+    getFabricId: () => number;
     /**
      * Create a group/pool
      * @param   {string}    name    The name the new group will use

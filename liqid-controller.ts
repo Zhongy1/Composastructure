@@ -69,6 +69,10 @@ export class LiqidController {
         }
     }
 
+    public getFabricId = (): number => {
+        return this.fabricId
+    }
+
     /**
      * Create a group/pool
      * @param   {string}    name    The name the new group will use
@@ -153,7 +157,7 @@ export class LiqidController {
             let assembleSuccessful = true;
             await this.liqidObs.refresh();
             for (let i = 0; i < deviceStatuses.length; i++) {
-                let predevice = this.liqidObs.getDeviceByName(deviceStatuses[i].name);
+                let predevice = this.liqidObs.getPreDeviceByName(deviceStatuses[i].name);
                 if (predevice.mach_id != machineId.toString()) {
                     assembleSuccessful = false;
                     break;
@@ -203,13 +207,13 @@ export class LiqidController {
             //only devices outside of target group will be moved
             var transDevices: DeviceStatus[] = [];
             for (let i = 0; i < devices.length; i++) {
-                let predevice = this.liqidObs.getDeviceByName(devices[i].name);
+                let predevice = this.liqidObs.getPreDeviceByName(devices[i].name);
                 if (!predevice || predevice.grp_id != grpId) transDevices.push(devices[i]);
                 if (predevice && predevice.mach_id != 'n/a') throw new Error(`Move Device To Group Error: Device ${devices[i].name} is currently in use by machine ${predevice.mname}.`);
             }
             //enter edit mode for transitioning devices
             for (let i = 0; i < transDevices.length; i++) {
-                let predevice = this.liqidObs.getDeviceByName(transDevices[i].name);
+                let predevice = this.liqidObs.getPreDeviceByName(transDevices[i].name);
                 if (!predevice) continue;
                 if (!grpsInEditMode.hasOwnProperty(predevice.grp_id)) {
                     grpsInEditMode[predevice.grp_id] = {
@@ -223,7 +227,7 @@ export class LiqidController {
             }
             //pull out of pool
             for (let i = 0; i < transDevices.length; i++) {
-                let predevice = this.liqidObs.getDeviceByName(transDevices[i].name);
+                let predevice = this.liqidObs.getPreDeviceByName(transDevices[i].name);
                 if (!predevice) continue;
                 let groupDeviceRelator: GroupDeviceRelator = {
                     deviceStatus: transDevices[i],
@@ -321,7 +325,7 @@ export class LiqidController {
             //select only the devices that needs to be moved
             var transDevices: DeviceStatus[] = [];
             for (let i = 0; i < devices.length; i++) {
-                let predevice = this.liqidObs.getDeviceByName(devices[i].name);
+                let predevice = this.liqidObs.getPreDeviceByName(devices[i].name);
                 if (!predevice || predevice.grp_id != machine.grp_id)
                     throw new Error(`Move Device To Machine Error: Device ${devices[i].name} is not in the same group as machine.`);
                 if (predevice.mach_id != 'n/a') {

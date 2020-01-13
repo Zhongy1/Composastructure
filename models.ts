@@ -103,6 +103,7 @@ export interface DeviceStatus {
     flags?: string,
     fabric_type?: string,
     index?: number,
+    lanes?: number,
     location?: LiqidCoordinates,
     name: string,
     owner?: LiqidCoordinates,
