@@ -2,6 +2,7 @@ import _ = require('lodash');
 import { LiqidCommunicator } from './liqid-communicator';
 import { Group, PreDevice, Machine, DeviceStatus } from './models';
 import * as Stomp from 'stompjs';
+import * as WebSocket from 'ws';
 
 
 export interface OrganizedDeviceStatuses {
@@ -48,6 +49,7 @@ export class LiqidObserver {
         this.liqidComm = new LiqidCommunicator(liqidIp);
         this.wsUrl = `ws://${liqidIp}:8080/liqidui/event`;
         this.busyState = false;
+        this.stompClient = Stomp.overWS(this.wsUrl);
 
         this.groups = {};
         this.machines = {};
