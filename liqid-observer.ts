@@ -2,7 +2,6 @@ import _ = require('lodash');
 import { LiqidCommunicator } from './liqid-communicator';
 import { Group, PreDevice, Machine, DeviceStatus } from './models';
 import * as Stomp from 'stompjs';
-import * as WebSocket from 'ws';
 
 
 export interface OrganizedDeviceStatuses {
@@ -82,12 +81,37 @@ export class LiqidObserver {
      * @return  {Promise<boolean>}   Return true if start is successful; false if observer is already in an on state
      */
     public start = async (): Promise<boolean> => {
+        var stompConnectCallback = (): void => {
+            console.log('connect callback called');
+            if (this.busyState)
+                return;
+            this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
+                //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.groups);
+                console.log('Change occurred in groups:', m);
+            }, { 'id': "group-data-socket" });
+            this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
+                //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.machines);
+                console.log('Change occurred in machines:', m);
+            }, { 'id': "machine-socket" });
+            this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
+                //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.devices);
+                console.log('Change occurred in predevices:', m);
+            }, { 'id': "predevice-socket" });
+            this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
+                //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.deviceStatuses);
+                console.log('Change occurred in device statuses:', m);
+            }, { 'id': "device-data-socket" });
+        }
+        var stompErrorCallback = (e: Stomp.Frame | string): void => {
+            console.log('Stomp Error:');
+            console.log(e);
+        }
         try {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
                 if (this.fabricTracked) {
-                    await this.stompClient.connect({}, this.stompConnectCallback, this.stompErrorCallback);
+                    await this.stompClient.connect({}, stompConnectCallback, tompErrorCallback);
                     // this.mainLoop = setInterval(() => {
                     //     this.trackSystemChanges()
                     //         .then(success => {
@@ -111,33 +135,6 @@ export class LiqidObserver {
 
     public setBusyState = (state: boolean): void => {
         this.busyState = state;
-    }
-
-    public stompConnectCallback = (): void => {
-        console.log('connect callback called');
-        if (this.busyState)
-            return;
-        this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.groups);
-            console.log('Change occurred in groups:', m);
-        }, { 'client-id': "group-data-socket" });
-        this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.machines);
-            console.log('Change occurred in machines:', m);
-        }, { 'client-id': "machine-socket" });
-        this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.devices);
-            console.log('Change occurred in predevices:', m);
-        }, { 'client-id': "predevice-socket" });
-        this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.deviceStatuses);
-            console.log('Change occurred in device statuses:', m);
-        }, { 'client-id': "device-data-socket" });
-    }
-
-    public stompErrorCallback = (e: Stomp.Frame | string): void => {
-        console.log('Stomp Error:');
-        console.log(e);
     }
 
     /**
