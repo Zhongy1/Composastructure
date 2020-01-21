@@ -48,7 +48,6 @@ export class LiqidObserver {
         this.liqidComm = new LiqidCommunicator(liqidIp);
         this.wsUrl = `ws://${liqidIp}:8080/liqidui/event`;
         this.busyState = false;
-        this.stompClient = Stomp.overWS(this.wsUrl);
 
         this.groups = {};
         this.machines = {};
@@ -86,6 +85,7 @@ export class LiqidObserver {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
                 if (this.fabricTracked) {
+                    this.stompClient = Stomp.overWS(this.wsUrl);
                     await this.stompClient.connect({}, () => {
                         this.doSubsribe();
                     }, (e) => {
@@ -118,7 +118,6 @@ export class LiqidObserver {
     }
 
     public doSubsribe = (): void => {
-        console.log('connect callback called');
         if (this.busyState)
             return;
         this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
