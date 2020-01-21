@@ -87,7 +87,7 @@ export class LiqidObserver {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
                 if (this.fabricTracked) {
-                    this.stompClient.connect({}, this.stompConnectCallback, this.stompErrorCallback);
+                    await this.stompClient.connect({}, this.stompConnectCallback, this.stompErrorCallback);
                     // this.mainLoop = setInterval(() => {
                     //     this.trackSystemChanges()
                     //         .then(success => {
@@ -113,28 +113,29 @@ export class LiqidObserver {
         this.busyState = state;
     }
 
-    private stompConnectCallback = (): void => {
+    public stompConnectCallback = (): void => {
+        console.log('connect callback called');
         if (this.busyState)
             return;
         this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
-            let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.groups);
-            console.log('Change occurred in groups');
-        }, "group-data-socket");
+            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.groups);
+            console.log('Change occurred in groups:', m);
+        }, { 'client-id': "group-data-socket" });
         this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
-            let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.machines);
-            console.log('Change occurred in machines');
-        }, "machine-socket");
+            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.machines);
+            console.log('Change occurred in machines:', m);
+        }, { 'client-id': "machine-socket" });
         this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
-            let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.devices);
-            console.log('Change occurred in predevices');
-        }, "predevice-socket");
+            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.devices);
+            console.log('Change occurred in predevices:', m);
+        }, { 'client-id': "predevice-socket" });
         this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
-            let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.deviceStatuses);
-            console.log('Change occurred in device statuses');
-        }, "device-data-socket");
+            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.deviceStatuses);
+            console.log('Change occurred in device statuses:', m);
+        }, { 'client-id': "device-data-socket" });
     }
 
-    private stompErrorCallback = (e: Stomp.Frame | string): void => {
+    public stompErrorCallback = (e: Stomp.Frame | string): void => {
         console.log('Stomp Error:');
         console.log(e);
     }
@@ -179,6 +180,8 @@ export class LiqidObserver {
             throw new Error('Observer Refresh Error: refresh unsuccessful.');
         }
     }
+
+    //public
 
     /**
      * Pulls up-to-date information from Liqid and compares/modifies existing information.
