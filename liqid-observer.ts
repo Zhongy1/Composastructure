@@ -81,7 +81,7 @@ export class LiqidObserver {
      * @return  {Promise<boolean>}   Return true if start is successful; false if observer is already in an on state
      */
     public start = async (): Promise<boolean> => {
-        var stompConnectCallback = (): void => {
+        var doSubsribe = (): void => {
             console.log('connect callback called');
             if (this.busyState)
                 return;
@@ -102,16 +102,17 @@ export class LiqidObserver {
                 console.log('Change occurred in device statuses:', m);
             }, { 'id': "device-data-socket" });
         }
-        var stompErrorCallback = (e: Stomp.Frame | string): void => {
-            console.log('Stomp Error:');
-            console.log(e);
-        }
         try {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
                 if (this.fabricTracked) {
-                    await this.stompClient.connect({}, stompConnectCallback, tompErrorCallback);
+                    await this.stompClient.connect({}, () => {
+                        doSubsribe();
+                    }, (e) => {
+                        console.log('Stomp Error:');
+                        console.log(e);
+                    });
                     // this.mainLoop = setInterval(() => {
                     //     this.trackSystemChanges()
                     //         .then(success => {
