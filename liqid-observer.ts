@@ -80,15 +80,54 @@ export class LiqidObserver {
      * @return  {Promise<boolean>}   Return true if start is successful; false if observer is already in an on state
      */
     public start = async (): Promise<boolean> => {
+        var doSubsribe = (): void => {
+            let map: { [key: string]: Group } = {};
+            let groupArray = await this.liqidComm.getGroupList();
+            groupArray.forEach((group) => {
+                map[group.grp_id] = group;
+            });
+            if (this.busyState)
+                return;
+            this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
+                let map: { [key: string]: Group } = {};
+                JSON.parse(m.body).forEach((group) => {
+                    map[group.grp_id] = group;
+                });
+                let updated: boolean = this.makeNecessaryUpdates(map, this.groups);
+                //console.log('Change occurred in groups:', m);
+            }, { 'id': "group-data-socket" });
+            this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
+                let map: { [key: string]: Group } = {};
+                JSON.parse(m.body).forEach((machine) => {
+                    map[machine.mach_id] = machine;
+                });
+                let updated: boolean = this.makeNecessaryUpdates(map, this.machines);
+                //console.log('Change occurred in machines:', m);
+            }, { 'id': "machine-socket" });
+            this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
+                let map: { [key: string]: PreDevice } = {};
+                JSON.parse(m.body).forEach((device) => {
+                    map[device.name] = device;
+                });
+                let updated: boolean = this.makeNecessaryUpdates(map, this.devices);
+                //console.log('Change occurred in predevices:', m);
+            }, { 'id': "predevice-socket" });
+            this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
+                let map: { [key: string]: DeviceStatus } = {};
+                JSON.parse(m.body).forEach((status) => {
+                    map[status.name] = status;
+                });
+                let updated: boolean = this.makeNecessaryUpdates(map, this.deviceStatuses);
+                //console.log('Change occurred in device statuses:', m);
+            }, { 'id': "device-data-socket" });
+        }
         try {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
                 if (this.fabricTracked) {
                     this.stompClient = Stomp.overWS(this.wsUrl);
-                    await this.stompClient.connect({}, () => {
-                        this.doSubsribe();
-                    }, (e) => {
+                    await this.stompClient.connect({}, doSubsribe, (e) => {
                         console.log('Stomp Error:');
                         console.log(e);
                     });
@@ -115,27 +154,6 @@ export class LiqidObserver {
 
     public setBusyState = (state: boolean): void => {
         this.busyState = state;
-    }
-
-    public doSubsribe = (): void => {
-        if (this.busyState)
-            return;
-        this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.groups);
-            console.log('Change occurred in groups:', m);
-        }, { 'id': "group-data-socket" });
-        this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.machines);
-            console.log('Change occurred in machines:', m);
-        }, { 'id': "machine-socket" });
-        this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.devices);
-            console.log('Change occurred in predevices:', m);
-        }, { 'id': "predevice-socket" });
-        this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
-            //let updated: boolean = this.makeNecessaryUpdates(JSON.parse(m.body), this.deviceStatuses);
-            console.log('Change occurred in device statuses:', m);
-        }, { 'id': "device-data-socket" });
     }
 
     /**
