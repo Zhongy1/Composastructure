@@ -25,22 +25,6 @@ export interface AssemblyTimestamp {
     assemblyEndTime: number,
     assemblyStartTime: number
 }
-export interface ClusterDetails {
-    cid: number,
-    'cluster-name': string,
-    'cpu-core-count': number,
-    'cpu-count': number,
-    'cpu-frequency': number,
-    'cpu-lanes': number,
-    'gpu-cores': number,
-    'gpu-count': number,
-    'network-adapter-count': number,
-    'storage-drive-count': number,
-    'total-capacity': number,
-    'total-dram': number,
-    'total-machines': number,
-    'total-throughput': string
-}
 export interface ComputeDeviceStatus {
     dev_id?: string,
     device_state?: string,
@@ -55,6 +39,7 @@ export interface ComputeDeviceStatus {
     location?: LiqidCoordinates,
     name: string,
     owner?: LiqidCoordinates,
+    pod_id: number,
     port_gid?: string,
     sled_id?: string,
     swit_gid?: string,
@@ -82,7 +67,15 @@ export interface ConnectionHistory {
     owner_gid: string,
     udesc: string
 }
-export interface Description {
+export interface ControlFlag {
+    name: string,
+    value: string
+}
+export interface ControlFlagState {
+    control_flag: ControlFlag,
+    is_set: boolean
+}
+export interface DegradedSteps {
 
 }
 export interface DeviceCount {
@@ -108,10 +101,13 @@ export interface DeviceStatus {
     fabr_gid: string,
     fabr_id: number,
     flags?: string,
+    fabric_type?: string,
     index?: number,
+    lanes?: number,
     location?: LiqidCoordinates,
     name: string,
     owner?: LiqidCoordinates,
+    pod_id: number,
     port_gid?: string,
     sled_id?: string,
     swit_gid?: string,
@@ -128,7 +124,7 @@ export interface ErrorMessage {
     type: string
 }
 export interface FabricConfigurationEntry {
-    description?: Description,
+    description?: ManageableEntryDescription,
     fabr_connect: ConfigurationEntry,
     fabr_thresh: ConfigurationEntry,
     fabr_type: ConfigurationEntry,
@@ -152,6 +148,7 @@ export interface FPGADeviceStatus {
     location?: LiqidCoordinates,
     name: string,
     owner?: LiqidCoordinates,
+    pod_id: number,
     port_gid?: string,
     sled_id?: string,
     swit_gid?: string,
@@ -173,6 +170,7 @@ export interface GPUDeviceStatus {
     location?: LiqidCoordinates,
     name: string,
     owner?: LiqidCoordinates,
+    pod_id: number,
     port_gid?: string,
     sled_id?: string,
     swit_gid?: string,
@@ -181,27 +179,45 @@ export interface GPUDeviceStatus {
     unique?: string
 }
 export interface Group {
-    cid: number,
-    cluster_name: string,
-    fabr_id: number
+    fabr_id: number,
+    group_name: string,
+    grp_id: number,
+    pod_id: number
 }
 export interface GroupAssembly {
     assemblyTimestamp: AssemblyTimestamp,
     group: Group
+}
+export interface GroupDetails {
+    'cpu-core-count': number,
+    'cpu-count': number,
+    'cpu-frequency': number,//double
+    'cpu-lanes': number,
+    'gpu-cores': number,
+    'gpu-count': number,
+    'group_name': string,
+    'grp_id': number,
+    'network-adapter-count': number,
+    'storage-drive-count': number,
+    'total-capacity': number,
+    'total-dram': number,
+    'total-machines': number,
+    'total-throughput': string
 }
 export interface GroupDeviceRelator {
     deviceStatus: DeviceStatus,
     group: Group
 }
 export interface GroupPool {
-    cluster_id: number,
     coordinates: LiqidCoordinates,
-    fabr_id: number
+    fabr_id: number,
+    grp_id: number
 }
 export interface HardwareComponent {
 
 }
 export interface Image {
+    arguments: string,
     date?: string,
     filename: string,
     index: number,
@@ -229,6 +245,7 @@ export interface LinkDeviceStatus {
     location?: LiqidCoordinates,
     name: string,
     owner?: LiqidCoordinates,
+    pod_id: number,
     port_gid?: string,
     sled_id?: string,
     swit_gid?: string,
@@ -246,15 +263,21 @@ export interface LiqidDaemonConfiguration {
     configurationEntryStanzas: ConfigurationEntryStanza[],
     fabricConfigurationEntries: FabricConfigurationEntry[]
 }
+export interface LiqidDegradedSteps {
+    index?: number,
+    key?: string,
+    steps?: string[],
+    type: string
+}
 export interface LiqidReset {
     epoch: number
 }
 export interface Machine {
-    cid: number,
     comp_name?: string,
     connection_history?: ConnectionHistory[],
     fabr_gid: string,
     fabr_id: number,
+    grp_id: number,
     index?: number,
     mach_id: number,
     mach_name: string,
@@ -310,26 +333,33 @@ export interface MachineDeviceRelator {
     groupDeviceRelator: GroupDeviceRelator,
     machine: Machine
 }
+export interface MachineWithBusyDevice {
+    device_gid: string,
+    device_name: string,
+    machine: Machine,
+    port: string,
+    type: string
+}
 export interface Manageable {
     type: string
 }
 export interface ManageableDevice {
     type: string,
     capacity: number,
-    companionDevice: string,
+    companion_device: string,
     coreMhz: number
     cores: number,
     description: string,
-    deviceManufacturer: string,
-    deviceType: DeviceType,
+    device_manufacturer: string,
+    device_type: DeviceType,
     did: string,
-    discoveryToken: string,
-    dramSize: number,
-    dramType: string,
-    entry_description: ManageableEntryDescription
+    discovery_token: string,
+    dram_size: number,
+    dram_type: string,
+    entry_description: ManageableEntryDescription,
     model: string,
     speed: number
-    speedString: string,
+    speed_string: string,
     threads: number,
     unique?: string,
     vid: string
@@ -363,6 +393,12 @@ export interface NodeStatus {
     sw_vers: number,
     targs: number,
     uptime: string
+}
+export interface NullDegradedSteps {
+    index: number,
+    key: string,
+    steps: string[],
+    type: string //ManageableDevice|ManageableIpmiAddress
 }
 export interface PciNode {
     deviceType: DeviceType,
@@ -412,12 +448,12 @@ export interface PendingMachineCommand {
     type: string
 }
 export interface PreDevice {
-    cid: number,
     dev_type: string,
     fabr_gid: string,
     fabr_id: number,
     flags: string,
     gname: string,
+    grp_id: number,
     index: string,
     lanes: number,
     liqid_gid: string,
@@ -430,6 +466,12 @@ export interface PreDevice {
 }
 export interface ResponseBodyEmitter {
     timeout: number
+}
+export interface Result {
+    'commandLine': string,
+    'errorOutput': string,
+    'exitValue': number,
+    'standardOutput': string
 }
 export interface SsdDeviceStatus {
     dev_id?: string,
@@ -444,12 +486,16 @@ export interface SsdDeviceStatus {
     location?: LiqidCoordinates,
     name: string,
     owner?: LiqidCoordinates,
+    pod_id: string,
     port_gid?: string,
     sled_id?: string,
     swit_gid?: string,
     type: string,
     vid?: string,
     capacity?: number
+}
+export interface UpgradeArguments {
+
 }
 export interface Version {
 

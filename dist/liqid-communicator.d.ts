@@ -1,4 +1,4 @@
-import { DeviceStatus, ComputeDeviceStatus, FPGADeviceStatus, GPUDeviceStatus, LinkDeviceStatus, SsdDeviceStatus, Machine, PreDevice, Group, MachineDeviceRelator, MachineDetails, NodeStatus, PendingGroupCommand, PendingMachineCommand, LiqidCoordinates, PredeviceParams, DeviceStatusParams } from './models';
+import { DeviceStatus, ComputeDeviceStatus, FPGADeviceStatus, GPUDeviceStatus, LinkDeviceStatus, SsdDeviceStatus, Machine, PreDevice, Group, MachineDeviceRelator, MachineDetails, NodeStatus, PendingGroupCommand, PendingMachineCommand, LiqidCoordinates, PredeviceParams, DeviceStatusParams, GroupPool, GroupDeviceRelator, GroupDetails } from './models';
 /**
  * Communicator for server and liqid system
 ```typescript
@@ -7,6 +7,7 @@ const communicator = new LiqidCommunicator(ip);
  */
 export declare class LiqidCommunicator {
     private liqidIp;
+    private liqidUri;
     constructor(liqidIp: string);
     getDeviceStats: (options?: DeviceStatusParams) => Promise<DeviceStatus[]>;
     getComputeDeviceStats: () => Promise<ComputeDeviceStatus[]>;
@@ -15,11 +16,29 @@ export declare class LiqidCommunicator {
     getGpuDeviceStats: () => Promise<GPUDeviceStatus[]>;
     getLinkDeviceStats: () => Promise<LinkDeviceStatus[]>;
     getTargetDeviceStats: () => Promise<SsdDeviceStatus[]>;
-    enterEditMode: (machine: Machine) => Promise<Machine>;
+    cancelFabricEdit: (machine: Machine) => Promise<Machine>;
+    enterFabricEditMode: (machine: Machine) => Promise<Machine>;
     getFabricId: () => Promise<number>;
     reprogramFabric: (machine: Machine) => Promise<Machine>;
     getGroupList: () => Promise<Group[]>;
+    createGroup: (group: Group) => Promise<Group>;
+    deleteGroup: (id: string | number) => Promise<Group>;
+    getGroupDetails: (id: string | number) => Promise<GroupDetails>;
+    getNextGroupId: () => Promise<number>;
     getDeviceList: (options?: PredeviceParams) => Promise<PreDevice[]>;
+    addCpuToPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    removeCpuFromPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    addFpgaToPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    removeFpgaFromPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    addGpuToPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    removeGpuFromPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    addNetCardToPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    removeNetCardFromPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    addStorageToPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    removeStorageFromPool: (options: GroupDeviceRelator) => Promise<GroupDeviceRelator>;
+    cancelPoolEdit: (clusterPool: GroupPool) => Promise<GroupPool>;
+    savePoolEdit: (clusterPool: GroupPool) => Promise<GroupPool>;
+    enterPoolEditMode: (clusterPool: GroupPool) => Promise<GroupPool>;
     getMachineList: (cid?: string | number, mid?: string | number, mname?: string) => Promise<Machine[]>;
     createMachine: (machine: Machine) => Promise<Machine>;
     getMachineDetails: (id: string | number) => Promise<MachineDetails>;
