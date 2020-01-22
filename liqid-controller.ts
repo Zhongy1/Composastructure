@@ -314,6 +314,7 @@ export class LiqidController {
         let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
         try {
             if (devices.length == 0) return;
+            this.liqidObs.setBusyState(true);
             await this.liqidObs.refresh();
             //gather all neccessary pieces and enter fabric edit mode
             var machine: Machine = this.liqidObs.getMachineById(machId);
@@ -364,8 +365,10 @@ export class LiqidController {
             }
             await this.liqidObs.refresh();
             await this.liqidComm.reprogramFabric(machine);
+            this.liqidObs.setBusyState(false);
         }
         catch (err) {
+            this.liqidObs.setBusyState(false);
             throw new Error(err);
         }
     }

@@ -1,6 +1,7 @@
 import _ = require('lodash');
 import { LiqidCommunicator } from './liqid-communicator';
 import { Group, PreDevice, Machine, DeviceStatus } from './models';
+import * as Stomp from 'stompjs';
 
 
 export interface OrganizedDeviceStatuses {
@@ -30,7 +31,11 @@ export class LiqidObserver {
 
     private liqidComm: LiqidCommunicator;
     private fabricId: number;
-    private mainLoop: any;
+    // private mainLoop: any;
+    private wsUrl: string;
+    private busyState: boolean;
+
+    private stompClient: Stomp.Client;
 
     private groups: { [key: string]: Group };
     private machines: { [key: string]: Machine };
@@ -41,6 +46,8 @@ export class LiqidObserver {
 
     constructor(private liqidIp: string) {
         this.liqidComm = new LiqidCommunicator(liqidIp);
+        this.wsUrl = `ws://${liqidIp}:8080/liqidui/event`;
+        this.busyState = false;
 
         this.groups = {};
         this.machines = {};
@@ -73,21 +80,62 @@ export class LiqidObserver {
      * @return  {Promise<boolean>}   Return true if start is successful; false if observer is already in an on state
      */
     public start = async (): Promise<boolean> => {
+        var doSubsribe = (): void => {
+            if (this.busyState)
+                return;
+            this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
+                let map: { [key: string]: Group } = {};
+                JSON.parse(m.body).forEach((group) => {
+                    map[group.grp_id] = group;
+                });
+                let updated: boolean = this.makeNecessaryUpdates(map, this.groups);
+                //console.log('Change occurred in groups:', m);
+            }, { 'id': "group-data-socket" });
+            this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
+                let map: { [key: string]: Group } = {};
+                JSON.parse(m.body).forEach((machine) => {
+                    map[machine.mach_id] = machine;
+                });
+                let updated: boolean = this.makeNecessaryUpdates(map, this.machines);
+                //console.log('Change occurred in machines:', m);
+            }, { 'id': "machine-socket" });
+            this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
+                let map: { [key: string]: PreDevice } = {};
+                JSON.parse(m.body).forEach((device) => {
+                    map[device.name] = device;
+                });
+                let updated: boolean = this.makeNecessaryUpdates(map, this.devices);
+                //console.log('Change occurred in predevices:', m);
+            }, { 'id': "predevice-socket" });
+            // this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
+            //     let map: { [key: string]: DeviceStatus } = {};
+            //     JSON.parse(m.body).forEach((status) => {
+            //         map[status.name] = status;
+            //     });
+            //     let updated: boolean = this.makeNecessaryUpdates(map, this.deviceStatuses);
+            //     //console.log('Change occurred in device statuses:', m);
+            // }, { 'id': "device-data-socket" });
+        }
         try {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
                 if (this.fabricTracked) {
-                    this.mainLoop = setInterval(() => {
-                        this.trackSystemChanges()
-                            .then(success => {
-                                if (!success)
-                                    this.stop();
-                            }, err => {
-                                if (err)
-                                    this.stop();
-                            });
-                    }, 5000);
+                    this.stompClient = Stomp.overWS(this.wsUrl);
+                    await this.stompClient.connect({}, doSubsribe, (e) => {
+                        console.log('Stomp Error:');
+                        console.log(e);
+                    });
+                    // this.mainLoop = setInterval(() => {
+                    //     this.trackSystemChanges()
+                    //         .then(success => {
+                    //             if (!success)
+                    //                 this.stop();
+                    //         }, err => {
+                    //             if (err)
+                    //                 this.stop();
+                    //         });
+                    // }, 5000);
                     return true;
                 }
             }
@@ -97,6 +145,10 @@ export class LiqidObserver {
             this.fabricTracked = false;
             throw new Error('LiqidObserver start unsuccessful: possibly unable to communicate with Liqid.');
         }
+    }
+
+    public setBusyState = (state: boolean): void => {
+        this.busyState = state;
     }
 
     /**
@@ -122,7 +174,8 @@ export class LiqidObserver {
     public stop = (): void => {
         if (!this.fabricTracked) return;
         this.fabricTracked = false;
-        clearInterval(this.mainLoop);
+        this.stompClient.disconnect(() => { });
+        // clearInterval(this.mainLoop);
     }
 
     /**
@@ -139,39 +192,51 @@ export class LiqidObserver {
         }
     }
 
+    //public
+
     /**
      * Pulls up-to-date information from Liqid and compares/modifies existing information.
      * @return {Promise<boolean>}    The success of the operation
      */
     private trackSystemChanges = async (): Promise<boolean> => {
-        var makeNecessaryUpdates = (update: { [key: string]: any }, target: { [key: string]: any }) => {
-            //check for necessary updates
-            let detectedChanges = this.difference(update, target);
-            //update
-            Object.keys(detectedChanges).forEach((key) => {
-                target[key] = update[key];
-            });
-            //check for necessary deletions
-            detectedChanges = this.difference(target, update);
-            //do deletions
-            Object.keys(detectedChanges).forEach((key) => {
-                delete target[key];
-            });
-        }
         try {
+            this.setBusyState(true);
             let groups = await this.fetchGroups();
             let machines = await this.fetchMachines();
             let devices = await this.fetchPreDevices();
             let devStatuses = await this.fetchDevStatuses();
-            makeNecessaryUpdates(groups, this.groups);
-            makeNecessaryUpdates(machines, this.machines);
-            makeNecessaryUpdates(devices, this.devices);
-            makeNecessaryUpdates(devStatuses, this.deviceStatuses);
+            this.makeNecessaryUpdates(groups, this.groups);
+            this.makeNecessaryUpdates(machines, this.machines);
+            this.makeNecessaryUpdates(devices, this.devices);
+            this.makeNecessaryUpdates(devStatuses, this.deviceStatuses);
+            this.setBusyState(false);
             return true;
         }
         catch (err) {
+            this.setBusyState(false);
             throw new Error('Issue with trackSystemChanges; halting tracking');
         }
+    }
+
+    private makeNecessaryUpdates = (update: { [key: string]: any }, target: { [key: string]: any }): boolean => {
+        let hasDifferences = false;
+        //check for necessary updates
+        let detectedChanges = this.difference(update, target);
+        if (detectedChanges.length > 0)
+            hasDifferences = true;
+        //update
+        Object.keys(detectedChanges).forEach((key) => {
+            target[key] = update[key];
+        });
+        //check for necessary deletions
+        detectedChanges = this.difference(target, update);
+        if (!hasDifferences && detectedChanges.length > 0)
+            hasDifferences = true;
+        //do deletions
+        Object.keys(detectedChanges).forEach((key) => {
+            delete target[key];
+        });
+        return hasDifferences;
     }
 
     /**
