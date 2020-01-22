@@ -81,11 +81,6 @@ export class LiqidObserver {
      */
     public start = async (): Promise<boolean> => {
         var doSubsribe = (): void => {
-            let map: { [key: string]: Group } = {};
-            let groupArray = await this.liqidComm.getGroupList();
-            groupArray.forEach((group) => {
-                map[group.grp_id] = group;
-            });
             if (this.busyState)
                 return;
             this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
