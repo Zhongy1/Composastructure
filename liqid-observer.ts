@@ -107,14 +107,14 @@ export class LiqidObserver {
                 let updated: boolean = this.makeNecessaryUpdates(map, this.devices);
                 //console.log('Change occurred in predevices:', m);
             }, { 'id': "predevice-socket" });
-            this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
-                let map: { [key: string]: DeviceStatus } = {};
-                JSON.parse(m.body).forEach((status) => {
-                    map[status.name] = status;
-                });
-                let updated: boolean = this.makeNecessaryUpdates(map, this.deviceStatuses);
-                //console.log('Change occurred in device statuses:', m);
-            }, { 'id': "device-data-socket" });
+            // this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
+            //     let map: { [key: string]: DeviceStatus } = {};
+            //     JSON.parse(m.body).forEach((status) => {
+            //         map[status.name] = status;
+            //     });
+            //     let updated: boolean = this.makeNecessaryUpdates(map, this.deviceStatuses);
+            //     //console.log('Change occurred in device statuses:', m);
+            // }, { 'id': "device-data-socket" });
         }
         try {
             if (!this.fabricTracked) {
