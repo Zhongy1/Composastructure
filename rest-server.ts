@@ -1,4 +1,5 @@
 import * as express from 'express';
+import * as bodyParser from 'body-parser';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus } from './models';
@@ -80,6 +81,8 @@ export class RestServer {
         this.liqidObservers = {};
         this.liqidControllers = {};
         this.app = express();
+        this.app.use(bodyParser.urlencoded({ extended: false }));
+        this.app.use(bodyParser.json())
         this.ready = false;
 
     }
