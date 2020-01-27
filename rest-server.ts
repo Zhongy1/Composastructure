@@ -12,11 +12,6 @@ export interface TargetedComposeOptions extends ComposeOptions {
     fabr_id: number
 }
 
-export interface Target extends express.Request {
-    fabr_id?: number,
-    id?: string
-}
-
 export interface GroupConfig extends express.Request {
 
 }
@@ -186,33 +181,33 @@ export class RestServer {
     }
 
     private initializeLookupHandlers = (): void => {
-        this.app.get('/api/group/:fabr_id/:id', (req: Target, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
-                res.json(this.liqidObservers[req.fabr_id].getGroupById(req.id));
+        this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id))
+                res.json(this.liqidObservers[req.params.fabr_id].getGroupById(req.params.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/machine/:fabr_id/:id', (req: Target, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
-                res.json(this.liqidObservers[req.fabr_id].getMachineById(req.id));
+        this.app.get('/api/machine/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id))
+                res.json(this.liqidObservers[req.params.fabr_id].getMachineById(req.params.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/devicestatus/:fabr_id/:id', (req: Target, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
-                res.json(this.liqidObservers[req.fabr_id].getDeviceStatusByName(req.id));
+        this.app.get('/api/devicestatus/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id))
+                res.json(this.liqidObservers[req.params.fabr_id].getDeviceStatusByName(req.params.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/predevice/:fabr_id/:id', (req: Target, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
-                res.json(this.liqidObservers[req.fabr_id].getPreDeviceByName(req.id));
+        this.app.get('/api/predevice/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id))
+                res.json(this.liqidObservers[req.params.fabr_id].getPreDeviceByName(req.params.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/device/:fabr_id/:id', (req: Target, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.fabr_id))
-                res.json(this.summarizeDevice(req.fabr_id, req.id));
+        this.app.get('/api/device/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id))
+                res.json(this.summarizeDevice(parseInt(req.params.fabr_id), req.params.id));
             else
                 res.json(null);
         });
@@ -222,7 +217,7 @@ export class RestServer {
         this.app.post('/api/group', (req, res, next) => {
 
         });
-        this.app.delete('/api/group/:fabr_id/:id', (req: Target, res, next) => {
+        this.app.delete('/api/group/:fabr_id/:id', (req, res, next) => {
 
         });
         this.app.post('/api/machine', (req: MachineConfig, res, next) => {
@@ -238,9 +233,9 @@ export class RestServer {
                 res.send(`Fabric with fabr_id ${req.body.fabr_id} does not exist.`);
             }
         });
-        this.app.delete('/api/machine/:fabr_id/:id', (req: Target, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.fabr_id)) {
-                this.liqidControllers[req.fabr_id].decompose(this.liqidObservers[req.fabr_id].getMachineById(req.id))
+        this.app.delete('/api/machine/:fabr_id/:id', (req, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
+                this.liqidControllers[req.params.fabr_id].decompose(this.liqidObservers[req.params.fabr_id].getMachineById(req.params.id))
                     .then(() => {
                         res.send('Machine decomposed successfully.');
                     }, err => {
@@ -249,7 +244,7 @@ export class RestServer {
                     });
             }
             else {
-                res.send(`Fabric with fabr_id ${req.fabr_id} does not exist.`);
+                res.send(`Fabric with fabr_id ${req.params.fabr_id} does not exist.`);
             }
         });
 
@@ -388,6 +383,7 @@ export class RestServer {
             });
             this.initializeCollectionsHandlers();
             this.initializeLookupHandlers();
+            this.initializeControlHandlers();
             this.ready = true;
         }
         catch (err) {
