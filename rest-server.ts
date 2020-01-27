@@ -1,11 +1,28 @@
 import * as express from 'express';
 import { LiqidObserver } from './liqid-observer';
-import { LiqidController } from './liqid-controller';
+import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus } from './models';
 
 export interface RestServerConfig {
     ips: string[],
     hostPort: number
+}
+
+export interface TargetedComposeOptions extends ComposeOptions {
+    fabr_id: number
+}
+
+export interface Target extends express.Request {
+    fabr_id?: number,
+    id?: string
+}
+
+export interface GroupConfig extends express.Request {
+
+}
+
+export interface MachineConfig extends express.Request {
+    body: TargetedComposeOptions
 }
 
 export enum DeviceType {
@@ -61,7 +78,7 @@ export class RestServer {
 
     private liqidObservers: { [key: string]: LiqidObserver };
     private liqidControllers: { [key: string]: LiqidController };
-    private app: any;
+    private app: express.Express;
     private ready;
 
     constructor(private config: RestServerConfig) {
@@ -169,36 +186,73 @@ export class RestServer {
     }
 
     private initializeLookupHandlers = (): void => {
-        this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
+        this.app.get('/api/group/:fabr_id/:id', (req: Target, res, next) => {
             if (this.liqidObservers.hasOwnProperty(req.fabr_id))
                 res.json(this.liqidObservers[req.fabr_id].getGroupById(req.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/machine/:fabr_id/:id', (req, res, next) => {
+        this.app.get('/api/machine/:fabr_id/:id', (req: Target, res, next) => {
             if (this.liqidObservers.hasOwnProperty(req.fabr_id))
                 res.json(this.liqidObservers[req.fabr_id].getMachineById(req.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/devicestatus/:fabr_id/:id', (req, res, next) => {
+        this.app.get('/api/devicestatus/:fabr_id/:id', (req: Target, res, next) => {
             if (this.liqidObservers.hasOwnProperty(req.fabr_id))
                 res.json(this.liqidObservers[req.fabr_id].getDeviceStatusByName(req.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/predevice/:fabr_id/:id', (req, res, next) => {
+        this.app.get('/api/predevice/:fabr_id/:id', (req: Target, res, next) => {
             if (this.liqidObservers.hasOwnProperty(req.fabr_id))
                 res.json(this.liqidObservers[req.fabr_id].getPreDeviceByName(req.id));
             else
                 res.json(null);
         });
-        this.app.get('/api/device/:fabr_id/:id', (req, res, next) => {
+        this.app.get('/api/device/:fabr_id/:id', (req: Target, res, next) => {
             if (this.liqidObservers.hasOwnProperty(req.fabr_id))
                 res.json(this.summarizeDevice(req.fabr_id, req.id));
             else
                 res.json(null);
         });
+    }
+
+    private initializeControlHandlers = (): void => {
+        this.app.post('/api/group', (req, res, next) => {
+
+        });
+        this.app.delete('/api/group/:fabr_id/:id', (req: Target, res, next) => {
+
+        });
+        this.app.post('/api/machine', (req: MachineConfig, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.body.fabr_id)) {
+                this.liqidControllers[req.body.fabr_id].compose(req.body)
+                    .then((mach) => {
+                        res.send(mach);
+                    }, err => {
+                        res.send('Error composing machine.');
+                    });
+            }
+            else {
+                res.send(`Fabric with fabr_id ${req.body.fabr_id} does not exist.`);
+            }
+        });
+        this.app.delete('/api/machine/:fabr_id/:id', (req: Target, res, next) => {
+            if (this.liqidObservers.hasOwnProperty(req.fabr_id)) {
+                this.liqidControllers[req.fabr_id].decompose(this.liqidObservers[req.fabr_id].getMachineById(req.id))
+                    .then(() => {
+                        res.send('Machine decomposed successfully.');
+                    }, err => {
+                        if (err)
+                            res.send('There was a problem decomposing a machine.');
+                    });
+            }
+            else {
+                res.send(`Fabric with fabr_id ${req.fabr_id} does not exist.`);
+            }
+        });
+
     }
 
     private summarizeDevice = (fabr_id: number, name: string): Device => {
