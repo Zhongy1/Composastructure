@@ -1,6 +1,6 @@
 import _ = require('lodash');
 import { LiqidCommunicator } from './liqid-communicator';
-import { Group, PreDevice, Machine, DeviceStatus } from './models';
+import { Group, PreDevice, Machine, DeviceStatus, ConnectionHistory } from './models';
 import * as Stomp from 'stompjs';
 
 
@@ -359,6 +359,19 @@ export class LiqidObserver {
     }
 
     /**
+     * Get ID of group by name
+     * @param {string} name    Name used to select group
+     * @return {Group}         Group ID that matches the given name or -1 if name does not exist
+     */
+    public getGroupIdByName = (name: string): number => {
+        Object.keys(this.groups).forEach((grpId) => {
+            if (this.groups[grpId].group_name == name)
+                return this.groups[grpId].grp_id;
+        });
+        return -1;
+    }
+
+    /**
      * Get machine by machine ID
      * @param {string | number} [id]    Optional ID used to select machine
      * @return {Machine}                Machine that matches the given id or null; if id is not specified, then the first available Machine or null if no Machines available
@@ -401,6 +414,15 @@ export class LiqidObserver {
             let keys = Object.keys(this.deviceStatuses);
             return (keys.length > 0) ? this.deviceStatuses[keys[0]] : null;
         }
+    }
+
+    public convertHistToDevStatuses = (histList: ConnectionHistory[]): DeviceStatus[] => {
+        let devStats = [];
+        for (let i = 0; i < histList.length; i++) {
+            if (this.deviceStatuses.hasOwnProperty(histList[i].name))
+                devStats.push(this.deviceStatuses[histList[i].name]);
+        }
+        return devStats;
     }
 
     /**

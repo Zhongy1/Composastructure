@@ -94,6 +94,20 @@ export class LiqidController {
     }
 
     /**
+     * Delete a group/pool
+     * @param   {number}    id      The id of the group to be deleted
+     * @return  {Promise<Group>}    The deleted group
+     */
+    public deleteGroup = async (id: number): Promise<Group> => {
+        try {
+            return await this.liqidComm.deleteGroup(id);
+        }
+        catch (err) {
+            throw new Error('Unable to delete group with id ' + id + '.');
+        }
+    }
+
+    /**
      * Compose a machine: specify the parts needed and the controller attempts to compose the machine. Aborts when an error is encountered.
      * @param {ComposeOptions} options  Specify parts needed either by name or by how many
      * @return {Machine}                Machine object, returned from Liqid
@@ -118,9 +132,11 @@ export class LiqidController {
                     throw new Error(`Group Assignment Error: The group with id ${options.groupId} does not exist.`)
             }
             else {
-                var group = this.liqidObs.getGroupById();
-                if (!group)
-                    throw new Error('Group Assignment Error: There are currently no available groups (You should create one first).')
+                let grpId = this.liqidObs.getGroupIdByName('UngroupedGroup');
+                if (grpId > 0)
+                    var group = this.liqidObs.getGroupById(grpId);
+                else
+                    var group = await this.createGroup('UngroupedGroup');
             }
 
             //check machine name
@@ -374,10 +390,59 @@ export class LiqidController {
     }
 
     /**
-     * Decompose a machine
+     * Decompose a machine and return devices to fabric layer
      * @param {Machine} machine The machine to be decomposed
      */
     public decompose = async (machine: Machine): Promise<void> => {
+        try {
+            if (machine) {
+                machine = this.liqidObs.getMachineById(machine.mach_id);
+                let deviceStatuses = this.liqidObs.convertHistToDevStatuses(machine.connection_history);
+                await this.liqidComm.deleteMachine(machine.mach_id);
+                //move devices out of group...
+                let grpPool: GroupPool = {
+                    coordinates: deviceStatuses[0].location,
+                    grp_id: machine.grp_id,
+                    fabr_id: machine.fabr_id
+                }
+                await this.liqidComm.enterPoolEditMode(grpPool);
+                for (let i = 0; i < deviceStatuses.length; i++) {
+                    let groupDeviceRelator: GroupDeviceRelator = {
+                        deviceStatus: deviceStatuses[i],
+                        group: await this.liqidObs.getGroupById(grpPool.grp_id)
+                    };
+                    switch (deviceStatuses[i].type) {
+                        case 'ComputeDeviceStatus':
+                            await this.liqidComm.removeCpuFromPool(groupDeviceRelator);
+                            break;
+                        case 'GpuDeviceStatus':
+                            await this.liqidComm.removeGpuFromPool(groupDeviceRelator);
+                            break;
+                        case 'SsdDeviceStatus':
+                            await this.liqidComm.removeStorageFromPool(groupDeviceRelator);
+                            break;
+                        case 'LinkDeviceStatus':
+                            await this.liqidComm.removeNetCardFromPool(groupDeviceRelator);
+                            break;
+                        case 'FpgaDeviceStatus':
+                            await this.liqidComm.removeFpgaFromPool(groupDeviceRelator);
+                            break;
+                    }
+                }
+                await this.liqidComm.savePoolEdit(grpPool);
+            }
+
+        }
+        catch (err) {
+            throw new Error(err);
+        }
+    }
+
+    /**
+     * Decompose a machine
+     * @param {Machine} machine The machine to be decomposed
+     */
+    public decomposeBasic = async (machine: Machine): Promise<void> => {
         try {
             if (machine)
                 await this.liqidComm.deleteMachine(machine.mach_id);

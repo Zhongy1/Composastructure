@@ -9,18 +9,6 @@ export interface RestServerConfig {
     hostPort: number
 }
 
-export interface TargetedComposeOptions extends ComposeOptions {
-    fabr_id: number
-}
-
-export interface GroupConfig extends express.Request {
-
-}
-
-export interface MachineConfig extends express.Request {
-    body: TargetedComposeOptions
-}
-
 export enum DeviceType {
     cpu = 'cpu',
     gpu = 'gpu',
@@ -218,12 +206,26 @@ export class RestServer {
 
     private initializeControlHandlers = (): void => {
         this.app.post('/api/group', (req, res, next) => {
-
+            if (this.liqidObservers.hasOwnProperty(req.body.fabr_id)) {
+                this.liqidControllers[req.body.fabr_id].createGroup(req.body.group_name)
+                    .then((group) => {
+                        res.send(group);
+                    }, err => {
+                        res.send('Error creating group.');
+                    });
+            }
         });
         this.app.delete('/api/group/:fabr_id/:id', (req, res, next) => {
-
+            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
+                this.liqidControllers[req.params.fabr_id].deleteGroup(parseInt(req.params.id))
+                    .then((group) => {
+                        res.send(group);
+                    }, err => {
+                        res.send('Error deleting group.')
+                    });
+            }
         });
-        this.app.post('/api/machine', (req: MachineConfig, res, next) => {
+        this.app.post('/api/machine', (req, res, next) => {
             if (this.liqidObservers.hasOwnProperty(req.body.fabr_id)) {
                 this.liqidControllers[req.body.fabr_id].compose(req.body)
                     .then((mach) => {
