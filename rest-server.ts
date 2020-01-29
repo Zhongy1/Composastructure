@@ -1,4 +1,6 @@
 import * as express from 'express';
+import * as http from 'http';
+import * as socketio from 'socket.io';
 import * as bodyParser from 'body-parser';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
@@ -63,61 +65,23 @@ export class RestServer {
     private liqidObservers: { [key: string]: LiqidObserver };
     private liqidControllers: { [key: string]: LiqidController };
     private app: express.Express;
+    private http: http.Server;
+    private io: socketio.Server;
     private ready;
 
     constructor(private config: RestServerConfig) {
         this.liqidObservers = {};
         this.liqidControllers = {};
+
         this.app = express();
+        this.app.set('port', config.hostPort);
         this.app.use(bodyParser.urlencoded({ extended: false }));
-        this.app.use(bodyParser.json())
+        this.app.use(bodyParser.json());
+        this.http = require('http').Server(this.app);
+        this.io = socketio(this.http);
         this.ready = false;
 
     }
-
-    /*
-    private generateGetHandlers = (): void => {
-        // /observer/getGroups
-        this.app.get('/observer/getGroups', (req, res, next) => {
-            res.json(this.liqidObs.getGroups());
-        });
-        // /observer/getMachines
-        this.app.get('/observer/getMachines', (req, res, next) => {
-            res.json(this.liqidObs.getMachines());
-        });
-        // /observer/getPreDevices
-        this.app.get('/observer/getPreDevices', (req, res, next) => {
-            res.json(this.liqidObs.getPreDevices());
-        });
-        // /observer/getDeviceStatuses
-        this.app.get('/observer/getDeviceStatuses', (req, res, next) => {
-            res.json(this.liqidObs.getDeviceStatuses());
-        });
-        // /observer/getGroupById/:grp_id
-        this.app.get('/observer/getGroupById/:grp_id', (req, res, next) => {
-            res.json(this.liqidObs.getGroupById(req.params.grp_id));
-        });
-        // /observer/getMachineById/:mach_id
-        this.app.get('/observer/getMachineById/:mach_id', (req, res, next) => {
-            res.json(this.liqidObs.getMachineById(req.params.mach_id));
-        });
-        // /observer/getDeviceByName/:name
-        this.app.get('/observer/getPreDeviceByName/:name', (req, res, next) => {
-            res.json(this.liqidObs.getPreDeviceByName(req.params.name));
-        });
-        // /observer/getDeviceStatusByName/:name
-        this.app.get('/observer/getDeviceStatusByName/:name', (req, res, next) => {
-            res.json(this.liqidObs.getDeviceStatusByName(req.params.name));
-        });
-        // /observer/getDeviceStatusesOrganized
-        this.app.get('/observer/getDeviceStatusesOrganized', (req, res, next) => {
-            res.json(this.liqidObs.getDeviceStatusesOrganized());
-        });
-        // /observer/getMiniTopology
-        this.app.get('/observer/getMiniTopology', (req, res, next) => {
-            res.json(this.liqidObs.getMiniTopology());
-        });
-    }*/
 
     private initializeCollectionsHandlers = (): void => {
         this.app.get('/api/groups', (req, res, next) => {
@@ -383,8 +347,11 @@ export class RestServer {
                 res = await ctrl.start();
                 this.liqidControllers[ctrl.getFabricId()] = ctrl;
             }
-            this.app.listen(this.config.hostPort, () => {
-                console.log(`Server running on port ${this.config.hostPort}`);
+            // this.app.listen(this.config.hostPort, () => {
+            //     console.log(`Server running on port ${this.config.hostPort}`);
+            // });
+            this.http.listen(this.config.hostPort, () => {
+                console.log(`listening on *:${this.config.hostPort}`);
             });
             this.initializeCollectionsHandlers();
             this.initializeLookupHandlers();
