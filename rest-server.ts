@@ -353,9 +353,10 @@ export class RestServer {
             // this.app.listen(this.config.hostPort, () => {
             //     console.log(`Server running on port ${this.config.hostPort}`);
             // });
-            this.http.listen(this.config.hostPort, () => {
+            const server = this.http.listen(this.config.hostPort, () => {
                 console.log(`listening on *:${this.config.hostPort}`);
             });
+            this.http.on('request', this.app);
             this.initializeCollectionsHandlers();
             this.initializeLookupHandlers();
             this.initializeControlHandlers();
