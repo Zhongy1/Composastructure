@@ -1,0 +1,12 @@
+<body>
+    <button onClick="sendMsg()">Hit Me</button>
+
+    <script src="/socket.io.js"></script>
+    <script>
+        const socket = io(window.location.href);
+
+        function sendMsg() {
+            socket.emit("message", "HELLO WORLD");
+        }
+    </script>
+</body>

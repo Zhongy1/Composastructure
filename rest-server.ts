@@ -2,6 +2,8 @@ import * as express from 'express';
 import * as http from 'http';
 import * as socketio from 'socket.io';
 import * as bodyParser from 'body-parser';
+import * as serveStatic from 'serve-static';
+import * as path from 'path';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus } from './models';
@@ -77,6 +79,7 @@ export class RestServer {
         this.app.set('port', config.hostPort);
         this.app.use(bodyParser.urlencoded({ extended: false }));
         this.app.use(bodyParser.json());
+        this.app.use(serveStatic(path.resolve(__dirname, 'public')));
         this.http = require('http').Server(this.app);
         this.io = socketio(this.http);
         this.ready = false;
