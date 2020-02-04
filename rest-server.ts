@@ -69,7 +69,8 @@ export class RestServer {
     private app: express.Express;
     private http: http.Server;
     private io: socketio.Server;
-    private ready;
+    private ready: boolean;
+    private socketioStarted: boolean;
 
     constructor(private config: RestServerConfig) {
         this.liqidObservers = {};
@@ -79,11 +80,47 @@ export class RestServer {
         this.app.set('port', config.hostPort);
         this.app.use(bodyParser.urlencoded({ extended: false }));
         this.app.use(bodyParser.json());
-        this.app.use(serveStatic(path.resolve(__dirname, 'public')));
         this.http = require('http').Server(this.app);
         this.io = socketio(this.http);
         this.ready = false;
+        this.socketioStarted = false;
+    }
 
+    private startSocketIO = (): void => {
+        if (this.socketioStarted) return;
+        this.socketioStarted = true;
+        this.app.use(serveStatic(path.resolve(__dirname, '../public')));
+        const server = this.http.listen(this.config.hostPort, () => {
+            console.log(`listening on *:${this.config.hostPort}`);
+        });
+        this.io.on('connection', (socket) => {
+            socket.on('reload', () => {
+                let response: MainResponse = {
+                    fabrics: []
+                }
+                Object.keys(this.liqidObservers).forEach(fabr_id => {
+                    let fabric: Fabric = this.getInfoFromFabric(parseInt(fabr_id));
+                    if (!fabric)
+                        return null
+                    else
+                        response.fabrics.push(fabric);
+                });
+                socket.emit('update', response);
+            });
+            socket.on('create', (composeOpts) => {
+                if (this.liqidObservers.hasOwnProperty(composeOpts.fabr_id)) {
+                    this.liqidControllers[composeOpts.fabr_id].compose(composeOpts.body)
+                        .then((mach) => {
+                            socket.emit('success', mach);
+                        }, err => {
+                            socket.emit('error', 'Error composing machine.');
+                        });
+                }
+                else {
+                    socket.emit('error', `Fabric with fabr_id ${composeOpts.fabr_id} does not exist.`);
+                }
+            })
+        });
     }
 
     private initializeCollectionsHandlers = (): void => {
@@ -353,10 +390,7 @@ export class RestServer {
             // this.app.listen(this.config.hostPort, () => {
             //     console.log(`Server running on port ${this.config.hostPort}`);
             // });
-            const server = this.http.listen(this.config.hostPort, () => {
-                console.log(`listening on *:${this.config.hostPort}`);
-            });
-            this.http.on('request', this.app);
+            this.startSocketIO();
             this.initializeCollectionsHandlers();
             this.initializeLookupHandlers();
             this.initializeControlHandlers();

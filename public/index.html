@@ -1,12 +1,60 @@
 <body>
-    <button onClick="sendMsg()">Hit Me</button>
+    <div>
+        <form>
+            CPU Count: <input id='cpu'><br>
+            SSD Count: <input id='ssd'><br>
+            GPU Count: <input id='gpu'><br>
+            NIC Count: <input id='nic'><br>
+            Mach Name: <input id='name'><br>
+            Fabric ID: <input id='fid'><br>
+            <button onClick="createMachine()">Create</button>
+        </form>
+        <button onClick="reload()">Reload Fabric</button>
+    </div>
 
+    <br>
+
+    <div id=='liqid-state'></div>
     <script src="/socket.io.js"></script>
     <script>
         const socket = io(window.location.href);
 
-        function sendMsg() {
-            socket.emit("message", "HELLO WORLD");
+        function createMachine() {
+            create(
+                parseInt(document.getElementById('cpu').value),
+                parseInt(document.getElementById('ssd').value),
+                parseInt(document.getElementById('gpu').value),
+                parseInt(document.getElementById('nic').value),
+                document.getElementById('name').value,
+                parseInt(document.getElementById('fid').value)
+            );
         }
+
+        function reload() {
+            socket.emit('reload');
+        }
+
+        function create(c, s, g, n, name, fid) {
+            socket.emit('create', {
+                "fabr_id": fid,
+                "cpu": c,
+                "gpu": g,
+                "ssd": s,
+                "nic": n,
+                "fpga": 0,
+                "name": name
+            });
+        }
+
+        socket.on('update', (update) => {
+            console.log('Received an update!');
+            document.getElementById('liqid-state').innerHTML = update;
+        });
+        socket.on('success', (msg) => {
+            console.log(msg);
+        });
+        socket.on('error', (err) => {
+            console.log(err);
+        });
     </script>
 </body>
