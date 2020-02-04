@@ -101,7 +101,7 @@ export class RestServer {
                 Object.keys(this.liqidObservers).forEach(fabr_id => {
                     let fabric: Fabric = this.getInfoFromFabric(parseInt(fabr_id));
                     if (!fabric)
-                        return null
+                        return null;
                     else
                         response.fabrics.push(fabric);
                 });
@@ -119,7 +119,34 @@ export class RestServer {
                 else {
                     socket.emit('err', `Fabric with fabr_id ${composeOpts.fabr_id} does not exist.`);
                 }
+            });
+            socket.on('delete-machine', (machDeleteOpts) => {
+                if (this.liqidObservers.hasOwnProperty(machDeleteOpts.fabr_id)) {
+                    this.liqidControllers[machDeleteOpts.fabr_id].decompose(this.liqidObservers[machDeleteOpts.fabr_id].getMachineById(machDeleteOpts.id))
+                        .then(() => {
+                            socket.emit('success', 'Machine decomposed successfully.');
+                        }, err => {
+                            if (err)
+                                socket.emit('err', 'There was a problem decomposing a machine.');
+                        });
+                }
+                else {
+                    socket.emit('err', `Fabric with fabr_id ${machDeleteOpts.fabr_id} does not exist.`);
+                }
             })
+            socket.on('delete-group', (grpDeleteOpts) => {
+                if (this.liqidObservers.hasOwnProperty(grpDeleteOpts.fabr_id)) {
+                    this.liqidControllers[grpDeleteOpts.fabr_id].deleteGroup(parseInt(grpDeleteOpts.id))
+                        .then((group) => {
+                            socket.emit('success', group);
+                        }, err => {
+                            socket.emit('err', 'Error deleting group.');
+                        });
+                }
+                else {
+                    socket.emit('err', `Fabric with fabr_id ${grpDeleteOpts.fabr_id} does not exist.`);
+                }
+            });
         });
     }
 

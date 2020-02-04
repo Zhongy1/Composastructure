@@ -1,21 +1,29 @@
 <body>
     <div>
-        <form>
-            CPU Count: <input id='cpu'><br>
-            SSD Count: <input id='ssd'><br>
-            GPU Count: <input id='gpu'><br>
-            NIC Count: <input id='nic'><br>
-            Mach Name: <input id='name'><br>
-            Group ID: <input id='gid'><br>
-            Fabric ID: <input id='fid'><br>
-            <button onClick="createMachine()">Create</button>
-        </form>
+        CPU Count: <input id='cpu'><br>
+        SSD Count: <input id='ssd'><br>
+        GPU Count: <input id='gpu'><br>
+        NIC Count: <input id='nic'><br>
+        Mach Name: <input id='name'><br>
+        Group ID: <input id='gid'><br>
+        Fabric ID: <input id='fid'><br>
+        <button onClick="createMachine()">Create Machine</button><br><br>
+
+        Machine ID: <input id='mid2'><br>
+        Fabric ID: <input id='fid2'><br>
+        <button onClick="deleteMachine()">Delete Machine</button><br><br>
+
+        Group ID: <input id='gid3'><br>
+        Fabric ID: <input id='fid3'><br>
+        <button onClick="deleteGroup()">Delete Group</button><br><br>
+
         <button onClick="reload()">Reload Fabric</button>
+
     </div>
 
     <br>
 
-    <div id=='liqid-state'></div>
+    <div id='liqid-state'></div>
     <script src="/socket.io.js"></script>
     <script>
         const socket = io(window.location.href);
@@ -30,6 +38,20 @@
                 parseInt(document.getElementById('gid').value),
                 parseInt(document.getElementById('fid').value)
             );
+        }
+
+        function deleteMachine() {
+            socket.emit('delete-machine', {
+                "fabr_id": parseInt(document.getElementById('fid2').value),
+                "id": document.getElementById('mid2').value
+            });
+        }
+
+        function deleteGroup() {
+            socket.emit('delete-group', {
+                "fabr_id": parseInt(document.getElementById('fid3').value),
+                "id": document.getElementById('gid3').value
+            });
         }
 
         function reload() {
