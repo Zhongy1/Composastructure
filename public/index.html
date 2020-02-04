@@ -6,6 +6,7 @@
             GPU Count: <input id='gpu'><br>
             NIC Count: <input id='nic'><br>
             Mach Name: <input id='name'><br>
+            Group ID: <input id='gid'><br>
             Fabric ID: <input id='fid'><br>
             <button onClick="createMachine()">Create</button>
         </form>
@@ -26,6 +27,7 @@
                 parseInt(document.getElementById('gpu').value),
                 parseInt(document.getElementById('nic').value),
                 document.getElementById('name').value,
+                parseInt(document.getElementById('gid').value),
                 parseInt(document.getElementById('fid').value)
             );
         }
@@ -34,7 +36,8 @@
             socket.emit('reload');
         }
 
-        function create(c, s, g, n, name, fid) {
+        function create(c, s, g, n, name, gid, fid) {
+            console.log('Trying to compose.');
             socket.emit('create', {
                 "fabr_id": fid,
                 "cpu": c,
@@ -42,18 +45,19 @@
                 "ssd": s,
                 "nic": n,
                 "fpga": 0,
-                "name": name
+                "name": name,
+                "groupId": gid
             });
         }
 
         socket.on('update', (update) => {
             console.log('Received an update!');
-            document.getElementById('liqid-state').innerHTML = update;
+            document.getElementById('liqid-state').innerHTML = JSON.stringify(update);
         });
         socket.on('success', (msg) => {
             console.log(msg);
         });
-        socket.on('error', (err) => {
+        socket.on('err', (err) => {
             console.log(err);
         });
     </script>

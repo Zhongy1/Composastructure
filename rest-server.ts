@@ -109,15 +109,15 @@ export class RestServer {
             });
             socket.on('create', (composeOpts) => {
                 if (this.liqidObservers.hasOwnProperty(composeOpts.fabr_id)) {
-                    this.liqidControllers[composeOpts.fabr_id].compose(composeOpts.body)
+                    this.liqidControllers[composeOpts.fabr_id].compose(composeOpts)
                         .then((mach) => {
                             socket.emit('success', mach);
                         }, err => {
-                            socket.emit('error', 'Error composing machine.');
+                            socket.emit('err', 'Error composing machine.');
                         });
                 }
                 else {
-                    socket.emit('error', `Fabric with fabr_id ${composeOpts.fabr_id} does not exist.`);
+                    socket.emit('err', `Fabric with fabr_id ${composeOpts.fabr_id} does not exist.`);
                 }
             })
         });
