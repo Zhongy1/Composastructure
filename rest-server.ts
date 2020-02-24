@@ -2,11 +2,17 @@ import * as express from 'express';
 import * as http from 'http';
 import * as socketio from 'socket.io';
 import * as bodyParser from 'body-parser';
+import * as cookieParser from 'cookie-parser';
 import * as serveStatic from 'serve-static';
 import * as path from 'path';
+import * as session from 'express-session';
+import * as passport from 'passport';
+import * as passportLocal from 'passport-local';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus } from './models';
+import { userInfo } from 'os';
+const LocalStrategy = passportLocal.Strategy;
 
 export interface RestServerConfig {
     ips: string[],
@@ -76,10 +82,49 @@ export class RestServer {
         this.liqidObservers = {};
         this.liqidControllers = {};
 
+        // passport.use(new LocalStrategy(
+        //     function (username, password, done) {
+        //         User.findOne({ username: username }, function (err, user) {
+        //             if (err) { return done(err); }
+        //             if (!user) {
+        //                 return done(null, false, { message: 'Incorrect username.' });
+        //             }
+        //             if (!user.validPassword(password)) {
+        //                 return done(null, false, { message: 'Incorrect password.' });
+        //             }
+        //             return done(null, user);
+        //         });
+        //     }
+        // ));
+
+        passport.serializeUser((user: any, done) => {
+            done(null, user.id);
+        });
+        passport.deserializeUser((id, done) => {
+            if (id == 'mainUser') {
+                done(null, { name: 'evlroot', password: 'getaccess', id: 'mainUser' });
+            }
+        });
+        passport.use(new LocalStrategy((username, password, done) => {
+            if (username != 'evlroot') {
+                return done(null, false, { message: 'Incorrect username.' });
+            }
+            if (password != 'getaccess') {
+                return done(null, false, { message: 'Incorrect password.' });
+            }
+            return done(null, { name: username, password: password, id: 'mainUser' });
+        }));
+
         this.app = express();
         this.app.set('port', config.hostPort);
+        this.app.use(cookieParser())
         this.app.use(bodyParser.urlencoded({ extended: false }));
         this.app.use(bodyParser.json());
+        this.app.use(session({ secret: 'thismightwork' }));
+        this.app.use(passport.initialize());
+        this.app.use(passport.session());
+
+
         this.http = require('http').Server(this.app);
         this.io = socketio(this.http);
         this.ready = false;
@@ -89,7 +134,15 @@ export class RestServer {
     private startSocketIO = (): void => {
         if (this.socketioStarted) return;
         this.socketioStarted = true;
-        this.app.use(serveStatic(path.resolve(__dirname, '../public')));
+        var authenticate = passport.authenticate('local', {
+            successRedirect: '/',
+            failureRedirect: '/login'
+        });
+        this.app.use(authenticate, serveStatic(path.resolve(__dirname, '../public')));
+        // this.app.post('/login', passport.authenticate('local', {
+        //     successRedirect: '/',
+        //     failureRedirect: '/login'
+        // }));
         const server = this.http.listen(this.config.hostPort, () => {
             console.log(`listening on *:${this.config.hostPort}`);
         });
