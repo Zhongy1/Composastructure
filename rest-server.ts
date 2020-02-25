@@ -94,7 +94,7 @@ export class RestServer {
         this.app.use(cors());
         this.app.use(morgan('combined'));
 
-        if (config.sslCert)
+        if (!config.sslCert)
             this.https = require('http').Server(this.app);
         else
             this.https = https.createServer({
@@ -200,8 +200,7 @@ export class RestServer {
         this.app.use(session({
             secret: 'thismightwork',
             resave: false,
-            saveUninitialized: true,
-            cookie: { secure: true }
+            saveUninitialized: true
         }));
         this.app.use(passport.initialize());
         this.app.use(passport.session());
