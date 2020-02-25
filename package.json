@@ -28,6 +28,9 @@
     "@types/serve-static": "^1.13.3",
     "@types/socket.io": "^2.1.4",
     "@types/stompjs": "^2.3.4",
+    "@types/cors": "^2.8.6",
+    "@types/helmet": "0.0.45",
+    "@types/morgan": "^1.7.37",
     "typescript": "^3.7.2"
   },
   "dependencies": {
@@ -35,14 +38,18 @@
     "axios": "^0.19.0",
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.4",
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
+    "helmet": "^3.21.3",
     "lodash": "^4.17.15",
+    "morgan": "^1.9.1",
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "serve-static": "^1.14.1",
     "socket.io": "^2.3.0",
     "stompjs": "^2.3.3",
+    "tls": "0.0.1",
     "typedoc": "^0.15.2"
   }
 }

@@ -1,5 +1,5 @@
 import * as express from 'express';
-import * as http from 'http';
+import * as https from 'https';
 import * as socketio from 'socket.io';
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
@@ -8,15 +8,21 @@ import * as path from 'path';
 import * as session from 'express-session';
 import * as passport from 'passport';
 import * as passportLocal from 'passport-local';
+import * as tls from 'tls';
+import * as cors from 'cors';
+import * as helmet from 'helmet';
+import * as morgan from 'morgan';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus } from './models';
 import { userInfo } from 'os';
+
 const LocalStrategy = passportLocal.Strategy;
 
 export interface RestServerConfig {
     ips: string[],
-    hostPort: number
+    hostPort: number,
+    sslCert?: any
 }
 
 export enum DeviceType {
@@ -73,7 +79,7 @@ export class RestServer {
     private liqidObservers: { [key: string]: LiqidObserver };
     private liqidControllers: { [key: string]: LiqidController };
     private app: express.Express;
-    private http: http.Server;
+    private https: https.Server;
     private io: socketio.Server;
     private ready: boolean;
     private socketioStarted: boolean;
@@ -82,68 +88,34 @@ export class RestServer {
         this.liqidObservers = {};
         this.liqidControllers = {};
 
-        // passport.use(new LocalStrategy(
-        //     function (username, password, done) {
-        //         User.findOne({ username: username }, function (err, user) {
-        //             if (err) { return done(err); }
-        //             if (!user) {
-        //                 return done(null, false, { message: 'Incorrect username.' });
-        //             }
-        //             if (!user.validPassword(password)) {
-        //                 return done(null, false, { message: 'Incorrect password.' });
-        //             }
-        //             return done(null, user);
-        //         });
-        //     }
-        // ));
-
-        passport.serializeUser((user: any, done) => {
-            done(null, user.id);
-        });
-        passport.deserializeUser((id, done) => {
-            if (id == 'mainUser') {
-                done(null, { name: 'evlroot', password: 'getaccess', id: 'mainUser' });
-            }
-        });
-        passport.use(new LocalStrategy((username, password, done) => {
-            if (username != 'evlroot') {
-                return done(null, false, { message: 'Incorrect username.' });
-            }
-            if (password != 'getaccess') {
-                return done(null, false, { message: 'Incorrect password.' });
-            }
-            return done(null, { name: username, password: password, id: 'mainUser' });
-        }));
-
         this.app = express();
         this.app.set('port', config.hostPort);
-        this.app.use(cookieParser())
-        this.app.use(bodyParser.urlencoded({ extended: false }));
-        this.app.use(bodyParser.json());
-        this.app.use(session({ secret: 'thismightwork' }));
-        this.app.use(passport.initialize());
-        this.app.use(passport.session());
+        this.app.use(helmet());
+        this.app.use(cors());
+        this.app.use(morgan('combined'));
 
+        if (config.sslCert)
+            this.https = require('http').Server(this.app);
+        else
+            this.https = https.createServer({
+                key: config.sslCert.privateKey,
+                cert: config.sslCert.certificate,
+                ca: config.sslCert.ca,
+                requestCert: false,
+                rejectUnauthorized: true,
+                honorCipherOrder: true
+            }, this.app);
+        this.io = socketio(this.https);
 
-        this.http = require('http').Server(this.app);
-        this.io = socketio(this.http);
         this.ready = false;
         this.socketioStarted = false;
     }
 
-    private startSocketIO = (): void => {
+    private startSocketIOAndServer = (): void => {
         if (this.socketioStarted) return;
         this.socketioStarted = true;
-        var authenticate = passport.authenticate('local', {
-            successRedirect: '/',
-            failureRedirect: '/login'
-        });
-        this.app.use(authenticate, serveStatic(path.resolve(__dirname, '../public')));
-        // this.app.post('/login', passport.authenticate('local', {
-        //     successRedirect: '/',
-        //     failureRedirect: '/login'
-        // }));
-        const server = this.http.listen(this.config.hostPort, () => {
+
+        this.https.listen(this.config.hostPort, () => {
             console.log(`listening on *:${this.config.hostPort}`);
         });
         this.io.on('connection', (socket) => {
@@ -201,6 +173,55 @@ export class RestServer {
                 }
             });
         });
+    }
+
+    private setupAuthMiddleware = () => {
+        passport.serializeUser((user: any, done) => {
+            done(null, user.id);
+        });
+        passport.deserializeUser((id, done) => {
+            if (id == 'mainUser') {
+                done(null, { name: 'evlroot', id: 'mainUser' });
+            }
+        });
+        passport.use(new LocalStrategy((username, password, done) => {
+            if (username != 'evlroot') {
+                return done(null, false, { message: 'Incorrect username.' });
+            }
+            if (password != 'getaccess') {
+                return done(null, false, { message: 'Incorrect password.' });
+            }
+            return done(null, { name: username, id: 'mainUser' });
+        }));
+
+        this.app.use(cookieParser())
+        this.app.use(bodyParser.urlencoded({ extended: false }));
+        this.app.use(bodyParser.json());
+        this.app.use(session({
+            secret: 'thismightwork',
+            resave: false,
+            saveUninitialized: true,
+            cookie: { secure: true }
+        }));
+        this.app.use(passport.initialize());
+        this.app.use(passport.session());
+
+        var isLoggedIn = (req, res, next) => {
+            if (req.isAuthenticated()) {
+                return next();
+            } else {
+                return res.redirect('/login.html');
+            }
+        }
+
+        this.app.post('/login', passport.authenticate('local', {
+            successRedirect: '/',
+            failureRedirect: '/login.html'
+        }));
+
+        this.app.use(serveStatic(path.resolve(__dirname, '../public')));
+        this.app.use(isLoggedIn, serveStatic(path.resolve(__dirname, '../private')));
+        this.app.all('/api', isLoggedIn);
     }
 
     private initializeCollectionsHandlers = (): void => {
@@ -470,7 +491,8 @@ export class RestServer {
             // this.app.listen(this.config.hostPort, () => {
             //     console.log(`Server running on port ${this.config.hostPort}`);
             // });
-            this.startSocketIO();
+            this.startSocketIOAndServer();
+            this.setupAuthMiddleware();
             this.initializeCollectionsHandlers();
             this.initializeLookupHandlers();
             this.initializeControlHandlers();
