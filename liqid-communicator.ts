@@ -20,7 +20,9 @@ import {
     DeviceStatusParams,
     GroupPool,
     GroupDeviceRelator,
-    GroupDetails
+    GroupDetails,
+    ManageableIpmiAddress,
+    ManageableDevice
 } from './models';
 
 /**
@@ -612,7 +614,27 @@ export class LiqidCommunicator {
     }
 
     //Manager Controller
-
+    //GET '/manager/{type}' List all known managed entities; available types: ipmi, device
+    public getManageableIpmiAddresses = (): Promise<ManageableIpmiAddress[]> => {
+        return new Promise<ManageableIpmiAddress[]>((resolve, reject) => {
+            axios.get(this.liqidUri + '/manager/ipmi')
+                .then(res => {
+                    resolve(res.data.response.data);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
+    public getManageableDevices = (): Promise<ManageableDevice[]> => {
+        return new Promise<ManageableDevice[]>((resolve, reject) => {
+            axios.get(this.liqidUri + '/manager/device')
+                .then(res => {
+                    resolve(res.data.response.data);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
 
     //Node Configuration Controller
 
@@ -621,7 +643,7 @@ export class LiqidCommunicator {
     //GET '/node/status' Report all available nodes.
     public getAllNodeStatus = (): Promise<NodeStatus[]> => {
         return new Promise<NodeStatus[]>((resolve, reject) => {
-            axios.get(this.liqidUri + '/node/status/')
+            axios.get(this.liqidUri + '/node/status')
                 .then(res => {
                     resolve(res.data.response.data);
                 }, err => {

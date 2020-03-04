@@ -341,7 +341,7 @@ export interface MachineWithBusyDevice {
     type: string
 }
 export interface Manageable {
-    type: string
+    type: string //ipmi | device
 }
 export interface ManageableDevice {
     type: string,

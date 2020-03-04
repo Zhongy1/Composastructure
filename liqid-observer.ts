@@ -31,7 +31,7 @@ export class LiqidObserver {
 
     private liqidComm: LiqidCommunicator;
     private fabricId: number;
-    // private mainLoop: any;
+
     private wsUrl: string;
     private busyState: boolean;
 
@@ -40,7 +40,9 @@ export class LiqidObserver {
     private groups: { [key: string]: Group };
     private machines: { [key: string]: Machine };
     private devices: { [key: string]: PreDevice };
-    private deviceStatuses: { [key: string]: DeviceStatus }
+    private deviceStatuses: { [key: string]: DeviceStatus };
+
+    private ipmiToCpuNameMap: { [key: string]: string };
 
     public fabricTracked: boolean;
 
@@ -53,6 +55,8 @@ export class LiqidObserver {
         this.machines = {};
         this.devices = {};
         this.deviceStatuses = {};
+
+        this.ipmiToCpuNameMap = {};
 
         this.fabricTracked = false;
     }
@@ -81,9 +85,9 @@ export class LiqidObserver {
      */
     public start = async (): Promise<boolean> => {
         var doSubsribe = (): void => {
-            if (this.busyState)
-                return;
             this.stompClient.subscribe('/data/group', (m: Stomp.Message) => {
+                if (this.busyState)
+                    return;
                 let map: { [key: string]: Group } = {};
                 JSON.parse(m.body).forEach((group) => {
                     map[group.grp_id] = group;
@@ -92,6 +96,8 @@ export class LiqidObserver {
                 //console.log('Change occurred in groups:', m);
             }, { 'id': "group-data-socket" });
             this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
+                if (this.busyState)
+                    return;
                 let map: { [key: string]: Group } = {};
                 JSON.parse(m.body).forEach((machine) => {
                     map[machine.mach_id] = machine;
@@ -100,6 +106,8 @@ export class LiqidObserver {
                 //console.log('Change occurred in machines:', m);
             }, { 'id': "machine-socket" });
             this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
+                if (this.busyState)
+                    return;
                 let map: { [key: string]: PreDevice } = {};
                 JSON.parse(m.body).forEach((device) => {
                     map[device.name] = device;
@@ -108,6 +116,8 @@ export class LiqidObserver {
                 //console.log('Change occurred in predevices:', m);
             }, { 'id': "predevice-socket" });
             // this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
+            //     if (this.busyState)
+            //         return;
             //     let map: { [key: string]: DeviceStatus } = {};
             //     JSON.parse(m.body).forEach((status) => {
             //         map[status.name] = status;
@@ -120,7 +130,8 @@ export class LiqidObserver {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
-                if (this.fabricTracked) {
+                await this.loadIpmiCpuMapping;
+                if (this.fabricTracked && !this.stompClient) {
                     this.stompClient = Stomp.overWS(this.wsUrl);
                     await this.stompClient.connect({}, doSubsribe, (e) => {
                         console.log('Stomp Error:');
@@ -138,6 +149,7 @@ export class LiqidObserver {
                     // }, 5000);
                     return true;
                 }
+                return true;
             }
             return false;
         }
@@ -166,6 +178,25 @@ export class LiqidObserver {
 
     public getFabricId = (): number => {
         return this.fabricId
+    }
+
+    private loadIpmiCpuMapping = async (): Promise<void> => {
+        try {
+            let list = await this.liqidComm.getManageableIpmiAddresses();
+            for (let i = 0; i < list.length; i++) {
+                this.ipmiToCpuNameMap[list[i].ipmi_address] = list[i].cpu_name;
+            }
+        }
+        catch (err) {
+            throw new Error('Unable to retrieve ipmi addresses.');
+        }
+    }
+
+    public getIpmiAddressByName = (name: string): string => {
+        if (this.ipmiToCpuNameMap.hasOwnProperty(name))
+            return this.ipmiToCpuNameMap[name];
+        else
+            return '';
     }
 
     /**
@@ -200,7 +231,8 @@ export class LiqidObserver {
      */
     private trackSystemChanges = async (): Promise<boolean> => {
         try {
-            this.setBusyState(true);
+            var prevBusy = this.busyState;
+            if (!prevBusy) this.busyState = true;
             let groups = await this.fetchGroups();
             let machines = await this.fetchMachines();
             let devices = await this.fetchPreDevices();
@@ -209,11 +241,11 @@ export class LiqidObserver {
             this.makeNecessaryUpdates(machines, this.machines);
             this.makeNecessaryUpdates(devices, this.devices);
             this.makeNecessaryUpdates(devStatuses, this.deviceStatuses);
-            this.setBusyState(false);
+            if (!prevBusy) this.busyState = false;
             return true;
         }
         catch (err) {
-            this.setBusyState(false);
+            if (!prevBusy) this.busyState = false;
             throw new Error('Issue with trackSystemChanges; halting tracking');
         }
     }
@@ -391,7 +423,7 @@ export class LiqidObserver {
      * @param {string | number} [name]  Optional name used to select predevice
      * @return {Predevice}              Predevice that matches the given name or null; if name is not specified, then the first available Predevice or null if no Predevices available
      */
-    public getPreDeviceByName = (name?: number | string): PreDevice => {
+    public getPreDeviceByName = (name?: string): PreDevice => {
         if (name) {
             return (this.devices.hasOwnProperty(name)) ? this.devices[name] : null;
         }
@@ -406,7 +438,7 @@ export class LiqidObserver {
      * @param {string | number} [name]  Optional name used to select device status
      * @return {DeviceStatus}           DeviceStatus that matches the given name or null; if name is not specified, then the first available DeviceStatus or null if no DeviceStatuses available
      */
-    public getDeviceStatusByName = (name?: number | string): DeviceStatus => {
+    public getDeviceStatusByName = (name?: string): DeviceStatus => {
         if (name) {
             return (this.deviceStatuses.hasOwnProperty(name)) ? this.deviceStatuses[name] : null;
         }

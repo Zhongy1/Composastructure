@@ -122,8 +122,10 @@ export class LiqidController {
 
             if (this.busy)
                 throw new Error('Controller Busy Error: A compose task is currently running.')
-            else
+            else {
                 this.busy = true;
+                this.liqidObs.setBusyState(true);
+            }
 
             //determine group
             if (options.groupId) {
@@ -135,8 +137,10 @@ export class LiqidController {
                 let grpId = this.liqidObs.getGroupIdByName('UngroupedGroup');
                 if (grpId > 0)
                     var group = this.liqidObs.getGroupById(grpId);
-                else
+                else {
                     var group = await this.createGroup('UngroupedGroup');
+                    await this.liqidObs.refresh();
+                }
             }
 
             //check machine name
@@ -188,11 +192,13 @@ export class LiqidController {
             }
 
             this.busy = false;
+            this.liqidObs.setBusyState(false);
             await this.liqidObs.refresh();
             return this.liqidObs.getMachineById(machine.mach_id);
         }
         catch (err) {
             this.busy = false;
+            this.liqidObs.setBusyState(false);
             // if (poolEditMode) this.liqidComm.cancelPoolEdit();
             // if (fabricEditMode) this.liqidComm.cancelFabricEdit();
             throw new Error(err + ' Aborting Compose!');
@@ -330,7 +336,6 @@ export class LiqidController {
         let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
         try {
             if (devices.length == 0) return;
-            this.liqidObs.setBusyState(true);
             await this.liqidObs.refresh();
             //gather all neccessary pieces and enter fabric edit mode
             var machine: Machine = this.liqidObs.getMachineById(machId);
@@ -381,10 +386,8 @@ export class LiqidController {
             }
             await this.liqidObs.refresh();
             await this.liqidComm.reprogramFabric(machine);
-            this.liqidObs.setBusyState(false);
         }
         catch (err) {
-            this.liqidObs.setBusyState(false);
             throw new Error(err);
         }
     }

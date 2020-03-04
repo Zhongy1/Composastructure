@@ -41,7 +41,8 @@ export interface Device {
     gname: string,
     mach_id: number,
     mname: string,
-    lanes: number
+    lanes: number,
+    ipmi?: string
 }
 
 export interface SimplifiedMachine {
@@ -375,10 +376,11 @@ export class RestServer {
         if (!deviceStatus) return null;
         switch (deviceStatus.type) {
             case 'ComputeDeviceStatus':
-                device.type = DeviceType.cpu
+                device.type = DeviceType.cpu;
+                device.ipmi = this.liqidObservers[fabr_id].getIpmiAddressByName(name);
                 break;
             case 'GpuDeviceStatus':
-                device.type = DeviceType.gpu
+                device.type = DeviceType.gpu;
                 break;
             case 'SsdDeviceStatus':
                 if (deviceStatus.name.indexOf('ssd') >= 0)
