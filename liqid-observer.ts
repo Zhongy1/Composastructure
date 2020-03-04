@@ -43,6 +43,7 @@ export class LiqidObserver {
     private deviceStatuses: { [key: string]: DeviceStatus };
 
     private ipmiToCpuNameMap: { [key: string]: string };
+    private cpuNameToIpmiMap: { [key: string]: string };
 
     public fabricTracked: boolean;
 
@@ -57,6 +58,7 @@ export class LiqidObserver {
         this.deviceStatuses = {};
 
         this.ipmiToCpuNameMap = {};
+        this.cpuNameToIpmiMap = {};
 
         this.fabricTracked = false;
     }
@@ -185,6 +187,7 @@ export class LiqidObserver {
             let list = await this.liqidComm.getManageableIpmiAddresses();
             for (let i = 0; i < list.length; i++) {
                 this.ipmiToCpuNameMap[list[i].ipmi_address] = list[i].cpu_name;
+                this.cpuNameToIpmiMap[list[i].cpu_name] = list[i].ipmi_address;
             }
         }
         catch (err) {
@@ -193,8 +196,8 @@ export class LiqidObserver {
     }
 
     public getIpmiAddressByName = (name: string): string => {
-        if (this.ipmiToCpuNameMap.hasOwnProperty(name))
-            return this.ipmiToCpuNameMap[name];
+        if (this.cpuNameToIpmiMap.hasOwnProperty(name))
+            return this.cpuNameToIpmiMap[name];
         else
             return '';
     }
