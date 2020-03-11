@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <head>
-
+    <link href='style.css' rel='stylesheet' type='text/css'>
 </head>
 
 <body>
@@ -24,69 +24,14 @@
         <button onClick="deleteGroup()">Delete Group</button><br><br>
 
         <button onClick="reload()">Reload Fabric</button>
+        <button onClick="updateClientView(0)">Table</button>
 
     </div>
 
     <br>
 
     <div id='liqid-state'></div>
+    <div id='liqid-table-view'></div>
     <script src="/socket.io.js"></script>
-    <script>
-        const socket = io(window.location.href);
-
-        function createMachine() {
-            create(
-                parseInt(document.getElementById('cpu').value),
-                parseInt(document.getElementById('ssd').value),
-                parseInt(document.getElementById('gpu').value),
-                parseInt(document.getElementById('nic').value),
-                document.getElementById('name').value,
-                parseInt(document.getElementById('gid').value),
-                parseInt(document.getElementById('fid').value)
-            );
-        }
-
-        function deleteMachine() {
-            socket.emit('delete-machine', {
-                "fabr_id": parseInt(document.getElementById('fid2').value),
-                "id": document.getElementById('mid2').value
-            });
-        }
-
-        function deleteGroup() {
-            socket.emit('delete-group', {
-                "fabr_id": parseInt(document.getElementById('fid3').value),
-                "id": document.getElementById('gid3').value
-            });
-        }
-
-        function reload() {
-            socket.emit('reload');
-        }
-
-        function create(c, s, g, n, name, gid, fid) {
-            console.log('Trying to compose.');
-            socket.emit('create', {
-                "fabr_id": fid,
-                "cpu": c,
-                "gpu": g,
-                "ssd": s,
-                "nic": n,
-                "fpga": 0,
-                "name": name,
-                "groupId": gid
-            });
-        }
-
-        socket.on('update', (update) => {
-            console.log('Received an update!');
-            document.getElementById('liqid-state').innerHTML = JSON.stringify(update);
-        });
-        socket.on('success', (msg) => {
-            console.log(msg);
-        });
-        socket.on('err', (err) => {
-            console.log(err);
-        });
-    </script>
+    <script src='./script.js'></script>
 </body>

@@ -45,6 +45,8 @@ export class LiqidObserver {
     private ipmiToCpuNameMap: { [key: string]: string };
     private cpuNameToIpmiMap: { [key: string]: string };
 
+    private updateCallback;
+
     public fabricTracked: boolean;
 
     constructor(private liqidIp: string) {
@@ -115,6 +117,8 @@ export class LiqidObserver {
                     map[device.name] = device;
                 });
                 let updated: boolean = this.makeNecessaryUpdates(map, this.devices);
+                if (this.updateCallback)
+                    this.updateCallback(this.fabricId);
                 //console.log('Change occurred in predevices:', m);
             }, { 'id': "predevice-socket" });
             // this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
@@ -132,23 +136,13 @@ export class LiqidObserver {
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
-                await this.loadIpmiCpuMapping;
+                await this.loadIpmiCpuMapping();
                 if (this.fabricTracked && !this.stompClient) {
                     this.stompClient = Stomp.overWS(this.wsUrl);
                     await this.stompClient.connect({}, doSubsribe, (e) => {
                         console.log('Stomp Error:');
                         console.log(e);
                     });
-                    // this.mainLoop = setInterval(() => {
-                    //     this.trackSystemChanges()
-                    //         .then(success => {
-                    //             if (!success)
-                    //                 this.stop();
-                    //         }, err => {
-                    //             if (err)
-                    //                 this.stop();
-                    //         });
-                    // }, 5000);
                     return true;
                 }
                 return true;
@@ -163,6 +157,10 @@ export class LiqidObserver {
 
     public setBusyState = (state: boolean): void => {
         this.busyState = state;
+    }
+
+    public attachUpdateCallback = (callback) => {
+        this.updateCallback = callback;
     }
 
     /**
@@ -554,6 +552,16 @@ export class LiqidObserver {
                         }
                         else
                             devices.push(deviceStats.cpu[options.cpu[i]]);
+                    }
+                    else if (this.ipmiToCpuNameMap.hasOwnProperty(options.cpu[i])) {
+                        if (options.gatherUnused) {
+                            let predevice: PreDevice = this.getPreDeviceByName(this.ipmiToCpuNameMap[options.cpu[i]]);
+                            if (predevice == null || predevice.mach_id == 'n/a')
+                                devices.push(deviceStats.cpu[this.ipmiToCpuNameMap[options.cpu[i]]]);
+                            else throw new Error(`CPU with IPMI ${this.ipmiToCpuNameMap[options.cpu[i]]} is currently in use by machine ${predevice.mname}.`);
+                        }
+                        else
+                            devices.push(deviceStats.cpu[this.ipmiToCpuNameMap[options.cpu[i]]]);
                     }
                     else
                         throw new Error(`CPU ${options.cpu[i]} does not exist.`);

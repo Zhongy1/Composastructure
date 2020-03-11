@@ -55,8 +55,8 @@ export interface SimplifiedMachine {
 export interface Pool {
     grp_id: number,
     gname: string,
-    unusedDevices: Device[]
-    usedDevices: Device[]
+    unusedDevices: Device[],
+    usedDevices: Device[],
     machines: SimplifiedMachine[]
 }
 
@@ -112,6 +112,15 @@ export class RestServer {
         this.socketioStarted = false;
     }
 
+    public observerCallback = (fabrId: number): void => {
+        let devicesMap = this.summarizeAllDevices(fabrId);
+        let devices = [];
+        Object.keys(devicesMap).forEach(deviceId => {
+            devices.push(devicesMap[deviceId]);
+        });
+        this.io.sockets.emit('liqid-state-update', { fabrIds: [fabrId.toString()], devices: devices });
+    }
+
     private startSocketIOAndServer = (): void => {
         if (this.socketioStarted) return;
         this.socketioStarted = true;
@@ -120,6 +129,18 @@ export class RestServer {
             console.log(`listening on *:${this.config.hostPort}`);
         });
         this.io.on('connection', (socket) => {
+            socket.on('refresh-devices', () => {
+                let deviceArray: Device[][] = [];
+                let fabrIds = Object.keys(this.liqidObservers);
+                for (let i = 0; i < fabrIds.length; i++) {
+                    let devices = this.summarizeAllDevices(parseInt(fabrIds[i]));
+                    deviceArray.push([]);
+                    Object.keys(devices).forEach((deviceId) => {
+                        deviceArray[i].push(devices[deviceId]);
+                    });
+                }
+                socket.emit('liqid-state-update', { fabrIds: fabrIds, devices: deviceArray });
+            });
             socket.on('reload', () => {
                 let response: MainResponse = {
                     fabrics: []
@@ -173,6 +194,9 @@ export class RestServer {
                     socket.emit('err', `Fabric with fabr_id ${grpDeleteOpts.fabr_id} does not exist.`);
                 }
             });
+        });
+        Object.keys(this.liqidObservers).forEach(fabrId => {
+            this.liqidObservers[fabrId].attachUpdateCallback(this.observerCallback);
         });
     }
 
@@ -254,6 +278,7 @@ export class RestServer {
             res.json(devicestatuses);
         });
         this.app.get('/api/devices', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/json');
             let devices: { [key: string]: { [key: string]: Device } } = {};
             Object.keys(this.liqidObservers).forEach((fabr_id) => {
                 devices[fabr_id] = this.summarizeAllDevices(parseInt(fabr_id));
