@@ -1,4 +1,5 @@
 const socket = io(window.location.href);
+const config;
 
 function createMachine() {
     create(
@@ -45,21 +46,44 @@ function create(c, s, g, n, name, gid, fid) {
 }
 
 function updateClientView(data) {
-    var table = document.createElement('TABLE');
-    table.border = '1';
+    let index = 0;
+    Object.keys(data.fabrIds).forEach(id => {
+        var table = document.getElementById(id);
+        table.innerHTML = '';
 
-    var tableBody = document.createElement('TBODY');
-    table.appendChild(tableBody);
+        var tableBody = document.createElement('TBODY');
+        table.appendChild(tableBody);
 
-    var thr = document.createElement('TR');
-    tableBody.appendChild(thr);
-    ['', 'one', 'two', 'three'].forEach(header => {
-        var th = document.createElement('TH');
-        th.appendChild(document.createTextNode(header));
-        thr.appendChild(th);
+        var thr = document.createElement('TR');
+        tableBody.appendChild(thr);
+        [`Fabric: ${id}`, 'type', 'fabr_id', 'grp_id', 'gname', 'mach_id', 'mname', 'lanes', 'ipmi'].forEach(header => {
+            var th = document.createElement('TH');
+            th.appendChild(document.createTextNode(header));
+            thr.appendChild(th);
+        });
+
+        Object.keys(data.devices[index]).forEach(device => {
+            var tr = document.createElement('TR');
+            tableBody.appendChild(tr);
+            Object.keys(device).forEach(property => {
+                var td = document.createElement('TD');
+                td.appendChild(document.createTextNode(data.devices[i][j][property]));
+                tr.appendChild(td);
+            });
+        });
+
+        index++;
     });
+}
+
+function generateTables(fabrIds) {
     document.getElementById('liqid-table-view').innerHTML = '';
-    document.getElementById('liqid-table-view').appendChild(table);
+    fabrIds.forEach(id => {
+        var table = document.createElement('TABLE');
+        table.setAttribute('id', id);
+        table.border = '1';
+        document.getElementById('liqid-table-view').appendChild(table);
+    });
 }
 
 socket.on('update', (update) => {
@@ -71,6 +95,10 @@ socket.on('success', (msg) => {
 });
 socket.on('err', (err) => {
     console.log(err);
+});
+socket.on('init-config', (c) => {
+    config = c;
+    generateTables(c.fabrIds);
 });
 socket.on('liqid-state-update', (data) => {
     console.log('Liqid system state changed...');

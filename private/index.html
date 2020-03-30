@@ -24,7 +24,7 @@
         <button onClick="deleteGroup()">Delete Group</button><br><br>
 
         <button onClick="reload()">Reload Fabric</button>
-        <button onClick="updateClientView(0)">Table</button>
+        <button onClick="socket.emit('refresh-devices');">Table</button>
 
     </div>
 

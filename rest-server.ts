@@ -15,7 +15,6 @@ import * as morgan from 'morgan';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus } from './models';
-import { userInfo } from 'os';
 
 const LocalStrategy = passportLocal.Strategy;
 
@@ -106,7 +105,9 @@ export class RestServer {
                 rejectUnauthorized: true,
                 honorCipherOrder: true
             }, this.app);
-        this.io = socketio(this.https);
+        this.io = socketio(this.https, {
+            pingTimeout: 600000
+        });
 
         this.ready = false;
         this.socketioStarted = false;
@@ -118,7 +119,7 @@ export class RestServer {
         Object.keys(devicesMap).forEach(deviceId => {
             devices.push(devicesMap[deviceId]);
         });
-        this.io.sockets.emit('liqid-state-update', { fabrIds: [fabrId.toString()], devices: devices });
+        this.io.sockets.emit('liqid-state-update', { fabrIds: [fabrId.toString()], devices: [devices] });
     }
 
     private startSocketIOAndServer = (): void => {
@@ -129,6 +130,7 @@ export class RestServer {
             console.log(`listening on *:${this.config.hostPort}`);
         });
         this.io.on('connection', (socket) => {
+            socket.emit('init-config', { fabrIds: Object.keys(this.liqidObservers) });
             socket.on('refresh-devices', () => {
                 let deviceArray: Device[][] = [];
                 let fabrIds = Object.keys(this.liqidObservers);
