@@ -1,5 +1,5 @@
 const socket = io(window.location.href);
-const config;
+var config;
 
 function createMachine() {
     create(
@@ -86,6 +86,10 @@ function generateTables(fabrIds) {
     });
 }
 
+$(document).ready(() => {
+    generateTables(config.fabrIds);
+});
+
 socket.on('update', (update) => {
     console.log('Received an update!');
     document.getElementById('liqid-state').innerHTML = JSON.stringify(update);
@@ -98,7 +102,6 @@ socket.on('err', (err) => {
 });
 socket.on('init-config', (c) => {
     config = c;
-    generateTables(c.fabrIds);
 });
 socket.on('liqid-state-update', (data) => {
     console.log('Liqid system state changed...');
