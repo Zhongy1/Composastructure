@@ -47,7 +47,7 @@ function create(c, s, g, n, name, gid, fid) {
 
 function updateClientView(data) {
     let index = 0;
-    Object.keys(data.fabrIds).forEach(id => {
+    data.fabrIds.forEach(id => {
         var table = document.getElementById(id);
         table.innerHTML = '';
 
@@ -62,12 +62,12 @@ function updateClientView(data) {
             thr.appendChild(th);
         });
 
-        Object.keys(data.devices[index]).forEach(device => {
+        data.devices[index].forEach(device => {
             var tr = document.createElement('TR');
             tableBody.appendChild(tr);
             Object.keys(device).forEach(property => {
                 var td = document.createElement('TD');
-                td.appendChild(document.createTextNode(data.devices[i][j][property]));
+                td.appendChild(document.createTextNode(device[property]));
                 tr.appendChild(td);
             });
         });
@@ -76,7 +76,8 @@ function updateClientView(data) {
     });
 }
 
-function generateTables(fabrIds) {
+function generateTables() {
+    let fabrIds = config.fabrIds;
     document.getElementById('liqid-table-view').innerHTML = '';
     fabrIds.forEach(id => {
         var table = document.createElement('TABLE');

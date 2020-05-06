@@ -1,0 +1,90 @@
+body {
+    margin: 0px;
+    overflow: hidden;
+}
+h1 {
+    margin: 0px 80px 0px 80px;
+}
+
+.header {
+    width: 100%;
+    height: 100px;
+    background-color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+#side-config {
+    float: left;
+    width: 300px;
+    height: calc(100vh - 100px);
+    background-color: #ccc;
+}
+
+.card {
+    width: 100px;
+    height: 100px;
+    background-color: white;
+    border: 3px solid black;
+    border-radius: 5px;
+    box-shadow: 2px 3px 3px #777;
+    margin: 10px;
+    padding: 10px;
+    display: inline-block;
+    overflow-x: hidden;
+}
+
+.card-group {
+    width: 276px;
+    height: calc(100% - 25px);
+    padding: 0px;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+}
+.card-group::-webkit-scrollbar {
+    display: none;
+}
+
+.card-machine {
+    padding: 0px;
+    width: 250px;
+    height: 100px;
+    display: block;
+}
+
+.card-group-header {
+    height: 40px;
+    width: 100%;
+    background-color: gray;
+    position: sticky;
+    top: 0;
+}
+
+.card-machine-header {
+
+}
+
+#fabric-indicator {
+    width: 100px;
+    height: 40px;
+    background-color: white;
+}
+
+#configure {
+    width: 100px;
+    height: 40px;
+    background-color: white;
+}
+
+#liqid-view {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    white-space: nowrap;
+    background-color: white;
+    height: calc(100vh - 100px);
+}
+
+#liqid-view::-webkit-scrollbar {
+    display: none;
+}

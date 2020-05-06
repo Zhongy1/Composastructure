@@ -74,6 +74,25 @@ export interface MainResponse {
     fabrics: Fabric[]
 }
 
+export interface MachineInfo {
+    machId: number,
+    mname: string,
+    grpId: number,
+    devices: Device[]
+}
+
+export interface GroupInfo {
+    grpId: number,
+    gname: string,
+    machines: MachineInfo[]
+}
+
+export interface Overview {
+    fabrIds: string[],
+    groups: GroupInfo[][],
+    devices: Device[][]
+}
+
 export class RestServer {
 
     private liqidObservers: { [key: string]: LiqidObserver };
@@ -120,10 +139,60 @@ export class RestServer {
             devices.push(devicesMap[deviceId]);
         });
         this.io.sockets.emit('liqid-state-update', { fabrIds: [fabrId.toString()], devices: [devices] });
+        this.io.sockets.emit('fabric-update', this.prepareFabricOverview(fabrId));
+    }
+
+    private prepareFabricOverview = (fabrId?: number): Overview => {
+        var fabrIds = (fabrId) ? [fabrId.toString()] : Object.keys(this.liqidObservers);
+        let overview: Overview = {
+            fabrIds: fabrIds,
+            groups: [],
+            devices: []
+        };
+        for (let i = 0; i < overview.fabrIds.length; i++) {
+            let groups = this.liqidObservers[overview.fabrIds[i]].getGroups();
+            let tempGroups = {};
+            Object.keys(groups).forEach(grpId => {
+                let group: GroupInfo = {
+                    grpId: groups[grpId].grp_id,
+                    gname: groups[grpId].group_name,
+                    machines: []
+                }
+                tempGroups[group.grpId] = group;
+                //overview.groups[overview.fabrIds[i]].push(group);
+            });
+            let machines = this.liqidObservers[overview.fabrIds[i]].getMachines();
+            let tempMachines = {};
+            Object.keys(machines).forEach((machId) => {
+                let machine: MachineInfo = {
+                    machId: machines[machId].mach_id,
+                    mname: machines[machId].mach_name,
+                    grpId: machines[machId].grp_id,
+                    devices: []
+                }
+                tempMachines[machine.machId] = machine;
+            });
+            let devices = this.summarizeAllDevices(parseInt(overview.fabrIds[i]));
+            overview.devices.push([]);
+            Object.keys(devices).forEach((deviceId) => {
+                overview.devices[i].push(devices[deviceId]);
+                if (devices[deviceId].mach_id)
+                    tempMachines[devices[deviceId].mach_id].devices.push(devices[deviceId]);
+            });
+            Object.keys(tempMachines).forEach(machId => {
+                tempGroups[tempMachines[machId].grpId].machines.push(tempMachines[machId]);
+            });
+            overview.groups.push([]);
+            Object.keys(tempGroups).forEach(grpId => {
+                overview.groups.push(tempGroups[grpId]);
+            });
+        }
+        return overview;
     }
 
     private startSocketIOAndServer = (): void => {
         if (this.socketioStarted) return;
+
         this.socketioStarted = true;
 
         this.https.listen(this.config.hostPort, () => {
@@ -131,6 +200,10 @@ export class RestServer {
         });
         this.io.on('connection', (socket) => {
             socket.emit('init-config', { fabrIds: Object.keys(this.liqidObservers) });
+            //new stuff vvv
+            socket.emit('initialize', this.prepareFabricOverview());
+            //new stuff ^^^
+
             socket.on('refresh-devices', () => {
                 let deviceArray: Device[][] = [];
                 let fabrIds = Object.keys(this.liqidObservers);

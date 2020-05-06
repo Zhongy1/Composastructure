@@ -23,8 +23,8 @@
         Fabric ID: <input id='fid3'><br>
         <button onClick="deleteGroup()">Delete Group</button><br><br>
 
-        <button onClick="reload()">Reload Fabric</button>
-        <button onClick="socket.emit('refresh-devices');">Table</button>
+        <button onClick="generateTables()">Generate Tables</button>
+        <button onClick="socket.emit('refresh-devices');">Refresh Tables</button>
 
     </div>
 
@@ -33,5 +33,6 @@
     <div id='liqid-state'></div>
     <div id='liqid-table-view'></div>
     <script src="/socket.io.js"></script>
-    <script src='./script.js'></script>
+    <script src='/jquery.min.js'></script>
+    <script src='/script.js'></script>
 </body>
