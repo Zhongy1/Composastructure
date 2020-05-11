@@ -184,7 +184,7 @@ export class RestServer {
             });
             overview.groups.push([]);
             Object.keys(tempGroups).forEach(grpId => {
-                overview.groups.push(tempGroups[grpId]);
+                overview.groups[i].push(tempGroups[grpId]);
             });
         }
         return overview;

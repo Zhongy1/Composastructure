@@ -1,4 +1,4 @@
-const socket = io(window.location.href);
+const socket = io();
 var config;
 
 function createMachine() {

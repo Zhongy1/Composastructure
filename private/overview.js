@@ -1,4 +1,4 @@
-const socket;
+const socket = io();
 
 var fabrics;
 var fabricSelected;
@@ -6,8 +6,8 @@ var liqidView;
 
 function displayFabric(fabricId) {
     liqidView.innerHTML = '';
-    if (!fabrics.fabricIds.includes(fabricId)) return;
-    let index = fabrics.fabricIds.indexOf(fabricId);
+    if (!fabrics.fabrIds.includes(fabricId)) return;
+    let index = fabrics.fabrIds.indexOf(fabricId);
     fabrics.groups[index].forEach(group => {
         let groupCard = document.createElement('div');
         groupCard.setAttribute('class', 'card card-group');
@@ -19,11 +19,76 @@ function displayFabric(fabricId) {
         group.machines.forEach(machine => {
             let machineCard = document.createElement('div');
             machineCard.setAttribute('class', 'card card-machine');
-            machineCard.innerHTML = machine.mname;
+
+            let machineHeader = document.createElement('div');
+            machineHeader.setAttribute('class', 'card-machine-header');
+            machineHeader.innerHTML = machine.mname;
+            machineCard.appendChild(machineHeader);
+
+            let characteristics = getMachineCharacteristics(machine.devices);
+
+            let ipmiBlock = document.createElement('div');
+            ipmiBlock.setAttribute('class', 'card-machine-textblock-1');
+            ipmiBlock.innerHTML = characteristics.ipmi;
+            machineCard.appendChild(ipmiBlock);
+
+            let cpuBlock = document.createElement('div');
+            cpuBlock.setAttribute('class', 'card-machine-textblock-2');
+            cpuBlock.innerHTML = 'CPUs: ' + characteristics.cpuCount;
+            machineCard.appendChild(cpuBlock);
+
+            let gpuBlock = document.createElement('div');
+            gpuBlock.setAttribute('class', 'card-machine-textblock-2');
+            gpuBlock.innerHTML = 'GPUs: ' + characteristics.gpuCount;
+            machineCard.appendChild(gpuBlock);
+
+            let ssdBlock = document.createElement('div');
+            ssdBlock.setAttribute('class', 'card-machine-textblock-2');
+            ssdBlock.innerHTML = 'SSDs: ' + characteristics.ssdCount;
+            machineCard.appendChild(ssdBlock);
+
+            let nicBlock = document.createElement('div');
+            nicBlock.setAttribute('class', 'card-machine-textblock-2');
+            nicBlock.innerHTML = 'NICs: ' + characteristics.nicCount;
+            machineCard.appendChild(nicBlock);
+
             groupCard.appendChild(machineCard);
         });
         liqidView.appendChild(groupCard);
     });
+}
+
+function getMachineCharacteristics(deviceArray) {
+    let characteristics = {
+        ipmi: '',
+        cpuCount: 0,
+        gpuCount: 0,
+        ssdCount: 0,
+        nicCount: 0,
+        optaneCount: 0
+    }
+    deviceArray.forEach(device => {
+        switch (device.type) {
+            case 'cpu':
+                if (device.hasOwnProperty('ipmi') && characteristics.ipmi == '')
+                    characteristics.ipmi = device.ipmi;
+                characteristics.cpuCount++;
+                break;
+            case 'gpu':
+                characteristics.gpuCount++;
+                break;
+            case 'ssd':
+                characteristics.ssdCount++;
+                break;
+            case 'nic':
+                characteristics.nicCount++;
+                break;
+            case 'optane':
+                characteristics.optaneCount++;
+                break;
+        }
+    });
+    return characteristics;
 }
 
 function selectFabric(fabricId) {
@@ -34,19 +99,19 @@ function selectFabric(fabricId) {
 
 $(document).ready(() => {
     liqidView = document.getElementById('liqid-view');
-    socket = io(window.location.href);
-    socket.on('connect', () => {
-        socket.on('initialize', (data) => {
-            fabrics = data;
-            selectFabric(fabrics.fabricIds[0]);
-        });
-        socket.on('fabric-update', (data) => {
-            if (fabrics && fabrics.fabrIds.includes(data.fabrIds[0])) {
-                let index = fabrics.fabrIds.indexOf(data.fabrIds[0]);
-                fabrics.groups[index] = data.groups[0];
-                fabrics.devices[index] = data.devices[0];
-                if (fabricSelected == data.fabrIds[0]) displayFabric(data.fabrIds[0]);
-            }
-        });
+});
+
+socket.on('connect', () => {
+    socket.on('initialize', (data) => {
+        fabrics = data;
+        selectFabric(fabrics.fabrIds[0]);
+    });
+    socket.on('fabric-update', (data) => {
+        if (fabrics && fabrics.fabrIds.includes(data.fabrIds[0])) {
+            let index = fabrics.fabrIds.indexOf(data.fabrIds[0]);
+            fabrics.groups[index] = data.groups[0];
+            fabrics.devices[index] = data.devices[0];
+            if (fabricSelected == data.fabrIds[0]) displayFabric(data.fabrIds[0]);
+        }
     });
 });
