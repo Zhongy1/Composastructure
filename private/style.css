@@ -15,11 +15,42 @@ h1 {
     justify-content: space-around;
 }
 
-#side-config {
+.side-config {
     float: left;
     width: 300px;
     height: calc(100vh - 100px);
     background-color: #ccc;
+    overflow: hidden;
+    position: relative;
+}
+
+.side-config>#main-side-content {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+.side-config>.drawer {
+    width: 100%;
+    height: 100%;
+    background-color: #bbb;
+    position: absolute;
+    left: 4%;
+}
+.side-config>.drawer>.drawer-header {
+    background-color: #aaa;
+    width: calc(100% - 10px);
+    height: 30px;
+    padding: 5px;
+}
+.side-config>.drawer>.drawer-header>.icon {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+}
+.side-config>.drawer>.drawer-content {
+    width: calc(100% - 10px);
+    height: calc(100% - 50px);
+    padding: 5px;
 }
 
 .card {
@@ -52,6 +83,7 @@ h1 {
     height: 100px;
     display: block;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .card-group-header {
@@ -64,6 +96,7 @@ h1 {
     text-align: center;
     font-size: 23px;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .card-machine-header {
@@ -116,6 +149,14 @@ h1 {
     white-space: nowrap;
     background-color: white;
     height: calc(100vh - 100px);
+}
+
+.unified {
+    overflow-x: hidden !important;
+    overflow-y: scroll !important;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
 }
 
 #liqid-view::-webkit-scrollbar {
