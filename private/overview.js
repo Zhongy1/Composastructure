@@ -6,6 +6,49 @@ var liqidView;
 var groupedView = true;
 var secondaryConfigShown = false;
 
+var viewOptions = [
+    {
+        name: 'Grouped View',
+        function: () => {
+            console.log('view option 1');
+            if (groupedView) return;
+            groupedView = true;
+            displayFabric(fabricSelected);
+        }
+    },
+    {
+        name: 'Ungrouped View',
+        function: () => {
+            console.log('view option 2');
+            if (!groupedView) return;
+            groupedView = false;
+            displayFabric(fabricSelected);
+        }
+    }
+];
+
+var miscOptions = [
+    {
+        name: 'Unassigned Devices',
+        function: () => {
+            console.log('misc option 1');
+        }
+    },
+    {
+        name: 'Create New Group',
+        function: () => {
+            console.log('misc option 2');
+        }
+    },
+    {
+        name: 'Compose New Machine',
+        function: () => {
+            console.log('misc option 3');
+        }
+    },
+
+]
+
 function displayFabric(fabricId) {
     liqidView.innerHTML = '';
     if (!fabrics.fabrIds.includes(fabricId)) return;
@@ -25,7 +68,6 @@ function displayInGroupModeOn(fabricId) {
         groupHeader.innerHTML = group.gname;
         groupHeader.setAttribute('id', 'card-group-' + group.grpId);
         groupHeader.addEventListener('click', (e) => {
-            console.log('Group header clicked!');
             showSecondarySideConfig();
         });
         groupCard.appendChild(groupHeader);
@@ -79,46 +121,49 @@ function displayInGroupModeOff(fabricId) {
     liqidView.setAttribute('class', 'unified');
     let index = fabrics.fabrIds.indexOf(fabricId);
     fabrics.groups[index].forEach(group => {
-        let machineCard = document.createElement('div');
-        machineCard.setAttribute('class', 'card card-machine');
-        machineCard.setAttribute('id', 'card-machine-' + machine.machId);
-        machineCard.addEventListener('click', (e) => {
-            console.log('Machine card clicked!');
+        group.machines.forEach(machine => {
+            let machineCard = document.createElement('div');
+            machineCard.setAttribute('class', 'card card-machine');
+            machineCard.setAttribute('id', 'card-machine-' + machine.machId);
+            machineCard.addEventListener('click', (e) => {
+                showSecondarySideConfig();
+                console.log(this.id);
+            });
+
+            let machineHeader = document.createElement('div');
+            machineHeader.setAttribute('class', 'card-machine-header');
+            machineHeader.innerHTML = machine.mname;
+            machineCard.appendChild(machineHeader);
+
+            let characteristics = getMachineCharacteristics(machine.devices);
+
+            let ipmiBlock = document.createElement('div');
+            ipmiBlock.setAttribute('class', 'card-machine-textblock-1');
+            ipmiBlock.innerHTML = characteristics.ipmi;
+            machineCard.appendChild(ipmiBlock);
+
+            let cpuBlock = document.createElement('div');
+            cpuBlock.setAttribute('class', 'card-machine-textblock-2');
+            cpuBlock.innerHTML = 'CPUs: ' + characteristics.cpuCount;
+            machineCard.appendChild(cpuBlock);
+
+            let gpuBlock = document.createElement('div');
+            gpuBlock.setAttribute('class', 'card-machine-textblock-2');
+            gpuBlock.innerHTML = 'GPUs: ' + characteristics.gpuCount;
+            machineCard.appendChild(gpuBlock);
+
+            let ssdBlock = document.createElement('div');
+            ssdBlock.setAttribute('class', 'card-machine-textblock-2');
+            ssdBlock.innerHTML = 'SSDs: ' + characteristics.ssdCount;
+            machineCard.appendChild(ssdBlock);
+
+            let nicBlock = document.createElement('div');
+            nicBlock.setAttribute('class', 'card-machine-textblock-2');
+            nicBlock.innerHTML = 'NICs: ' + characteristics.nicCount;
+            machineCard.appendChild(nicBlock);
+
+            liqidView.appendChild(machineCard);
         });
-
-        let machineHeader = document.createElement('div');
-        machineHeader.setAttribute('class', 'card-machine-header');
-        machineHeader.innerHTML = machine.mname;
-        machineCard.appendChild(machineHeader);
-
-        let characteristics = getMachineCharacteristics(machine.devices);
-
-        let ipmiBlock = document.createElement('div');
-        ipmiBlock.setAttribute('class', 'card-machine-textblock-1');
-        ipmiBlock.innerHTML = characteristics.ipmi;
-        machineCard.appendChild(ipmiBlock);
-
-        let cpuBlock = document.createElement('div');
-        cpuBlock.setAttribute('class', 'card-machine-textblock-2');
-        cpuBlock.innerHTML = 'CPUs: ' + characteristics.cpuCount;
-        machineCard.appendChild(cpuBlock);
-
-        let gpuBlock = document.createElement('div');
-        gpuBlock.setAttribute('class', 'card-machine-textblock-2');
-        gpuBlock.innerHTML = 'GPUs: ' + characteristics.gpuCount;
-        machineCard.appendChild(gpuBlock);
-
-        let ssdBlock = document.createElement('div');
-        ssdBlock.setAttribute('class', 'card-machine-textblock-2');
-        ssdBlock.innerHTML = 'SSDs: ' + characteristics.ssdCount;
-        machineCard.appendChild(ssdBlock);
-
-        let nicBlock = document.createElement('div');
-        nicBlock.setAttribute('class', 'card-machine-textblock-2');
-        nicBlock.innerHTML = 'NICs: ' + characteristics.nicCount;
-        machineCard.appendChild(nicBlock);
-
-        liqidView.appendChild(machineCard);
     });
 }
 
@@ -170,6 +215,50 @@ function prepareSideConfig() {
                 secondaryConfigShown = false;
             });
     });
+    populateMainSideContent();
+}
+
+function populateMainSideContent() {
+    //Prepare main side content
+    let mainSideContent = document.getElementById('main-side-content');
+    mainSideContent.innerHTML = '';
+    let fabricOptionsHeader = document.createElement('h3');
+    fabricOptionsHeader.innerHTML = 'Fabric Options';
+    mainSideContent.appendChild(fabricOptionsHeader);
+    if (fabricSelected) {
+        let fabricOptionsList = document.createElement('ul');
+        mainSideContent.appendChild(fabricOptionsList);
+        fabrics.fabrIds.forEach(id => {
+            let listElement = document.createElement('li');
+            listElement.innerHTML = id;
+            listElement.addEventListener('click', () => {
+                console.log('Switching fabric to ' + id);
+                displayFabric(id);
+            });
+            fabricOptionsList.appendChild(listElement);
+        });
+    }
+    let viewOptionsHeader = document.createElement('h3');
+    viewOptionsHeader.innerHTML = 'View Options'
+    mainSideContent.appendChild(viewOptionsHeader);
+    let viewOptionsList = document.createElement('ul');
+    mainSideContent.appendChild(viewOptionsList);
+    viewOptions.forEach(option => {
+        let listElement = document.createElement('li');
+        listElement.innerHTML = option.name;
+        listElement.addEventListener('click', option.function);
+        viewOptionsList.appendChild(listElement);
+    });
+    let miscOptionsHeader = document.createElement('h3');
+    miscOptionsHeader.innerHTML = 'Misc. Options';
+    mainSideContent.appendChild(miscOptionsHeader);
+    miscOptionsList = document.createElement('ul');
+    miscOptions.forEach(option => {
+        let listElement = document.createElement('li');
+        listElement.innerHTML = option.name;
+        listElement.addEventListener('click', option.function);
+        miscOptionsList.appendChild(listElement);
+    });
 }
 
 function showSecondarySideConfig() {
@@ -190,6 +279,7 @@ socket.on('connect', () => {
     socket.on('initialize', (data) => {
         fabrics = data;
         selectFabric(fabrics.fabrIds[0]);
+        populateMainSideContent();
     });
     socket.on('fabric-update', (data) => {
         if (fabrics && fabrics.fabrIds.includes(data.fabrIds[0])) {
