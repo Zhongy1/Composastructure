@@ -5,12 +5,12 @@ var fabricSelected;
 var liqidView;
 var groupedView = true;
 var secondaryConfigShown = false;
+var secondaryConfigLocked = false;
 
 var viewOptions = [
     {
         name: 'Grouped View',
         function: () => {
-            console.log('view option 1');
             if (groupedView) return;
             groupedView = true;
             displayFabric(fabricSelected);
@@ -19,7 +19,6 @@ var viewOptions = [
     {
         name: 'Ungrouped View',
         function: () => {
-            console.log('view option 2');
             if (!groupedView) return;
             groupedView = false;
             displayFabric(fabricSelected);
@@ -29,24 +28,24 @@ var viewOptions = [
 
 var miscOptions = [
     {
-        name: 'Unassigned Devices',
+        name: 'List Devices',
         function: () => {
-            console.log('misc option 1');
+            loadDevices();
+            showSecondarySideConfig();
         }
     },
     {
         name: 'Create New Group',
         function: () => {
-            console.log('misc option 2');
+            showSecondarySideConfig();
         }
     },
     {
         name: 'Compose New Machine',
         function: () => {
-            console.log('misc option 3');
+            showSecondarySideConfig();
         }
-    },
-
+    }
 ]
 
 function displayFabric(fabricId) {
@@ -68,6 +67,7 @@ function displayInGroupModeOn(fabricId) {
         groupHeader.innerHTML = group.gname;
         groupHeader.setAttribute('id', 'card-group-' + group.grpId);
         groupHeader.addEventListener('click', (e) => {
+            loadGroupDetails(group);
             showSecondarySideConfig();
         });
         groupCard.appendChild(groupHeader);
@@ -77,6 +77,7 @@ function displayInGroupModeOn(fabricId) {
             machineCard.setAttribute('class', 'card card-machine');
             machineCard.setAttribute('id', 'card-machine-' + machine.machId);
             machineCard.addEventListener('click', (e) => {
+                loadMachineDetails(machine);
                 showSecondarySideConfig();
             });
 
@@ -209,6 +210,7 @@ function selectFabric(fabricId) {
 function prepareSideConfig() {
     let goBackButton = document.getElementById('side-config-return');
     goBackButton.addEventListener('click', (e) => {
+        if (secondaryConfigLocked) return;
         $('#side-config-drawer')
             .css({ left: '0%' })
             .animate({ left: '100%' }, 500, () => {
@@ -230,10 +232,10 @@ function populateMainSideContent() {
         mainSideContent.appendChild(fabricOptionsList);
         fabrics.fabrIds.forEach(id => {
             let listElement = document.createElement('li');
+            listElement.setAttribute('class', 'clickable');
             listElement.innerHTML = id;
             listElement.addEventListener('click', () => {
-                console.log('Switching fabric to ' + id);
-                displayFabric(id);
+                selectFabric(id);
             });
             fabricOptionsList.appendChild(listElement);
         });
@@ -245,6 +247,7 @@ function populateMainSideContent() {
     mainSideContent.appendChild(viewOptionsList);
     viewOptions.forEach(option => {
         let listElement = document.createElement('li');
+        listElement.setAttribute('class', 'clickable');
         listElement.innerHTML = option.name;
         listElement.addEventListener('click', option.function);
         viewOptionsList.appendChild(listElement);
@@ -253,12 +256,60 @@ function populateMainSideContent() {
     miscOptionsHeader.innerHTML = 'Misc. Options';
     mainSideContent.appendChild(miscOptionsHeader);
     miscOptionsList = document.createElement('ul');
+    mainSideContent.appendChild(miscOptionsList);
     miscOptions.forEach(option => {
         let listElement = document.createElement('li');
+        listElement.setAttribute('class', 'clickable');
         listElement.innerHTML = option.name;
         listElement.addEventListener('click', option.function);
         miscOptionsList.appendChild(listElement);
     });
+}
+
+function loadDevices() {
+    let sideHeaderTitle = document.getElementById('drawer-header-title');
+    sideHeaderTitle.innerHTML = 'Devices';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+
+    let unassignedDevicesHeader = document.createElement('h3');
+    unassignedDevicesHeader.innerHTML = 'Unassigned';
+    secondarySideContent.appendChild(unassignedDevicesHeader);
+    let unassignedDevicesList = document.createElement('ul');
+    secondarySideContent.appendChild(unassignedDevicesList);
+
+    let assignedDevicesHeader = document.createElement('h3');
+    assignedDevicesHeader.innerHTML = 'Assigned';
+    secondarySideContent.appendChild(assignedDevicesHeader);
+    let assignedDevicesList = document.createElement('ul');
+    secondarySideContent.appendChild(assignedDevicesList);
+
+    fabrics.devices[fabrics.fabrIds.indexOf(fabricSelected)].forEach(device => {
+        let listElement = document.createElement('li');
+        listElement.innerHTML = device.id;
+        if (device.mach_id == null)
+            unassignedDevicesList.appendChild(listElement);
+        else
+            assignedDevicesList.appendChild(listElement);
+    });
+}
+
+function loadMachineDetails(machine) {
+    let sideHeaderTitle = document.getElementById('drawer-header-title');
+    sideHeaderTitle.innerHTML = machine.mname + ' (id: ' + machine.machId + ')';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+    let someText = document.createTextNode(JSON.stringify(machine));
+    secondarySideContent.appendChild(someText);
+}
+
+function loadGroupDetails(group) {
+    let sideHeaderTitle = document.getElementById('drawer-header-title');
+    sideHeaderTitle.innerHTML = group.gname + ' (id: ' + group.grpId + ')';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+    let someText = document.createTextNode(JSON.stringify(group));
+    secondarySideContent.appendChild(someText);
 }
 
 function showSecondarySideConfig() {

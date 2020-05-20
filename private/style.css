@@ -47,11 +47,20 @@ h1 {
     width: 30px;
     height: 30px;
     cursor: pointer;
+    float: left;
 }
 .side-config>.drawer>.drawer-content {
     width: calc(100% - 10px);
     height: calc(100% - 50px);
     padding: 5px;
+}
+#drawer-header-title {
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 20px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
 }
 
 .card {
@@ -130,6 +139,10 @@ h1 {
 }
 .red {
     background-color: #ff8888;
+}
+
+.clickable {
+    cursor: pointer;
 }
 
 #fabric-indicator {
