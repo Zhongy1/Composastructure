@@ -37,12 +37,20 @@ var miscOptions = [
     {
         name: 'Create New Group',
         function: () => {
+            let sideHeaderTitle = document.getElementById('drawer-header-title');
+            sideHeaderTitle.innerHTML = '';
+            let secondarySideContent = document.getElementById('secondary-side-content');
+            secondarySideContent.innerHTML = '';
             showSecondarySideConfig();
         }
     },
     {
         name: 'Compose New Machine',
         function: () => {
+            let sideHeaderTitle = document.getElementById('drawer-header-title');
+            sideHeaderTitle.innerHTML = '';
+            let secondarySideContent = document.getElementById('secondary-side-content');
+            secondarySideContent.innerHTML = '';
             showSecondarySideConfig();
         }
     }
@@ -127,8 +135,8 @@ function displayInGroupModeOff(fabricId) {
             machineCard.setAttribute('class', 'card card-machine');
             machineCard.setAttribute('id', 'card-machine-' + machine.machId);
             machineCard.addEventListener('click', (e) => {
+                loadMachineDetails(machine);
                 showSecondarySideConfig();
-                console.log(this.id);
             });
 
             let machineHeader = document.createElement('div');

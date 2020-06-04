@@ -53,6 +53,8 @@ h1 {
     width: calc(100% - 10px);
     height: calc(100% - 50px);
     padding: 5px;
+    overflow-wrap: break-word;
+    overflow-y: auto;
 }
 #drawer-header-title {
     white-space: nowrap;
