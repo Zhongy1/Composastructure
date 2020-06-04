@@ -44,6 +44,7 @@ export interface Device {
     ipmi?: string
 }
 
+//not currently used
 export interface SimplifiedMachine {
     mach_id: number,
     mname: string,
@@ -51,6 +52,7 @@ export interface SimplifiedMachine {
     devices: Device[]
 }
 
+//not currently used
 export interface Pool {
     grp_id: number,
     gname: string,
@@ -59,6 +61,7 @@ export interface Pool {
     machines: SimplifiedMachine[]
 }
 
+//not currently used
 export interface Fabric {
     fabricId: number,
     unassigned: Device[],
@@ -70,6 +73,7 @@ export interface Fabric {
     pools: Pool[]
 }
 
+//not currently used
 export interface MainResponse {
     fabrics: Fabric[]
 }
@@ -89,12 +93,6 @@ export interface GroupInfo {
     machines: MachineInfo[]
 }
 
-export interface Overview {
-    fabrIds: string[],
-    groups: GroupInfo[][],
-    devices: Device[][]
-}
-
 export interface GroupWrapper {
     fabrId: string,
     groups: GroupInfo[]
@@ -108,6 +106,16 @@ export interface MachineWrapper {
 export interface DeviceWrapper {
     fabrId: string,
     devices: Device[]
+}
+
+export interface Overview {
+    fabrIds: string[],
+    groups: GroupInfo[][],
+    devices: Device[][]
+}
+
+export interface BasicError {
+    description: string
 }
 
 
@@ -515,7 +523,7 @@ export class RestServer {
             if (username != 'evlroot') {
                 return done(null, false, { message: 'Incorrect username.' });
             }
-            if (password != 'getaccess') {
+            if (password != 'getaccess[asdjkl90-]') {
                 return done(null, false, { message: 'Incorrect password.' });
             }
             return done(null, { name: username, id: 'mainUser' });
@@ -588,39 +596,71 @@ export class RestServer {
     private initializeLookupHandlers = (): void => {
         this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
-            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { description: 'fabr_id has to be a number.' };
+                res.status(400).json(err);
+            }
+            else if (parseInt(req.params.id) == NaN) {
+                let err: BasicError = { description: 'id has to be a number.' };
+                res.status(400).json(err);
+            }
+            else if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
                 let data: GroupInfo = this.prepareGroupInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
                 if (data)
                     res.json(data);
-                else
-                    throw new Error('Could not find resource.');
+                else {
+                    let err: BasicError = { description: 'Group ' + parseInt(req.params.id) + ' does not exist.' };
+                    res.status(404).json(err);
+                }
             }
-            else
-                throw new Error('The provided fabric id does not exist.');
+            else {
+                let err: BasicError = { description: 'Fabric ' + parseInt(req.params.id) + ' does not exist.' };
+                res.status(404).json(err);
+            }
         });
         this.app.get('/api/machine/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { description: 'fabr_id has to be a number.' };
+                res.status(400).json(err);
+            }
+            else if (parseInt(req.params.id) == NaN) {
+                let err: BasicError = { description: 'id has to be a number.' };
+                res.status(400).json(err);
+            }
             if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
                 let data: MachineInfo = this.prepareMachineInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
                 if (data)
                     res.json(data);
-                else
-                    throw new Error('Could not find resource.');
+                else {
+                    let err: BasicError = { description: 'Machine ' + parseInt(req.params.id) + ' does not exist.' };
+                    res.status(404).json(err);
+                }
             }
-            else
-                throw new Error('The provided fabric id does not exist.');
+            else {
+                let err: BasicError = { description: 'Fabric ' + parseInt(req.params.id) + ' does not exist.' };
+                res.status(404).json(err);
+            }
         });
         this.app.get('/api/device/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { description: 'fabr_id has to be a number.' };
+                res.status(400).json(err);
+            }
             if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
                 let data: Device = this.prepareDevices(parseInt(req.params.fabr_id), req.params.id);
                 if (data)
                     res.json(data);
-                else
-                    throw new Error('Could not find resource.');
+                else {
+                    let err: BasicError = { description: 'Device ' + req.params.id + ' does not exist.' };
+                    res.status(404).json(err);
+                }
             }
-            else
-                throw new Error('The provided fabric id does not exist.');
+            else {
+                let err: BasicError = { description: 'Fabric ' + parseInt(req.params.id) + ' does not exist.' };
+                res.status(404).json(err);
+            }
         });
     }
 
