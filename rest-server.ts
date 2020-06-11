@@ -114,9 +114,21 @@ export interface Overview {
     devices: Device[][]
 }
 
+export interface GroupCreateOptions {
+    name: string,
+    fabrId: number
+}
+
 export interface BasicError {
+    code: number,
     description: string
 }
+
+// export interface SuccessResponse<T> {
+//     code: number,
+//     description: string,
+//     content: T
+// }
 
 
 export class RestServer {
@@ -230,10 +242,14 @@ export class RestServer {
                 fabrId: fabrId.toString(),
                 grpId: group.grp_id,
                 gname: group.group_name,
-                machines: null
+                machines: []
             }
-            let machWrapper: MachineWrapper = this.prepareMachineInfo(fabrId);
-            groupInfo.machines = machWrapper.machines;
+            let machInfos: MachineInfo[] = this.prepareMachineInfo(fabrId).machines;
+            machInfos.forEach(machInfo => {
+                if (machInfo.grpId == grpId) {
+                    groupInfo.machines.push(machInfo);
+                }
+            });
             return groupInfo;
         }
         else if (fabrId != null) {
@@ -479,7 +495,7 @@ export class RestServer {
             });
             socket.on('delete-machine', (machDeleteOpts) => {
                 if (this.liqidObservers.hasOwnProperty(machDeleteOpts.fabr_id)) {
-                    this.liqidControllers[machDeleteOpts.fabr_id].decompose(this.liqidObservers[machDeleteOpts.fabr_id].getMachineById(machDeleteOpts.id))
+                    this.liqidControllers[machDeleteOpts.fabr_id].decompose(machDeleteOpts.id)
                         .then(() => {
                             socket.emit('success', 'Machine decomposed successfully.');
                         }, err => {
@@ -506,6 +522,7 @@ export class RestServer {
             });
         });
         Object.keys(this.liqidObservers).forEach(fabrId => {
+            //currently disabled in observer (not used)
             this.liqidObservers[fabrId].attachUpdateCallback(this.observerCallback);
         });
     }
@@ -597,122 +614,198 @@ export class RestServer {
         this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
-                let err: BasicError = { description: 'fabr_id has to be a number.' };
-                res.status(400).json(err);
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
             }
             else if (parseInt(req.params.id) == NaN) {
-                let err: BasicError = { description: 'id has to be a number.' };
-                res.status(400).json(err);
+                let err: BasicError = { code: 400, description: 'id has to be a number.' };
+                res.status(err.code).json(err);
             }
-            else if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
+            else if (this.liqidObservers.hasOwnProperty(parseInt(req.params.fabr_id))) {
                 let data: GroupInfo = this.prepareGroupInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
                 if (data)
                     res.json(data);
                 else {
-                    let err: BasicError = { description: 'Group ' + parseInt(req.params.id) + ' does not exist.' };
-                    res.status(404).json(err);
+                    let err: BasicError = { code: 404, description: 'Group ' + parseInt(req.params.id) + ' does not exist.' };
+                    res.status(err.code).json(err);
                 }
             }
             else {
-                let err: BasicError = { description: 'Fabric ' + parseInt(req.params.id) + ' does not exist.' };
-                res.status(404).json(err);
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
             }
         });
         this.app.get('/api/machine/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
-                let err: BasicError = { description: 'fabr_id has to be a number.' };
-                res.status(400).json(err);
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
             }
             else if (parseInt(req.params.id) == NaN) {
-                let err: BasicError = { description: 'id has to be a number.' };
-                res.status(400).json(err);
+                let err: BasicError = { code: 400, description: 'id has to be a number.' };
+                res.status(err.code).json(err);
             }
-            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
+            else if (this.liqidObservers.hasOwnProperty(parseInt(req.params.fabr_id))) {
                 let data: MachineInfo = this.prepareMachineInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
                 if (data)
                     res.json(data);
                 else {
-                    let err: BasicError = { description: 'Machine ' + parseInt(req.params.id) + ' does not exist.' };
-                    res.status(404).json(err);
+                    let err: BasicError = { code: 404, description: 'Machine ' + parseInt(req.params.id) + ' does not exist.' };
+                    res.status(err.code).json(err);
                 }
             }
             else {
-                let err: BasicError = { description: 'Fabric ' + parseInt(req.params.id) + ' does not exist.' };
-                res.status(404).json(err);
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
             }
         });
         this.app.get('/api/device/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
-                let err: BasicError = { description: 'fabr_id has to be a number.' };
-                res.status(400).json(err);
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
             }
-            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
+            else if (this.liqidObservers.hasOwnProperty(parseInt(req.params.fabr_id))) {
                 let data: Device = this.prepareDevices(parseInt(req.params.fabr_id), req.params.id);
                 if (data)
                     res.json(data);
                 else {
-                    let err: BasicError = { description: 'Device ' + req.params.id + ' does not exist.' };
-                    res.status(404).json(err);
+                    let err: BasicError = { code: 404, description: 'Device ' + req.params.id + ' does not exist.' };
+                    res.status(err.code).json(err);
                 }
             }
             else {
-                let err: BasicError = { description: 'Fabric ' + parseInt(req.params.id) + ' does not exist.' };
-                res.status(404).json(err);
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
             }
         });
     }
 
     private initializeControlHandlers = (): void => {
         this.app.post('/api/group', (req, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.body.fabr_id)) {
-                this.liqidControllers[req.body.fabr_id].createGroup(req.body.group_name)
+            res.setHeader('Content-Type', 'application/json');
+            if (req.body.fabrId == null || req.body.name == null) {
+                let err: BasicError = { code: 400, description: 'Request body is missing one or more required properties.' };
+                res.status(err.code).json(err);
+            }
+            else if (typeof req.body.fabrId !== 'number') {
+                let err: BasicError = { code: 400, description: 'fabrId has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (typeof req.body.name !== 'string') {
+                let err: BasicError = { code: 400, description: 'name has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
+                this.liqidControllers[req.body.fabrId].createGroup(req.body.group_name)
                     .then((group) => {
-                        res.send(group);
+                        let data: GroupInfo = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
+                        if (data) {
+                            res.json(data);
+                            this.io.sockets.emit('fabric-update', this.prepareFabricOverview(req.body.fabrId));
+                        }
+                        else {
+                            let err: BasicError = { code: 500, description: 'Group seems to be created, but final verification failed.' };
+                            console.log(err);
+                            res.status(err.code).json(err);
+                        }
                     }, err => {
-                        res.send('Error creating group.');
+                        let error: BasicError = { code: err.code, description: err.description };
+                        res.status(error.code).json(error);
                     });
+            }
+            else {
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.body.fabrId) + ' does not exist.' };
+                res.status(err.code).json(err);
             }
         });
         this.app.delete('/api/group/:fabr_id/:id', (req, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
+            res.setHeader('Content-Type', 'application/json');
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (parseInt(req.params.id) == NaN) {
+                let err: BasicError = { code: 400, description: 'id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidControllers.hasOwnProperty(parseInt(req.params.fabr_id))) {
+                let grpInfo: GroupInfo = this.prepareGroupInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
                 this.liqidControllers[req.params.fabr_id].deleteGroup(parseInt(req.params.id))
                     .then((group) => {
-                        res.send(group);
+                        res.json(grpInfo);
+                        this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
                     }, err => {
-                        res.send('Error deleting group.')
+                        let error: BasicError = { code: err.code, description: err.description };
+                        res.status(error.code).json(error.description);
                     });
             }
             else {
-                throw new Error('The provided fabric id does not exist.');
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
             }
         });
         this.app.post('/api/machine', (req, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.body.fabr_id)) {
-                this.liqidControllers[req.body.fabr_id].compose(req.body)
+            res.setHeader('Content-Type', 'application/json');
+            if (req.body.fabrId == null || req.body.name == null) {
+                let err: BasicError = { code: 400, description: 'Request body is missing one or more required properties.' };
+                res.status(err.code).json(err);
+            }
+            else if (typeof req.body.fabrId !== 'number') {
+                let err: BasicError = { code: 400, description: 'fabrId has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (typeof req.body.name !== 'string') {
+                let err: BasicError = { code: 400, description: 'name has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
+                this.liqidControllers[req.body.fabrId].compose(req.body)
                     .then((mach) => {
-                        res.send(mach);
+                        let data: MachineInfo = this.prepareMachineInfo(Math.floor(req.body.fabrId), mach.mach_id);
+                        if (data) {
+                            res.json(data);
+                            this.io.sockets.emit('fabric-update', this.prepareFabricOverview(req.body.fabrId));
+                        }
+                        else {
+                            let err: BasicError = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
+                            console.log(err);
+                            res.status(err.code).json(err);
+                        }
                     }, err => {
-                        res.send('Error composing machine.');
+                        let error: BasicError = { code: err.code, description: err.description };
+                        res.status(error.code).json(error);
                     });
             }
             else {
-                res.send(`Fabric with fabr_id ${req.body.fabr_id} does not exist.`);
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.body.fabrId) + ' does not exist.' };
+                res.status(err.code).json(err);
             }
         });
         this.app.delete('/api/machine/:fabr_id/:id', (req, res, next) => {
-            if (this.liqidObservers.hasOwnProperty(req.params.fabr_id)) {
-                this.liqidControllers[req.params.fabr_id].decompose(this.liqidObservers[req.params.fabr_id].getMachineById(req.params.id))
-                    .then(() => {
-                        res.send('Machine decomposed successfully.');
+            res.setHeader('Content-Type', 'application/json');
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (parseInt(req.params.id) == NaN) {
+                let err: BasicError = { code: 400, description: 'id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidControllers.hasOwnProperty(req.params.fabr_id)) {
+                let machInfo: MachineInfo = this.prepareMachineInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
+                this.liqidControllers[req.params.fabr_id].decompose(parseInt(req.params.id))
+                    .then((machine) => {
+                        res.json(machInfo);
+                        this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
                     }, err => {
-                        if (err)
-                            res.send('There was a problem decomposing a machine.');
+                        let error: BasicError = { code: err.code, description: err.description };
+                        res.status(error.code).json(error.description);
                     });
             }
             else {
-                throw new Error('The provided fabric id does not exist.');
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
             }
         });
 
