@@ -91,15 +91,15 @@ export class LiqidController {
                 console.log(err);
                 throw err;
             }
-            if (this.liqidObs.getGroupIdByName(name) != -1 || name === 'UngroupedGroup') {
+            if (this.liqidObs.getGroupIdByName(name) != -1) {
                 let err: LiqidError = {
                     code: 422,
                     origin: 'controller',
-                    description: 'Use a different group name. The one provided is already in use or is reserved.'
+                    description: 'Use a different group name. The one provided is already in use.'
                 }
                 throw err;
             }
-            if (!name.match(/^[A-Za-z]+$/)) {
+            if (!name.match(/^[A-Za-z0-9]+$/)) {
                 let err: LiqidError = {
                     code: 422,
                     origin: 'controller',
@@ -325,6 +325,17 @@ export class LiqidController {
                 fpga: options.fpga,
                 gatherUnused: true
             });
+
+            //ensure there is at least one device
+            if (deviceStatuses.length == 0) {
+                let err: LiqidError = {
+                    code: 422,
+                    origin: 'controller',
+                    description: 'Machine specification must have at least one device.'
+                }
+                throw err;
+            }
+
             //move all devices to machine's group
             await this.moveDevicesToGroup(deviceStatuses, group.grp_id);
 

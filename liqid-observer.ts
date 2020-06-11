@@ -200,11 +200,11 @@ export class LiqidObserver {
     }
 
     public checkGroupIsEmpty(id: number): boolean {
-        Object.keys(this.machines).forEach(machId => {
-            if (this.machines[machId].grp_id == id) {
+        let arr = Object.keys(this.machines);
+        for (let i = 0; i < arr.length; i++) {
+            if (this.machines[arr[i]].grp_id == id)
                 return false;
-            }
-        });
+        }
         return true;
     }
 
@@ -405,10 +405,11 @@ export class LiqidObserver {
      * @return {Group}         Group ID that matches the given name or -1 if name does not exist
      */
     public getGroupIdByName(name: string): number {
-        Object.keys(this.groups).forEach((grpId) => {
-            if (this.groups[grpId].group_name == name)
-                return this.groups[grpId].grp_id;
-        });
+        let arr = Object.keys(this.groups);
+        for (let i = 0; i < arr.length; i++) {
+            if (this.groups[arr[i]].group_name === name)
+                return this.groups[arr[i]].grp_id;
+        }
         return -1;
     }
 
@@ -512,10 +513,11 @@ export class LiqidObserver {
      * @return {boolean}    True if name exists already
      */
     public checkMachNameExists(name: string): boolean {
-        Object.keys(this.machines).forEach((mach_id) => {
-            if (this.machines.hasOwnProperty(mach_id) && this.machines[mach_id].mach_name == name)
+        let arr = Object.keys(this.machines);
+        for (let i = 0; i < arr.length; i++) {
+            if (this.machines[arr[i]].mach_name === name)
                 return true;
-        });
+        }
         return false;
     }
 

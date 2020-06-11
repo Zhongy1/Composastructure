@@ -697,7 +697,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
-                this.liqidControllers[req.body.fabrId].createGroup(req.body.group_name)
+                this.liqidControllers[req.body.fabrId].createGroup(req.body.name)
                     .then((group) => {
                         let data: GroupInfo = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
                         if (data) {
@@ -800,7 +800,7 @@ export class RestServer {
                         this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
                     }, err => {
                         let error: BasicError = { code: err.code, description: err.description };
-                        res.status(error.code).json(error.description);
+                        res.status(error.code).json(error);
                     });
             }
             else {
