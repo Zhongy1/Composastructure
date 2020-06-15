@@ -136,8 +136,10 @@ export class LiqidController {
             return grp;
         }
         catch (err) {
-            this.busy = false;
-            this.liqidObs.setBusyState(false);
+            if (err.code == null || err.code != 503) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
             if (err.origin) {
                 throw err;
             }
@@ -211,8 +213,10 @@ export class LiqidController {
             }
         }
         catch (err) {
-            this.busy = false;
-            this.liqidObs.setBusyState(false);
+            if (err.code == null || err.code != 503) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
 
             if (err.origin) {
                 throw err;
@@ -382,8 +386,10 @@ export class LiqidController {
             return this.liqidObs.getMachineById(machine.mach_id);
         }
         catch (err) {
-            this.busy = false;
-            this.liqidObs.setBusyState(false);
+            if (err.code == null || err.code != 503) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
             // if (poolEditMode) this.liqidComm.cancelPoolEdit();
             // if (fabricEditMode) this.liqidComm.cancelFabricEdit();
             if (err.origin) {
@@ -670,8 +676,10 @@ export class LiqidController {
             }
         }
         catch (err) {
-            this.busy = false;
-            this.liqidObs.setBusyState(false);
+            if (err.code == null || err.code != 503) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
 
             if (err.origin) {
                 throw err;

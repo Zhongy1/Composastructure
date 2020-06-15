@@ -64,3 +64,4 @@ package-lock.json
 dist/doc/
 .DS_Store
 keys/
+discarded/

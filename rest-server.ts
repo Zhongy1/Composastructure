@@ -693,7 +693,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
             else if (typeof req.body.name !== 'string') {
-                let err: BasicError = { code: 400, description: 'name has to be a number.' };
+                let err: BasicError = { code: 400, description: 'name has to be a string.' };
                 res.status(err.code).json(err);
             }
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
@@ -737,7 +737,7 @@ export class RestServer {
                         this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
                     }, err => {
                         let error: BasicError = { code: err.code, description: err.description };
-                        res.status(error.code).json(error.description);
+                        res.status(error.code).json(error);
                     });
             }
             else {
@@ -756,7 +756,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
             else if (typeof req.body.name !== 'string') {
-                let err: BasicError = { code: 400, description: 'name has to be a number.' };
+                let err: BasicError = { code: 400, description: 'name has to be a string.' };
                 res.status(err.code).json(err);
             }
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
