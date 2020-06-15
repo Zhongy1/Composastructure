@@ -80,7 +80,7 @@ export class LiqidController {
      * @param   {string}    name    The name the new group will use
      * @return  {Promise<Group>}    The created group
      */
-    public async createGroup(name: string): Promise<Group> {
+    public async createGroup(name: string, ignoreBusy: boolean = false): Promise<Group> {
         try {
             if (!this.ready) {
                 let err: LiqidError = {
@@ -107,18 +107,20 @@ export class LiqidController {
                 }
                 throw err;
             }
-            if (this.busy) {
-                let err: LiqidError = {
-                    code: 503,
-                    origin: 'controller',
-                    description: `Controller for fabric ${this.fabricId} is busy with a previous compose/create request. Please wait a few seconds and retry.`
+            if (!ignoreBusy) {
+                if (this.busy) {
+                    let err: LiqidError = {
+                        code: 503,
+                        origin: 'controller',
+                        description: `Controller for fabric ${this.fabricId} is busy with a previous compose/create request. Please wait a few seconds and retry.`
+                    }
+                    console.log(err);
+                    throw err;
                 }
-                console.log(err);
-                throw err;
-            }
-            else {
-                this.busy = true;
-                this.liqidObs.setBusyState(true);
+                else {
+                    this.busy = true;
+                    this.liqidObs.setBusyState(true);
+                }
             }
             let group: Group = {
                 fabr_id: this.fabricId,
@@ -128,15 +130,17 @@ export class LiqidController {
             }
             let grp = await this.liqidComm.createGroup(group);
 
-            this.busy = false;
-            this.liqidObs.setBusyState(false);
+            if (!ignoreBusy) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
 
             await this.liqidObs.refresh();
 
             return grp;
         }
         catch (err) {
-            if (err.code == null || err.code != 503) {
+            if (!ignoreBusy && (err.code == null || err.code != 503)) {
                 this.busy = false;
                 this.liqidObs.setBusyState(false);
             }
@@ -294,7 +298,7 @@ export class LiqidController {
                 if (grpId > 0)
                     var group = this.liqidObs.getGroupById(grpId);
                 else {
-                    var group = await this.createGroup('UngroupedGroup');
+                    var group = await this.createGroup('UngroupedGroup', true);
                     await this.liqidObs.refresh();
                 }
             }
