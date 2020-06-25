@@ -1,6 +1,6 @@
 import _ = require('lodash');
 import { LiqidCommunicator, LiqidError } from './liqid-communicator';
-import { Group, PreDevice, Machine, DeviceStatus, ConnectionHistory } from './models';
+import { Group, PreDevice, Machine, DeviceStatus, ConnectionHistory, GroupDetails, MachineDetails, DeviceDetails, NodeStatus } from './models';
 import * as Stomp from 'stompjs';
 
 
@@ -51,7 +51,7 @@ export class LiqidObserver {
 
     public fabricTracked: boolean;
 
-    constructor(private liqidIp: string) {
+    constructor(private liqidIp: string, public systemName: string = '') {
         this.liqidComm = new LiqidCommunicator(liqidIp);
         this.wsUrl = `ws://${liqidIp}:8080/liqidui/event`;
         this.busyState = false;
@@ -352,6 +352,105 @@ export class LiqidObserver {
         }
     }
 
+    private async fetchNodeStatus(id: number): Promise<NodeStatus> {
+        try {
+            if (!this.machines.hasOwnProperty(id)) return null;
+            let mach = this.machines[id];
+            let nodeStatus: NodeStatus = await this.liqidComm.getNodeStatusByIds(this.fabricId, mach.grp_id, mach.mach_id, mach.mach_name);
+            return nodeStatus;
+        }
+        catch (err) {
+            throw new Error(err);
+        }
+    }
+
+    public async fetchDeviceDetails(id: string): Promise<DeviceDetails> {
+        try {
+            if (this.deviceStatuses.hasOwnProperty(id)) {
+                return await this.liqidComm.getDeviceDetails(this.deviceStatuses[id]);
+            }
+            else {
+                let err: LiqidError = {
+                    code: 404,
+                    origin: 'observer',
+                    description: `Device ${id} does not exist.`
+                }
+                throw err;
+            }
+        }
+        catch (err) {
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                let err: LiqidError = {
+                    code: 500,
+                    origin: 'observer',
+                    description: 'Undocumented error occurred in getting device details.'
+                }
+                throw err;
+            }
+        }
+    }
+
+    public async fetchMachineDetails(id: number): Promise<MachineDetails> {
+        try {
+            if (this.machines.hasOwnProperty(id)) {
+                return await this.liqidComm.getMachineDetails(id);
+            }
+            else {
+                let err: LiqidError = {
+                    code: 404,
+                    origin: 'observer',
+                    description: `Machine ${id} does not exist.`
+                }
+                throw err;
+            }
+        }
+        catch (err) {
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                let error: LiqidError = {
+                    code: 500,
+                    origin: 'observer',
+                    description: 'Undocumented error occurred in getting machine details.'
+                }
+                throw error;
+            }
+        }
+    }
+
+    public async fetchGroupDetails(id: number): Promise<GroupDetails> {
+        try {
+            if (this.machines.hasOwnProperty(id)) {
+                return await this.liqidComm.getGroupDetails(id);
+            }
+            else {
+                let err: LiqidError = {
+                    code: 404,
+                    origin: 'observer',
+                    description: `Group ${id} does not exist.`
+                }
+                throw err;
+            }
+        }
+        catch (err) {
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                let error: LiqidError = {
+                    code: 500,
+                    origin: 'observer',
+                    description: 'Undocumented error occurred in getting group details.'
+                }
+                throw error;
+            }
+        }
+    }
+
     /**
      * Get groups
      * @return {{ [key: string]: Group }}   Group mapping with id as key
@@ -521,6 +620,18 @@ export class LiqidObserver {
         return false;
     }
 
+    private checkIsProperSpecification(arr: string[]): boolean {
+        let map = {};
+        for (let i = 0; i < arr.length; i++) {
+            if (typeof arr[i] != 'string')
+                return false;
+            else if (map.hasOwnProperty(arr[i]))
+                return false;
+            map[arr[i]] = true;
+        }
+        return true;
+    }
+
     /**
      * Primarily for the controller. Used to select the devices that will be used to compose a machine
      * @param {GatheringDevStatsOptions} options    Options for what devices to be gathered
@@ -536,6 +647,14 @@ export class LiqidObserver {
             if (typeof options.cpu === 'number') {
                 options.cpu = (options.cpu < 0) ? 0 : Math.floor(options.cpu);
                 let deviceNames = Object.keys(deviceStats.cpu);
+                if (deviceNames.length > 1) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'CPU count can not be more than 1.'
+                    }
+                    throw err;
+                }
                 if (deviceNames.length < options.cpu) {
                     let err: LiqidError = {
                         code: 422,
@@ -569,6 +688,22 @@ export class LiqidObserver {
                 }
             }
             else if (Array.isArray(options.cpu)) {
+                if (options.cpu.length > 1) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'CPU specification should have no more than 1.'
+                    }
+                    throw err;
+                }
+                if (!this.checkIsProperSpecification(options.cpu)) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'CPU specification either contains duplicates or non string elements.'
+                    }
+                    throw err;
+                }
                 for (let i = 0; i < options.cpu.length; i++) {
                     if (deviceStats.cpu.hasOwnProperty(options.cpu[i])) {
                         if (options.gatherUnused) {
@@ -659,6 +794,14 @@ export class LiqidObserver {
                 }
             }
             else if (Array.isArray(options.gpu)) {
+                if (!this.checkIsProperSpecification(options.gpu)) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'GPU specification either contains duplicates or non string elements.'
+                    }
+                    throw err;
+                }
                 for (let i = 0; i < options.gpu.length; i++) {
                     if (deviceStats.gpu.hasOwnProperty(options.gpu[i])) {
                         if (options.gatherUnused) {
@@ -732,6 +875,14 @@ export class LiqidObserver {
                 }
             }
             else if (Array.isArray(options.ssd)) {
+                if (!this.checkIsProperSpecification(options.ssd)) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'SSD specification either contains duplicates or non string elements.'
+                    }
+                    throw err;
+                }
                 for (let i = 0; i < options.ssd.length; i++) {
                     if (deviceStats.ssd.hasOwnProperty(options.ssd[i])) {
                         if (options.gatherUnused) {
@@ -805,6 +956,14 @@ export class LiqidObserver {
                 }
             }
             else if (Array.isArray(options.optane)) {
+                if (!this.checkIsProperSpecification(options.optane)) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'Optane device specification either contains duplicates or non string elements.'
+                    }
+                    throw err;
+                }
                 for (let i = 0; i < options.optane.length; i++) {
                     if (deviceStats.optane.hasOwnProperty(options.optane[i])) {
                         if (options.gatherUnused) {
@@ -878,6 +1037,14 @@ export class LiqidObserver {
                 }
             }
             else if (Array.isArray(options.nic)) {
+                if (!this.checkIsProperSpecification(options.nic)) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'NIC specification either contains duplicates or non string elements.'
+                    }
+                    throw err;
+                }
                 for (let i = 0; i < options.nic.length; i++) {
                     if (deviceStats.nic.hasOwnProperty(options.nic[i])) {
                         if (options.gatherUnused) {
@@ -951,6 +1118,14 @@ export class LiqidObserver {
                 }
             }
             else if (Array.isArray(options.fpga)) {
+                if (!this.checkIsProperSpecification(options.fpga)) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'observer',
+                        description: 'FPGA specification either contains duplicates or non string elements.'
+                    }
+                    throw err;
+                }
                 for (let i = 0; i < options.fpga.length; i++) {
                     if (deviceStats.fpga.hasOwnProperty(options.fpga[i])) {
                         if (options.gatherUnused) {

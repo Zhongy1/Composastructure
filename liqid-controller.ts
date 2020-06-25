@@ -31,7 +31,7 @@ export class LiqidController {
     private ready: boolean;
     private busy: boolean;
 
-    constructor(private liqidIp: string) {
+    constructor(private liqidIp: string, public systemName: string = '') {
         this.liqidComm = new LiqidCommunicator(liqidIp);
         this.liqidObs = new LiqidObserver(liqidIp);
         this.ready = false;
@@ -634,6 +634,7 @@ export class LiqidController {
                 let deviceStatuses = this.liqidObs.convertHistToDevStatuses(machine.connection_history);
                 await this.liqidComm.deleteMachine(machine.mach_id);
                 //move devices out of group...
+                if (deviceStatuses.length == 0) return machine;
                 let grpPool: GroupPool = {
                     coordinates: deviceStatuses[0].location,
                     grp_id: machine.grp_id,

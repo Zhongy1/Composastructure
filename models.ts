@@ -284,7 +284,8 @@ export interface Machine {
     mtime?: number,
     p2p?: P2PStatus,
     port_gid?: string,
-    swit_gid?: string
+    swit_gid?: string,
+    status?: Run //not originally part of Liqid's model
 }
 export interface MachineAssembly {
     assemblyTimestamp: AssemblyTimestamp
@@ -389,7 +390,7 @@ export interface NodeStatus {
     links: number,
     location: LiqidCoordinates,
     os_type: OSType,
-    run: Run,
+    run: Run, //determines if machine is on/off?
     sw_vers: number,
     targs: number,
     uptime: string
@@ -501,6 +502,7 @@ export interface Version {
 
 }
 
+// For request parameters
 
 export interface PredeviceParams {
     mach_id?: number | string,
@@ -509,4 +511,56 @@ export interface PredeviceParams {
 }
 export interface DeviceStatusParams {
 
+}
+
+
+
+//** Special cases / Undocumented models
+export interface DeviceDetails {
+    index: number,
+    name: string,
+    flags: string,
+    unique: string,
+    location: LiqidCoordinates,
+    owner: LiqidCoordinates,
+    busgen: string,
+    buswidth: string,
+    vendor: string,
+    model: string,
+    family: string,
+    device_type: string,
+    device_state: string,
+    fabric_type: string,
+    dev_id: string,
+    sled_id: string,
+    fabr_gid: string,
+    pod_id: number,
+    pci_vendor: string,
+    pci_device: string,
+    udesc: string,
+    part_num: string,
+    class: string,
+    serial_num: string,
+    fw_rev: string
+}
+export interface CpuDetails extends DeviceDetails {
+    core_cnt: number,
+    core_mhz: number,
+    thrd_cnt: number,
+    dram_sz: number,
+    inst_set: string,
+    socket: string
+}
+export interface GpuDetails extends DeviceDetails {
+    core_cnt: string,
+    core_speed: string,
+    cache_size: string,
+    dram_size: string,
+    dram_type: string
+}
+export interface SsdDetails extends DeviceDetails {
+    capacity: string
+}
+export interface NicDetails extends DeviceDetails {
+    link_speed: string
 }

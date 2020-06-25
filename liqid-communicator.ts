@@ -22,7 +22,8 @@ import {
     GroupDeviceRelator,
     GroupDetails,
     ManageableIpmiAddress,
-    ManageableDevice
+    ManageableDevice,
+    DeviceDetails
 } from './models';
 
 export interface LiqidError {
@@ -643,7 +644,8 @@ export class LiqidCommunicator {
     }
 
     //Node Configuration Controller
-
+    //GET '/node/config' Endpoint for displaying the default Liqid configuration. The configuration returned by this endpoint is filtered to remove any configuration entries which are not editable.
+    //POST '/node/config' Endpoint for updating the system node configuration.
 
     //Node Status Controller
     //GET '/node/status' Report all available nodes.
@@ -663,7 +665,7 @@ export class LiqidCommunicator {
             axios.get(this.liqidUri + '/node/status/bound', {
                 params: {
                     fabr_id: fid,
-                    cluster_id: cid,
+                    group_id: cid,
                     mach_id: mid,
                     mach_name: mname
                 }
@@ -819,4 +821,35 @@ export class LiqidCommunicator {
     //Version Controller
     //GET '/version' List all available versions.
 
+
+
+    //** Special cases / Undocumented endpoints **
+    public getDeviceDetails(device: DeviceStatus): Promise<DeviceDetails> {
+        let endpoint = this.liqidUri + '/system/device/info';
+        switch (device.type) {
+            case 'ComputeDeviceStatus':
+                endpoint += '/cpu/' + device.name;
+                break;
+            case 'GpuDeviceStatus':
+                endpoint += '/gpu/' + device.name;
+                break;
+            case 'SsdDeviceStatus':
+                endpoint += '/ssd/' + device.name;
+                break;
+            case 'LinkDeviceStatus':
+                endpoint += '/link/' + device.name;
+                break;
+            case 'FpgaDeviceStatus':
+                endpoint += '/fpga/' + device.name;
+                break;
+        }
+        return new Promise<DeviceDetails>((resolve, reject) => {
+            axios.get(endpoint)
+                .then(res => {
+                    resolve(res.data);
+                }, err => {
+                    reject(err);
+                });
+        });
+    }
 }

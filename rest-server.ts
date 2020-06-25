@@ -14,14 +14,16 @@ import * as helmet from 'helmet';
 import * as morgan from 'morgan';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
-import { Group, Machine, PreDevice, DeviceStatus } from './models';
+import { Group, Machine, PreDevice, DeviceStatus, Run } from './models';
 
 const LocalStrategy = passportLocal.Strategy;
 
 export interface RestServerConfig {
     ips: string[],
+    names: string[],
     hostPort: number,
-    sslCert?: any
+    sslCert?: any,
+    enableGUI?: boolean
 }
 
 export enum DeviceType {
@@ -79,37 +81,39 @@ export interface MainResponse {
 }
 
 export interface MachineInfo {
-    fabrId: string,
+    fabrId: number,
     machId: number,
     mname: string,
     grpId: number,
-    devices: Device[]
+    devices: Device[],
+    status?: Run
 }
 
 export interface GroupInfo {
-    fabrId: string,
+    fabrId: number,
     grpId: number,
     gname: string,
     machines: MachineInfo[]
 }
 
 export interface GroupWrapper {
-    fabrId: string,
+    fabrId: number,
     groups: GroupInfo[]
 }
 
 export interface MachineWrapper {
-    fabrId: string,
+    fabrId: number,
     machines: MachineInfo[]
 }
 
 export interface DeviceWrapper {
-    fabrId: string,
+    fabrId: number,
     devices: Device[]
 }
 
 export interface Overview {
-    fabrIds: string[],
+    fabrIds: number[],
+    names: string[],
     groups: GroupInfo[][],
     devices: Device[][]
 }
@@ -139,6 +143,7 @@ export class RestServer {
     private https: https.Server;
     private io: socketio.Server;
     private ready: boolean;
+    private enableGUI: boolean;
     private socketioStarted: boolean;
 
     constructor(private config: RestServerConfig) {
@@ -167,281 +172,39 @@ export class RestServer {
         });
 
         this.ready = false;
+        this.enableGUI = config.enableGUI;
         this.socketioStarted = false;
     }
 
-    public observerCallback = (fabrId: number): void => {
-        let devicesMap = this.summarizeAllDevices(fabrId);
-        let devices = [];
-        Object.keys(devicesMap).forEach(deviceId => {
-            devices.push(devicesMap[deviceId]);
-        });
-        this.io.sockets.emit('liqid-state-update', { fabrIds: [fabrId.toString()], devices: [devices] });
-        this.io.sockets.emit('fabric-update', this.prepareFabricOverview(fabrId));
-    }
-
-    private prepareFabricOverview = (fabrId?: number): Overview => {
-        var fabrIds = (fabrId) ? [fabrId.toString()] : Object.keys(this.liqidObservers);
-        let overview: Overview = {
-            fabrIds: fabrIds,
-            groups: [],
-            devices: []
-        };
-        for (let i = 0; i < overview.fabrIds.length; i++) {
-            let groups = this.liqidObservers[overview.fabrIds[i]].getGroups();
-            let tempGroups = {};
-            Object.keys(groups).forEach(grpId => {
-                let group: GroupInfo = {
-                    fabrId: fabrIds[i],
-                    grpId: groups[grpId].grp_id,
-                    gname: groups[grpId].group_name,
-                    machines: []
-                }
-                tempGroups[group.grpId] = group;
-                //overview.groups[overview.fabrIds[i]].push(group);
-            });
-            let machines = this.liqidObservers[overview.fabrIds[i]].getMachines();
-            let tempMachines = {};
-            Object.keys(machines).forEach((machId) => {
-                let machine: MachineInfo = {
-                    fabrId: fabrIds[i],
-                    machId: machines[machId].mach_id,
-                    mname: machines[machId].mach_name,
-                    grpId: machines[machId].grp_id,
-                    devices: []
-                }
-                tempMachines[machine.machId] = machine;
-            });
-            let devices = this.summarizeAllDevices(parseInt(overview.fabrIds[i]));
-            overview.devices.push([]);
-            Object.keys(devices).forEach((deviceId) => {
-                overview.devices[i].push(devices[deviceId]);
-                if (devices[deviceId].mach_id)
-                    tempMachines[devices[deviceId].mach_id].devices.push(devices[deviceId]);
-            });
-            Object.keys(tempMachines).forEach(machId => {
-                tempGroups[tempMachines[machId].grpId].machines.push(tempMachines[machId]);
-            });
-            overview.groups.push([]);
-            Object.keys(tempGroups).forEach(grpId => {
-                overview.groups[i].push(tempGroups[grpId]);
-            });
-        }
-        return overview;
-    }
-
-    private prepareGroupInfo(): GroupWrapper[];
-    private prepareGroupInfo(fabrId: number): GroupWrapper;
-    private prepareGroupInfo(fabrId: number, grpId: number): GroupInfo;
-    private prepareGroupInfo(fabrId?: number, grpId?: number) {
-        if (grpId != null) {
-            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
-            let group = this.liqidObservers[fabrId].getGroupById(grpId);
-            if (group == null) return null;
-            let groupInfo: GroupInfo = {
-                fabrId: fabrId.toString(),
-                grpId: group.grp_id,
-                gname: group.group_name,
-                machines: []
+    public async start(): Promise<void> {
+        try {
+            if (this.ready) return;
+            for (let i = 0; i < this.config.ips.length; i++) {
+                let obs = new LiqidObserver(this.config.ips[i], this.config.names[i]);
+                let res = await obs.start();
+                this.liqidObservers[obs.getFabricId()] = obs;
+                let ctrl = new LiqidController(this.config.ips[i], this.config.names[i]);
+                res = await ctrl.start();
+                this.liqidControllers[ctrl.getFabricId()] = ctrl;
             }
-            let machInfos: MachineInfo[] = this.prepareMachineInfo(fabrId).machines;
-            machInfos.forEach(machInfo => {
-                if (machInfo.grpId == grpId) {
-                    groupInfo.machines.push(machInfo);
-                }
-            });
-            return groupInfo;
+            // this.app.listen(this.config.hostPort, () => {
+            //     console.log(`Server running on port ${this.config.hostPort}`);
+            // });
+            this.startSocketIOAndServer();
+            this.setupAuthMiddleware();
+            if (this.enableGUI) this.useGUI();
+            this.initializeCollectionsHandlers();
+            this.initializeLookupHandlers();
+            this.initializeDetailsHandlers();
+            this.initializeControlHandlers();
+            this.ready = true;
         }
-        else if (fabrId != null) {
-            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
-            let groups = this.liqidObservers[fabrId].getGroups();
-            let grpInfos: GroupInfo[] = [];
-            let machInfos: MachineInfo[] = this.prepareMachineInfo(fabrId).machines;
-            let tempGrpInfoMap: { [key: string]: GroupInfo } = {};
-            Object.keys(groups).forEach(grpId => {
-                let grpInfo: GroupInfo = {
-                    fabrId: fabrId.toString(),
-                    grpId: groups[grpId].grp_id,
-                    gname: groups[grpId].group_name,
-                    machines: []
-                }
-                tempGrpInfoMap[grpId] = grpInfo;
-            });
-            machInfos.forEach(machInfo => {
-                if (tempGrpInfoMap.hasOwnProperty(machInfo.grpId)) {
-                    tempGrpInfoMap[machInfo.grpId].machines.push(machInfo);
-                }
-            });
-            Object.keys(tempGrpInfoMap).forEach(grpId => {
-                grpInfos.push(tempGrpInfoMap[grpId]);
-            });
-            let grpWrapper: GroupWrapper = {
-                fabrId: fabrId.toString(),
-                groups: grpInfos
-            }
-            return grpWrapper;
-        }
-        else {
-            let grpWrappers: GroupWrapper[] = [];
-            Object.keys(this.liqidObservers).forEach(fabrId => {
-                let groups = this.liqidObservers[fabrId].getGroups();
-                let grpInfos: GroupInfo[] = [];
-                let machInfos: MachineInfo[] = this.prepareMachineInfo(parseInt(fabrId)).machines;
-                let tempGrpInfoMap: { [key: string]: GroupInfo } = {};
-                Object.keys(groups).forEach(grpId => {
-                    let grpInfo: GroupInfo = {
-                        fabrId: fabrId,
-                        grpId: groups[grpId].grp_id,
-                        gname: groups[grpId].group_name,
-                        machines: []
-                    }
-                    tempGrpInfoMap[grpId] = grpInfo;
-                });
-                machInfos.forEach(machInfo => {
-                    if (tempGrpInfoMap.hasOwnProperty(machInfo.grpId)) {
-                        tempGrpInfoMap[machInfo.grpId].machines.push(machInfo);
-                    }
-                });
-                Object.keys(tempGrpInfoMap).forEach(grpId => {
-                    grpInfos.push(tempGrpInfoMap[grpId]);
-                });
-                let grpWrapper: GroupWrapper = {
-                    fabrId: fabrId.toString(),
-                    groups: grpInfos
-                }
-                grpWrappers.push(grpWrapper);
-            });
-            return grpWrappers;
+        catch (err) {
+            throw new Error('Could not start REST Server');
         }
     }
 
-    private prepareMachineInfo(): MachineWrapper[];
-    private prepareMachineInfo(fabrId: number): MachineWrapper;
-    private prepareMachineInfo(fabrId: number, machId: number): MachineInfo;
-    private prepareMachineInfo(fabrId?: number, machId?: number) {
-        if (machId != null) {
-            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
-            let machine = this.liqidObservers[fabrId].getMachineById(machId);
-            if (machine == null) return null;
-            let machineInfo: MachineInfo = {
-                fabrId: fabrId.toString(),
-                machId: machine.mach_id,
-                mname: machine.mach_name,
-                grpId: machine.grp_id,
-                devices: []
-            }
-            let devices = this.summarizeAllDevices(fabrId);
-            Object.keys(devices).forEach(deviceId => {
-                if (devices[deviceId].mach_id == machine.mach_id) {
-                    machineInfo.devices.push(devices[deviceId]);
-                }
-            });
-            return machineInfo;
-        }
-        else if (fabrId != null) {
-            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
-            let machines = this.liqidObservers[fabrId].getMachines();
-            let machineInfos: MachineInfo[] = [];
-            let devices = this.summarizeAllDevices(fabrId);
-            let tempMachInfoMap: { [key: string]: MachineInfo } = {};
-            Object.keys(machines).forEach(machId => {
-                let machineInfo: MachineInfo = {
-                    fabrId: fabrId.toString(),
-                    machId: machines[machId].mach_id,
-                    mname: machines[machId].mach_name,
-                    grpId: machines[machId].grp_id,
-                    devices: []
-                }
-                tempMachInfoMap[machId] = machineInfo;
-            });
-            Object.keys(devices).forEach(deviceId => {
-                if (devices[deviceId].mach_id && tempMachInfoMap.hasOwnProperty(devices[deviceId].mach_id)) {
-                    tempMachInfoMap[devices[deviceId].mach_id].devices.push(devices[deviceId]);
-                }
-            });
-            Object.keys(tempMachInfoMap).forEach(machId => {
-                machineInfos.push(tempMachInfoMap[machId]);
-            });
-            let machWrapper: MachineWrapper = {
-                fabrId: fabrId.toString(),
-                machines: machineInfos
-            }
-            return machWrapper;
-        }
-        else {
-            let machWrappers: MachineWrapper[] = [];
-            Object.keys(this.liqidObservers).forEach(fabrId => {
-                let machines = this.liqidObservers[fabrId].getMachines();
-                let machineInfos: MachineInfo[] = [];
-                let devices = this.summarizeAllDevices(parseInt(fabrId));
-                let tempMachInfoMap: { [key: string]: MachineInfo } = {};
-                Object.keys(machines).forEach(machId => {
-                    let machineInfo: MachineInfo = {
-                        fabrId: fabrId,
-                        machId: machines[machId].mach_id,
-                        mname: machines[machId].mach_name,
-                        grpId: machines[machId].grp_id,
-                        devices: []
-                    }
-                    tempMachInfoMap[machId] = machineInfo;
-                });
-                Object.keys(devices).forEach(deviceId => {
-                    if (devices[deviceId].mach_id && tempMachInfoMap.hasOwnProperty(devices[deviceId].mach_id)) {
-                        tempMachInfoMap[devices[deviceId].mach_id].devices.push(devices[deviceId]);
-                    }
-                });
-                Object.keys(tempMachInfoMap).forEach(machId => {
-                    machineInfos.push(tempMachInfoMap[machId]);
-                });
-                let machWrapper: MachineWrapper = {
-                    fabrId: fabrId.toString(),
-                    machines: machineInfos
-                }
-                machWrappers.push(machWrapper);
-            });
-            return machWrappers;
-        }
-    }
-
-    private prepareDevices(): DeviceWrapper[];
-    private prepareDevices(fabrId: number): DeviceWrapper;
-    private prepareDevices(fabrId: number, deviceId: string): Device;
-    private prepareDevices(fabrId?: number, deviceId?: string) {
-        if (deviceId != null) {
-            let device: Device = this.summarizeDevice(fabrId, deviceId);
-            return device;
-        }
-        else if (fabrId != null) {
-            let devices = this.summarizeAllDevices(fabrId);
-            let devicesArray: Device[] = [];
-            Object.keys(devices).forEach(deviceId => {
-                devicesArray.push(devices[deviceId]);
-            });
-            let deviceWrapper: DeviceWrapper = {
-                fabrId: fabrId.toString(),
-                devices: devicesArray
-            }
-            return deviceWrapper;
-        }
-        else {
-            let deviceWrappers: DeviceWrapper[] = [];
-            Object.keys(this.liqidObservers).forEach(fabrId => {
-                let devices = this.summarizeAllDevices(parseInt(fabrId));
-                let devicesArray: Device[] = [];
-                Object.keys(devices).forEach(deviceId => {
-                    devicesArray.push(devices[deviceId]);
-                });
-                let deviceWrapper: DeviceWrapper = {
-                    fabrId: fabrId,
-                    devices: devicesArray
-                }
-                deviceWrappers.push(deviceWrapper);
-            });
-            return deviceWrappers;
-        }
-    }
-
-    private startSocketIOAndServer = (): void => {
+    private startSocketIOAndServer(): void {
         if (this.socketioStarted) return;
 
         this.socketioStarted = true;
@@ -527,7 +290,7 @@ export class RestServer {
         });
     }
 
-    private setupAuthMiddleware = () => {
+    private setupAuthMiddleware(): void {
         passport.serializeUser((user: any, done) => {
             done(null, user.id);
         });
@@ -565,17 +328,326 @@ export class RestServer {
             }
         }
 
-        this.app.post('/login', passport.authenticate('local', {
-            successRedirect: '/',
-            failureRedirect: '/login.html'
-        }));
+        if (this.enableGUI) {
+            this.app.post('/login', passport.authenticate('local', {
+                successRedirect: '/overview.html',
+                failureRedirect: '/login.html',
+                successFlash: true,
+                failureFlash: true
+            }));
+        }
+        else {
+            this.app.post('/login', passport.authenticate('local', {
+                successFlash: true,
+                failureFlash: true
+            }));
+        }
 
-        this.app.use(serveStatic(path.resolve(__dirname, '../public')));
-        this.app.use(isLoggedIn, serveStatic(path.resolve(__dirname, '../private')));
+        // this.app.use(serveStatic(path.resolve(__dirname, '../public')));
+        // this.app.use(isLoggedIn, serveStatic(path.resolve(__dirname, '../private')));
         this.app.all('/api', isLoggedIn);
     }
 
-    private initializeCollectionsHandlers = (): void => {
+    private useGUI(): void {
+        var isLoggedIn = (req, res, next) => {
+            if (req.isAuthenticated()) {
+                return next();
+            } else {
+                return res.redirect('/login.html');
+            }
+        }
+        this.app.use(serveStatic(path.resolve(__dirname, '../public')));
+        this.app.use(isLoggedIn, serveStatic(path.resolve(__dirname, '../private')));
+    }
+
+    public useBuiltInGUI(): boolean {
+        if (!this.enableGUI) {
+            this.enableGUI = true;
+            this.useGUI();
+            return true;
+        }
+        return false;
+    }
+
+    public observerCallback(fabrId: number): void {
+        let devicesMap = this.summarizeAllDevices(fabrId);
+        let devices = [];
+        Object.keys(devicesMap).forEach(deviceId => {
+            devices.push(devicesMap[deviceId]);
+        });
+        //this.io.sockets.emit('liqid-state-update', { fabrIds: [fabrId.toString()], devices: [devices] });
+        this.io.sockets.emit('fabric-update', this.prepareFabricOverview(fabrId));
+    }
+
+    private prepareFabricOverview(fabrId?: number): Overview {
+        let fabrIdsTemp: string[] = (fabrId != null) ? [fabrId.toString()] : Object.keys(this.liqidObservers);
+        let fabrIds: number[] = [];
+        let names: string[] = [];
+        for (let i = 0; i < fabrIdsTemp.length; i++) {
+            fabrIds.push(parseInt(fabrIdsTemp[i]));
+            names.push(this.liqidObservers[fabrIdsTemp[i]].systemName);
+        }
+        let overview: Overview = {
+            fabrIds: fabrIds,
+            names: names,
+            groups: [],
+            devices: []
+        };
+        for (let i = 0; i < overview.fabrIds.length; i++) {
+            let groups = this.liqidObservers[overview.fabrIds[i]].getGroups();
+            let tempGroups = {};
+            Object.keys(groups).forEach(grpId => {
+                let group: GroupInfo = {
+                    fabrId: fabrIds[i],
+                    grpId: groups[grpId].grp_id,
+                    gname: groups[grpId].group_name,
+                    machines: []
+                }
+                tempGroups[group.grpId] = group;
+                //overview.groups[overview.fabrIds[i]].push(group);
+            });
+            let machines = this.liqidObservers[overview.fabrIds[i]].getMachines();
+            let tempMachines = {};
+            Object.keys(machines).forEach((machId) => {
+                let machine: MachineInfo = {
+                    fabrId: fabrIds[i],
+                    machId: machines[machId].mach_id,
+                    mname: machines[machId].mach_name,
+                    grpId: machines[machId].grp_id,
+                    devices: []
+                }
+                tempMachines[machine.machId] = machine;
+            });
+            let devices = this.summarizeAllDevices(overview.fabrIds[i]);
+            overview.devices.push([]);
+            Object.keys(devices).forEach((deviceId) => {
+                overview.devices[i].push(devices[deviceId]);
+                if (devices[deviceId].mach_id)
+                    tempMachines[devices[deviceId].mach_id].devices.push(devices[deviceId]);
+            });
+            Object.keys(tempMachines).forEach(machId => {
+                tempGroups[tempMachines[machId].grpId].machines.push(tempMachines[machId]);
+            });
+            overview.groups.push([]);
+            Object.keys(tempGroups).forEach(grpId => {
+                overview.groups[i].push(tempGroups[grpId]);
+            });
+        }
+        return overview;
+    }
+
+    private prepareGroupInfo(): GroupWrapper[];
+    private prepareGroupInfo(fabrId: number): GroupWrapper;
+    private prepareGroupInfo(fabrId: number, grpId: number): GroupInfo;
+    private prepareGroupInfo(fabrId?: number, grpId?: number) {
+        if (grpId != null) {
+            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
+            let group = this.liqidObservers[fabrId].getGroupById(grpId);
+            if (group == null) return null;
+            let groupInfo: GroupInfo = {
+                fabrId: fabrId,
+                grpId: group.grp_id,
+                gname: group.group_name,
+                machines: []
+            }
+            let machInfos: MachineInfo[] = this.prepareMachineInfo(fabrId).machines;
+            machInfos.forEach(machInfo => {
+                if (machInfo.grpId == grpId) {
+                    groupInfo.machines.push(machInfo);
+                }
+            });
+            return groupInfo;
+        }
+        else if (fabrId != null) {
+            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
+            let groups = this.liqidObservers[fabrId].getGroups();
+            let grpInfos: GroupInfo[] = [];
+            let machInfos: MachineInfo[] = this.prepareMachineInfo(fabrId).machines;
+            let tempGrpInfoMap: { [key: string]: GroupInfo } = {};
+            Object.keys(groups).forEach(grpId => {
+                let grpInfo: GroupInfo = {
+                    fabrId: fabrId,
+                    grpId: groups[grpId].grp_id,
+                    gname: groups[grpId].group_name,
+                    machines: []
+                }
+                tempGrpInfoMap[grpId] = grpInfo;
+            });
+            machInfos.forEach(machInfo => {
+                if (tempGrpInfoMap.hasOwnProperty(machInfo.grpId)) {
+                    tempGrpInfoMap[machInfo.grpId].machines.push(machInfo);
+                }
+            });
+            Object.keys(tempGrpInfoMap).forEach(grpId => {
+                grpInfos.push(tempGrpInfoMap[grpId]);
+            });
+            let grpWrapper: GroupWrapper = {
+                fabrId: fabrId,
+                groups: grpInfos
+            }
+            return grpWrapper;
+        }
+        else {
+            let grpWrappers: GroupWrapper[] = [];
+            Object.keys(this.liqidObservers).forEach(fabrId => {
+                let groups = this.liqidObservers[fabrId].getGroups();
+                let grpInfos: GroupInfo[] = [];
+                let machInfos: MachineInfo[] = this.prepareMachineInfo(parseInt(fabrId)).machines;
+                let tempGrpInfoMap: { [key: string]: GroupInfo } = {};
+                Object.keys(groups).forEach(grpId => {
+                    let grpInfo: GroupInfo = {
+                        fabrId: parseInt(fabrId),
+                        grpId: groups[grpId].grp_id,
+                        gname: groups[grpId].group_name,
+                        machines: []
+                    }
+                    tempGrpInfoMap[grpId] = grpInfo;
+                });
+                machInfos.forEach(machInfo => {
+                    if (tempGrpInfoMap.hasOwnProperty(machInfo.grpId)) {
+                        tempGrpInfoMap[machInfo.grpId].machines.push(machInfo);
+                    }
+                });
+                Object.keys(tempGrpInfoMap).forEach(grpId => {
+                    grpInfos.push(tempGrpInfoMap[grpId]);
+                });
+                let grpWrapper: GroupWrapper = {
+                    fabrId: parseInt(fabrId),
+                    groups: grpInfos
+                }
+                grpWrappers.push(grpWrapper);
+            });
+            return grpWrappers;
+        }
+    }
+
+    private prepareMachineInfo(): MachineWrapper[];
+    private prepareMachineInfo(fabrId: number): MachineWrapper;
+    private prepareMachineInfo(fabrId: number, machId: number): MachineInfo;
+    private prepareMachineInfo(fabrId?: number, machId?: number) {
+        if (machId != null) {
+            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
+            let machine = this.liqidObservers[fabrId].getMachineById(machId);
+            if (machine == null) return null;
+            let machineInfo: MachineInfo = {
+                fabrId: fabrId,
+                machId: machine.mach_id,
+                mname: machine.mach_name,
+                grpId: machine.grp_id,
+                devices: []
+            }
+            let devices = this.summarizeAllDevices(fabrId);
+            Object.keys(devices).forEach(deviceId => {
+                if (devices[deviceId].mach_id == machine.mach_id) {
+                    machineInfo.devices.push(devices[deviceId]);
+                }
+            });
+            return machineInfo;
+        }
+        else if (fabrId != null) {
+            if (!this.liqidObservers.hasOwnProperty(fabrId)) return null;
+            let machines = this.liqidObservers[fabrId].getMachines();
+            let machineInfos: MachineInfo[] = [];
+            let devices = this.summarizeAllDevices(fabrId);
+            let tempMachInfoMap: { [key: string]: MachineInfo } = {};
+            Object.keys(machines).forEach(machId => {
+                let machineInfo: MachineInfo = {
+                    fabrId: fabrId,
+                    machId: machines[machId].mach_id,
+                    mname: machines[machId].mach_name,
+                    grpId: machines[machId].grp_id,
+                    devices: []
+                }
+                tempMachInfoMap[machId] = machineInfo;
+            });
+            Object.keys(devices).forEach(deviceId => {
+                if (devices[deviceId].mach_id && tempMachInfoMap.hasOwnProperty(devices[deviceId].mach_id)) {
+                    tempMachInfoMap[devices[deviceId].mach_id].devices.push(devices[deviceId]);
+                }
+            });
+            Object.keys(tempMachInfoMap).forEach(machId => {
+                machineInfos.push(tempMachInfoMap[machId]);
+            });
+            let machWrapper: MachineWrapper = {
+                fabrId: fabrId,
+                machines: machineInfos
+            }
+            return machWrapper;
+        }
+        else {
+            let machWrappers: MachineWrapper[] = [];
+            Object.keys(this.liqidObservers).forEach(fabrId => {
+                let machines = this.liqidObservers[fabrId].getMachines();
+                let machineInfos: MachineInfo[] = [];
+                let devices = this.summarizeAllDevices(parseInt(fabrId));
+                let tempMachInfoMap: { [key: string]: MachineInfo } = {};
+                Object.keys(machines).forEach(machId => {
+                    let machineInfo: MachineInfo = {
+                        fabrId: parseInt(fabrId),
+                        machId: machines[machId].mach_id,
+                        mname: machines[machId].mach_name,
+                        grpId: machines[machId].grp_id,
+                        devices: []
+                    }
+                    tempMachInfoMap[machId] = machineInfo;
+                });
+                Object.keys(devices).forEach(deviceId => {
+                    if (devices[deviceId].mach_id && tempMachInfoMap.hasOwnProperty(devices[deviceId].mach_id)) {
+                        tempMachInfoMap[devices[deviceId].mach_id].devices.push(devices[deviceId]);
+                    }
+                });
+                Object.keys(tempMachInfoMap).forEach(machId => {
+                    machineInfos.push(tempMachInfoMap[machId]);
+                });
+                let machWrapper: MachineWrapper = {
+                    fabrId: parseInt(fabrId),
+                    machines: machineInfos
+                }
+                machWrappers.push(machWrapper);
+            });
+            return machWrappers;
+        }
+    }
+
+    private prepareDevices(): DeviceWrapper[];
+    private prepareDevices(fabrId: number): DeviceWrapper;
+    private prepareDevices(fabrId: number, deviceId: string): Device;
+    private prepareDevices(fabrId?: number, deviceId?: string) {
+        if (deviceId != null) {
+            let device: Device = this.summarizeDevice(fabrId, deviceId);
+            return device;
+        }
+        else if (fabrId != null) {
+            let devices = this.summarizeAllDevices(fabrId);
+            let devicesArray: Device[] = [];
+            Object.keys(devices).forEach(deviceId => {
+                devicesArray.push(devices[deviceId]);
+            });
+            let deviceWrapper: DeviceWrapper = {
+                fabrId: fabrId,
+                devices: devicesArray
+            }
+            return deviceWrapper;
+        }
+        else {
+            let deviceWrappers: DeviceWrapper[] = [];
+            Object.keys(this.liqidObservers).forEach(fabrId => {
+                let devices = this.summarizeAllDevices(parseInt(fabrId));
+                let devicesArray: Device[] = [];
+                Object.keys(devices).forEach(deviceId => {
+                    devicesArray.push(devices[deviceId]);
+                });
+                let deviceWrapper: DeviceWrapper = {
+                    fabrId: parseInt(fabrId),
+                    devices: devicesArray
+                }
+                deviceWrappers.push(deviceWrapper);
+            });
+            return deviceWrappers;
+        }
+    }
+
+    private initializeCollectionsHandlers(): void {
         this.app.get('/api/groups', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             let data: GroupWrapper[] = this.prepareGroupInfo();
@@ -610,7 +682,7 @@ export class RestServer {
         });
     }
 
-    private initializeLookupHandlers = (): void => {
+    private initializeLookupHandlers(): void {
         this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
@@ -681,7 +753,67 @@ export class RestServer {
         });
     }
 
-    private initializeControlHandlers = (): void => {
+    private initializeDetailsHandlers(): void {
+        this.app.get('/api/details/group/fabr_id/id', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/json');
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidObservers.hasOwnProperty(parseInt(req.params.fabr_id))) {
+                this.liqidObservers[req.params.fabr_id].fetchGroupDetails(parseInt(req.params.id))
+                    .then(data => {
+                        res.json(data);
+                    }, err => {
+                        res.status(err.code).json(err);
+                    })
+            }
+            else {
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
+            }
+        });
+        this.app.get('/api/details/machine/fabr_id/id', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/json');
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidObservers.hasOwnProperty(parseInt(req.params.fabr_id))) {
+                this.liqidObservers[req.params.fabr_id].fetchMachineDetails(parseInt(req.params.id))
+                    .then(data => {
+                        res.json(data);
+                    }, err => {
+                        res.status(err.code).json(err);
+                    })
+            }
+            else {
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
+            }
+        });
+        this.app.get('/api/details/device/fabr_id/id', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/json');
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidObservers.hasOwnProperty(parseInt(req.params.fabr_id))) {
+                this.liqidObservers[req.params.fabr_id].fetchDeviceDetails(req.params.id)
+                    .then(data => {
+                        res.json(data);
+                    }, err => {
+                        res.status(err.code).json(err);
+                    })
+            }
+            else {
+                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                res.status(err.code).json(err);
+            }
+        });
+    }
+
+    private initializeControlHandlers(): void {
         this.app.post('/api/group', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (req.body.fabrId == null || req.body.name == null) {
@@ -702,7 +834,12 @@ export class RestServer {
                         let data: GroupInfo = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
                         if (data) {
                             res.json(data);
-                            this.io.sockets.emit('fabric-update', this.prepareFabricOverview(req.body.fabrId));
+                            this.liqidObservers[req.params.fabr_id].refresh()
+                                .then(() => {
+                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                                }, err => {
+                                    console.log('Group creation refresh failed: ' + err);
+                                });
                         }
                         else {
                             let err: BasicError = { code: 500, description: 'Group seems to be created, but final verification failed.' };
@@ -734,7 +871,12 @@ export class RestServer {
                 this.liqidControllers[req.params.fabr_id].deleteGroup(parseInt(req.params.id))
                     .then((group) => {
                         res.json(grpInfo);
-                        this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                        this.liqidObservers[req.params.fabr_id].refresh()
+                            .then(() => {
+                                this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                            }, err => {
+                                console.log('Group deletion refresh failed: ' + err);
+                            });
                     }, err => {
                         let error: BasicError = { code: err.code, description: err.description };
                         res.status(error.code).json(error);
@@ -765,7 +907,12 @@ export class RestServer {
                         let data: MachineInfo = this.prepareMachineInfo(Math.floor(req.body.fabrId), mach.mach_id);
                         if (data) {
                             res.json(data);
-                            this.io.sockets.emit('fabric-update', this.prepareFabricOverview(req.body.fabrId));
+                            this.liqidObservers[req.params.fabr_id].refresh()
+                                .then(() => {
+                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                                }, err => {
+                                    console.log('Machine compose refresh failed: ' + err);
+                                });
                         }
                         else {
                             let err: BasicError = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
@@ -797,7 +944,12 @@ export class RestServer {
                 this.liqidControllers[req.params.fabr_id].decompose(parseInt(req.params.id))
                     .then((machine) => {
                         res.json(machInfo);
-                        this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                        this.liqidObservers[req.params.fabr_id].refresh()
+                            .then(() => {
+                                this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                            }, err => {
+                                console.log('Machine deletion refresh failed: ' + err);
+                            });
                     }, err => {
                         let error: BasicError = { code: err.code, description: err.description };
                         res.status(error.code).json(error);
@@ -811,7 +963,7 @@ export class RestServer {
 
     }
 
-    private summarizeDevice = (fabr_id: number, name: string): Device => {
+    private summarizeDevice(fabr_id: number, name: string): Device {
         let device: Device = {
             id: name,
             type: null,
@@ -929,30 +1081,5 @@ export class RestServer {
             fabric.pools.push(pool);
         });
         return fabric;
-    }
-
-    public start = async (): Promise<void> => {
-        try {
-            for (let i = 0; i < this.config.ips.length; i++) {
-                let obs = new LiqidObserver(this.config.ips[i]);
-                let res = await obs.start();
-                this.liqidObservers[obs.getFabricId()] = obs;
-                let ctrl = new LiqidController(this.config.ips[i]);
-                res = await ctrl.start();
-                this.liqidControllers[ctrl.getFabricId()] = ctrl;
-            }
-            // this.app.listen(this.config.hostPort, () => {
-            //     console.log(`Server running on port ${this.config.hostPort}`);
-            // });
-            this.startSocketIOAndServer();
-            this.setupAuthMiddleware();
-            this.initializeCollectionsHandlers();
-            this.initializeLookupHandlers();
-            this.initializeControlHandlers();
-            this.ready = true;
-        }
-        catch (err) {
-            throw new Error('Could not start REST Server');
-        }
     }
 }
