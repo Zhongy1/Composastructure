@@ -16,6 +16,7 @@ import * as morgan from 'morgan';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus, Run } from './models';
+import { Router } from 'express-serve-static-core';
 
 const LocalStrategy = passportLocal.Strategy;
 
@@ -141,6 +142,7 @@ export class RestServer {
     private liqidObservers: { [key: string]: LiqidObserver };
     private liqidControllers: { [key: string]: LiqidController };
     private app: express.Express;
+    private apiRouter: Router;
     private https: https.Server;
     private io: socketio.Server;
     private ready: boolean;
@@ -152,6 +154,7 @@ export class RestServer {
         this.liqidControllers = {};
 
         this.app = express();
+        this.apiRouter = express.Router();
         this.app.set('port', config.hostPort);
         this.app.use(helmet());
         this.app.use(cors());
@@ -328,28 +331,54 @@ export class RestServer {
             if (req.isAuthenticated()) {
                 return next();
             } else {
-                return res.redirect('/login.html');
+                if (this.enableGUI) {
+                    return res.redirect(401, '/login.html');
+                }
+                else {
+                    return res.status(401).send('Unauthorized');
+                }
             }
         }
 
         if (this.enableGUI) {
-            this.app.post('/login', passport.authenticate('local', {
-                successRedirect: '/overview.html',
-                failureRedirect: '/login.html',
-                successFlash: true,
-                failureFlash: true
-            }));
+            // this.app.post('/login', passport.authenticate('local', {
+            //     successRedirect: '/overview.html',
+            //     failureRedirect: '/login.html'
+            // }));
+            this.app.post('/login', (req, res, next) => {
+                passport.authenticate('local', (err, user, info) => {
+                    if (!user) { return res.redirect(401, '/login.html'); }
+                    req.logIn(user, err => {
+                        if (err) {
+                            console.log(err);
+                            return res.redirect(500, '/login.html');
+                        }
+                        return res.redirect('/overview.html')
+                    });
+                })(req, res, next);
+            });
         }
         else {
-            this.app.post('/login', passport.authenticate('local', {
-                successFlash: true,
-                failureFlash: true
-            }));
+            this.app.post('/login', (req, res, next) => {
+                res.setHeader('Content-Type', 'application/json');
+                passport.authenticate('local', (err, user, info) => {
+                    if (!user) { return res.status(401).json(info) }
+                    req.logIn(user, err => {
+                        if (err) {
+                            console.log(err);
+                            return res.status(500).json(err);
+                        }
+                        return res.json(user);
+                    });
+                })(req, res, next);
+            });
         }
 
         // this.app.use(serveStatic(path.resolve(__dirname, '../public')));
         // this.app.use(isLoggedIn, serveStatic(path.resolve(__dirname, '../private')));
-        this.app.all('/api', isLoggedIn);
+        // this.app.all('/api', isLoggedIn);
+
+        this.app.use('/api', isLoggedIn, this.apiRouter);
     }
 
     private useGUI(): void {
@@ -357,7 +386,12 @@ export class RestServer {
             if (req.isAuthenticated()) {
                 return next();
             } else {
-                return res.redirect('/login.html');
+                if (this.enableGUI) {
+                    return res.redirect(401, '/login.html');
+                }
+                else {
+                    return res.status(401).send('Unauthorized');
+                }
             }
         }
         this.app.use(serveStatic(path.resolve(__dirname, '../public')));
@@ -652,22 +686,22 @@ export class RestServer {
     }
 
     private initializeCollectionsHandlers(): void {
-        this.app.get('/api/groups', (req, res, next) => {
+        this.apiRouter.get('/groups', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             let data: GroupWrapper[] = this.prepareGroupInfo();
             res.json(data);
         });
-        this.app.get('/api/machines', (req, res, next) => {
+        this.apiRouter.get('/machines', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             let data: MachineWrapper[] = this.prepareMachineInfo();
             res.json(data);
         });
-        this.app.get('/api/devices', (req, res, next) => {
+        this.apiRouter.get('/devices', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             let data: DeviceWrapper[] = this.prepareDevices();
             res.json(data);
         });
-        this.app.get('/api/fabrics', (req, res, next) => {
+        this.apiRouter.get('/fabrics', (req, res, next) => {
             // res.setHeader('Content-Type', 'application/json');
             // let response: MainResponse = {
             //     fabrics: []
@@ -687,7 +721,7 @@ export class RestServer {
     }
 
     private initializeLookupHandlers(): void {
-        this.app.get('/api/group/:fabr_id/:id', (req, res, next) => {
+        this.apiRouter.get('/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -711,7 +745,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.app.get('/api/machine/:fabr_id/:id', (req, res, next) => {
+        this.apiRouter.get('/machine/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -735,7 +769,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.app.get('/api/device/:fabr_id/:id', (req, res, next) => {
+        this.apiRouter.get('/device/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -758,7 +792,7 @@ export class RestServer {
     }
 
     private initializeDetailsHandlers(): void {
-        this.app.get('/api/details/group/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/group/fabr_id/id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -777,7 +811,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.app.get('/api/details/machine/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/machine/fabr_id/id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -796,7 +830,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.app.get('/api/details/device/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/device/fabr_id/id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -818,7 +852,7 @@ export class RestServer {
     }
 
     private initializeControlHandlers(): void {
-        this.app.post('/api/group', (req, res, next) => {
+        this.apiRouter.post('/group', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (req.body.fabrId == null || req.body.name == null) {
                 let err: BasicError = { code: 400, description: 'Request body is missing one or more required properties.' };
@@ -860,7 +894,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.app.delete('/api/group/:fabr_id/:id', (req, res, next) => {
+        this.apiRouter.delete('/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -891,7 +925,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.app.post('/api/machine', (req, res, next) => {
+        this.apiRouter.post('/machine', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (req.body.fabrId == null || req.body.name == null) {
                 let err: BasicError = { code: 400, description: 'Request body is missing one or more required properties.' };
@@ -933,7 +967,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.app.delete('/api/machine/:fabr_id/:id', (req, res, next) => {
+        this.apiRouter.delete('/machine/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };

@@ -96,6 +96,7 @@ export declare class RestServer {
     private liqidObservers;
     private liqidControllers;
     private app;
+    private apiRouter;
     private https;
     private io;
     private ready;
