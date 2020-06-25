@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as session from 'express-session';
 import * as passport from 'passport';
 import * as passportLocal from 'passport-local';
+import * as flash from 'connect-flash';
 import * as tls from 'tls';
 import * as cors from 'cors';
 import * as helmet from 'helmet';
@@ -299,7 +300,9 @@ export class RestServer {
                 done(null, { name: 'evlroot', id: 'mainUser' });
             }
         });
-        passport.use(new LocalStrategy((username, password, done) => {
+        passport.use(new LocalStrategy({
+            passReqToCallback: true
+        }, (req, username, password, done) => {
             if (username != 'evlroot') {
                 return done(null, false, { message: 'Incorrect username.' });
             }
@@ -319,6 +322,7 @@ export class RestServer {
         }));
         this.app.use(passport.initialize());
         this.app.use(passport.session());
+        this.app.use(flash());
 
         var isLoggedIn = (req, res, next) => {
             if (req.isAuthenticated()) {

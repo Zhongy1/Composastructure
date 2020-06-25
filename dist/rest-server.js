@@ -18,6 +18,7 @@ const path = require("path");
 const session = require("express-session");
 const passport = require("passport");
 const passportLocal = require("passport-local");
+const flash = require("connect-flash");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -262,7 +263,9 @@ class RestServer {
                 done(null, { name: 'evlroot', id: 'mainUser' });
             }
         });
-        passport.use(new LocalStrategy((username, password, done) => {
+        passport.use(new LocalStrategy({
+            passReqToCallback: true
+        }, (req, username, password, done) => {
             if (username != 'evlroot') {
                 return done(null, false, { message: 'Incorrect username.' });
             }
@@ -281,6 +284,7 @@ class RestServer {
         }));
         this.app.use(passport.initialize());
         this.app.use(passport.session());
+        this.app.use(flash());
         var isLoggedIn = (req, res, next) => {
             if (req.isAuthenticated()) {
                 return next();
