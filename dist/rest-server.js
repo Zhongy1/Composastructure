@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -293,7 +292,7 @@ class RestServer {
             }
             else {
                 if (this.enableGUI) {
-                    return res.redirect(401, '/login.html');
+                    return res.redirect('/login.html');
                 }
                 else {
                     return res.status(401).send('Unauthorized');
@@ -306,14 +305,15 @@ class RestServer {
             //     failureRedirect: '/login.html'
             // }));
             this.app.post('/login', (req, res, next) => {
+                res.setHeader('Content-Type', 'application/json');
                 passport.authenticate('local', (err, user, info) => {
                     if (!user) {
-                        return res.redirect(401, '/login.html');
+                        return res.redirect('/login.html');
                     }
                     req.logIn(user, err => {
                         if (err) {
                             console.log(err);
-                            return res.redirect(500, '/login.html');
+                            return res.status(500).json(err);
                         }
                         return res.redirect('/overview.html');
                     });
@@ -349,7 +349,7 @@ class RestServer {
             }
             else {
                 if (this.enableGUI) {
-                    return res.redirect(401, '/login.html');
+                    return res.redirect('/login.html');
                 }
                 else {
                     return res.status(401).send('Unauthorized');

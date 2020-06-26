@@ -332,7 +332,7 @@ export class RestServer {
                 return next();
             } else {
                 if (this.enableGUI) {
-                    return res.redirect(401, '/login.html');
+                    return res.redirect('/login.html');
                 }
                 else {
                     return res.status(401).send('Unauthorized');
@@ -346,12 +346,13 @@ export class RestServer {
             //     failureRedirect: '/login.html'
             // }));
             this.app.post('/login', (req, res, next) => {
+                res.setHeader('Content-Type', 'application/json');
                 passport.authenticate('local', (err, user, info) => {
-                    if (!user) { return res.redirect(401, '/login.html'); }
+                    if (!user) { return res.redirect('/login.html'); }
                     req.logIn(user, err => {
                         if (err) {
                             console.log(err);
-                            return res.redirect(500, '/login.html');
+                            return res.status(500).json(err);
                         }
                         return res.redirect('/overview.html')
                     });
@@ -387,7 +388,7 @@ export class RestServer {
                 return next();
             } else {
                 if (this.enableGUI) {
-                    return res.redirect(401, '/login.html');
+                    return res.redirect('/login.html');
                 }
                 else {
                     return res.status(401).send('Unauthorized');
