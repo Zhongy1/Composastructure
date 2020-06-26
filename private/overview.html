@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<head>
+    <link href='./style.css' rel='stylesheet' type='text/css'>
+    <script src="/socket.io.js"></script>
+    <script src='/jquery.min.js'></script>
+    <script src='/overview.js'></script>
+</head>
+
+<body>
+    <div class='header'>
+        <div id='fabric-indicator'>Fabrid ID: 123</div>
+        <h1>COMPaaS DLV</h1>
+        <div id='configure'>Configure</div>
+    </div>
+    <div>
+        <div class='side-config'>
+            <div id='main-side-content'>
+                <h3>Fabric Options</h3>
+                <ul>
+                    <li>123</li>
+                    <li>456</li>
+                </ul>
+                <h3>View Options</h3>
+                <ul>
+                    <li>Grouped View</li>
+                    <li>Ungrouped View</li>
+                </ul>
+                <h3>Misc. Options</h3>
+                <ul>
+                    <li>Unassigned Devices</li>
+                    <li>Create New Group</li>
+                    <li>Create New Machine</li>
+                </ul>
+            </div>
+            <div id='side-config-drawer' class='drawer'>
+                <div class='drawer-header'>
+                    <img id='side-config-return' src='images/arrow-left.png' class='icon'></img>
+                    <div id='drawer-header-title'></div>
+                </div>
+                <div id='secondary-side-content' class='drawer-content'></div>
+            </div>
+        </div>
+        <div id='liqid-view' class='unified'>
+            <!-- <div class='card card-group'>
+                <div class='card-group-header'>SomeGroupName</div>
+                <div class='card card-machine green'>
+                    <div class='card-machine-header'>SomeMachineName</div>
+                    <div class='card-machine-textblock-1'>1010101010</div>
+                    <div class='card-machine-textblock-2'>CPUs: 1</div>
+                    <div class='card-machine-textblock-2'>GPUs: 3</div>
+                    <div class='card-machine-textblock-2'>SSDs: 12</div>
+                    <div class='card-machine-textblock-2'>NICs: 1</div>
+                </div>
+                <div class='card card-machine'></div>
+            </div>
+            <div class='card card-group'></div> -->
+            <div class='card card-machine green'>
+                <div class='card-machine-header'>SomeMachineName</div>
+                <div class='card-machine-textblock-1'>1010101010</div>
+                <div class='card-machine-textblock-2'>CPUs: 1</div>
+                <div class='card-machine-textblock-2'>GPUs: 3</div>
+                <div class='card-machine-textblock-2'>SSDs: 12</div>
+                <div class='card-machine-textblock-2'>NICs: 1</div>
+            </div>
+            <div class='card card-machine'></div>
+            <div class='card card-machine'></div>
+            <div class='card card-machine'></div>
+            <div class='card card-machine'></div>
+            <div class='card card-machine'></div>
+            <div class='card card-machine'></div>
+            <div class='card card-machine'></div>
+        </div>
+    </div>
+</body>

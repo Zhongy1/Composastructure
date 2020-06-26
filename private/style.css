@@ -1,0 +1,180 @@
+body {
+    margin: 0px;
+    overflow: hidden;
+}
+h1 {
+    margin: 0px 80px 0px 80px;
+}
+
+.header {
+    width: 100%;
+    height: 100px;
+    background-color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.side-config {
+    float: left;
+    width: 300px;
+    height: calc(100vh - 100px);
+    background-color: #ccc;
+    overflow: hidden;
+    position: relative;
+}
+
+.side-config>#main-side-content {
+    width: 97.5%;
+    height: 97.5%;
+    position: absolute;
+    padding: 2.5%;
+}
+.side-config>.drawer {
+    width: 100%;
+    height: 100%;
+    background-color: #bbb;
+    position: absolute;
+    left: 100%;
+}
+.side-config>.drawer>.drawer-header {
+    background-color: #aaa;
+    width: calc(100% - 10px);
+    height: 30px;
+    padding: 5px;
+}
+.side-config>.drawer>.drawer-header>.icon {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    float: left;
+}
+.side-config>.drawer>.drawer-content {
+    width: calc(100% - 10px);
+    height: calc(100% - 50px);
+    padding: 5px;
+    overflow-wrap: break-word;
+    overflow-y: auto;
+}
+#drawer-header-title {
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 20px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+}
+
+.card {
+    width: 100px;
+    height: 100px;
+    background-color: white;
+    border: 3px solid black;
+    border-radius: 5px;
+    box-shadow: 2px 3px 3px #777;
+    margin: 10px;
+    padding: 10px;
+    display: inline-block;
+    overflow-x: hidden;
+}
+
+.card-group {
+    width: 276px;
+    height: calc(100% - 25px);
+    padding: 0px;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+}
+.card-group::-webkit-scrollbar {
+    display: none;
+}
+
+.card-machine {
+    padding: 0px;
+    width: 250px;
+    height: 100px;
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.card-group-header {
+    height: 35px;
+    width: 100%;
+    padding-top: 5px;
+    background-color: gray;
+    position: sticky;
+    top: 0;
+    text-align: center;
+    font-size: 23px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.card-machine-header {
+    height: 25px;
+    width: 100%;
+    background-color: gray;
+    text-align: center;
+    font-size: 20px;
+    overflow: hidden;
+}
+
+.card-machine-textblock-1 {
+    height: 20px;
+    width: 90%;
+    float: left;
+    font-size: 20px;
+    text-align: center;
+    padding: 2.5px 5% 2.5px 5%;
+}
+.card-machine-textblock-2 {
+    height: 18px;
+    width: 40%;
+    float: left;
+    font-size: 18px;
+    padding: 3.5px 5% 3.5px 5%;
+}
+
+.green {
+    background-color: #88ff88;
+}
+.red {
+    background-color: #ff8888;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+#fabric-indicator {
+    width: 100px;
+    height: 40px;
+    background-color: white;
+}
+
+#configure {
+    width: 100px;
+    height: 40px;
+    background-color: white;
+}
+
+#liqid-view {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    white-space: nowrap;
+    background-color: white;
+    height: calc(100vh - 100px);
+}
+
+.unified {
+    overflow-x: hidden !important;
+    overflow-y: scroll !important;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+
+#liqid-view::-webkit-scrollbar {
+    display: none;
+}

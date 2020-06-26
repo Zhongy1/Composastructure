@@ -1,17 +1,19 @@
 import _ = require('lodash');
-import { LiqidCommunicator } from './liqid-communicator';
+import { LiqidCommunicator, LiqidError } from './liqid-communicator';
 import { LiqidObserver, OrganizedDeviceStatuses } from './liqid-observer';
 import { MachineDeviceRelator, DeviceStatus, Group, Machine, GroupPool, GroupDeviceRelator, PreDevice } from './models';
 
 
 export interface ComposeOptions {
-    cpu: number | string[],
-    gpu: number | string[],
-    ssd: number | string[],
-    nic: number | string[],
-    fpga: number | string[],
+    cpu?: number | string[],
+    gpu?: number | string[],
+    ssd?: number | string[],
+    optane?: number | string[],
+    nic?: number | string[],
+    fpga?: number | string[],
     name: string,
-    groupId?: number | string
+    grpId?: number,
+    fabrId: number
 }
 
 
@@ -29,7 +31,7 @@ export class LiqidController {
     private ready: boolean;
     private busy: boolean;
 
-    constructor(private liqidIp: string) {
+    constructor(private liqidIp: string, public systemName: string = '') {
         this.liqidComm = new LiqidCommunicator(liqidIp);
         this.liqidObs = new LiqidObserver(liqidIp);
         this.ready = false;
@@ -40,7 +42,7 @@ export class LiqidController {
      * Start the controller. This is to confirm that the controller can connect to Liqid system.
      * @return  {Promise<boolean>}   Return true if start is successful, false if controller has already been started
      */
-    public start = async (): Promise<boolean> => {
+    public async start(): Promise<boolean> {
         try {
             if (!this.ready) {
                 let obsStart = await this.liqidObs.start();
@@ -60,7 +62,7 @@ export class LiqidController {
      * Determine the current fabric ID on which this controller is mounted
      * @return  {Promise<number>}    The ID
      */
-    private identifyFabricId = async (): Promise<number> => {
+    private async identifyFabricId(): Promise<number> {
         try {
             return await this.liqidComm.getFabricId();
         }
@@ -69,7 +71,7 @@ export class LiqidController {
         }
     }
 
-    public getFabricId = (): number => {
+    public getFabricId(): number {
         return this.fabricId
     }
 
@@ -78,18 +80,160 @@ export class LiqidController {
      * @param   {string}    name    The name the new group will use
      * @return  {Promise<Group>}    The created group
      */
-    public createGroup = async (name: string): Promise<Group> => {
+    public async createGroup(name: string, ignoreBusy: boolean = false): Promise<Group> {
         try {
-            var group: Group = {
+            if (!this.ready) {
+                let err: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: `Controller for fabric ${this.fabricId} is not ready. Server may be unable to connect to this Liqid system.`
+                }
+                console.log(err);
+                throw err;
+            }
+            if (this.liqidObs.getGroupIdByName(name) != -1) {
+                let err: LiqidError = {
+                    code: 422,
+                    origin: 'controller',
+                    description: 'Use a different group name. The one provided is already in use.'
+                }
+                throw err;
+            }
+            if (!name.match(/^[A-Za-z0-9]+$/)) {
+                let err: LiqidError = {
+                    code: 422,
+                    origin: 'controller',
+                    description: 'Do not use special characters for a group name.'
+                }
+                throw err;
+            }
+            if (!ignoreBusy) {
+                if (this.busy) {
+                    let err: LiqidError = {
+                        code: 503,
+                        origin: 'controller',
+                        description: `Controller for fabric ${this.fabricId} is busy with a previous compose/create request. Please wait a few seconds and retry.`
+                    }
+                    console.log(err);
+                    throw err;
+                }
+                else {
+                    this.busy = true;
+                    this.liqidObs.setBusyState(true);
+                }
+            }
+            let group: Group = {
                 fabr_id: this.fabricId,
                 group_name: name,
                 grp_id: await this.liqidComm.getNextGroupId(),
                 pod_id: -1
             }
-            return await this.liqidComm.createGroup(group);
+            let grp = await this.liqidComm.createGroup(group);
+
+            if (!ignoreBusy) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
+
+            await this.liqidObs.refresh();
+
+            return grp;
         }
         catch (err) {
-            throw new Error('Unable to create group with name ' + name + '.');
+            if (!ignoreBusy && (err.code == null || err.code != 503)) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                console.log(err);
+                let error: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: 'Undocumented error occurred in group creation.'
+                }
+                throw error;
+            }
+        }
+    }
+
+    /**
+     * Delete a group/pool
+     * @param   {number}    id      The id of the group to be deleted
+     * @return  {Promise<Group>}    The deleted group
+     */
+    public async deleteGroup(id: number): Promise<Group> {
+        try {
+            if (!this.ready) {
+                let err: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: `Controller for fabric ${this.fabricId} is not ready. Server may be unable to connect to this Liqid system.`
+                }
+                console.log(err);
+                throw err;
+            }
+            if (this.busy) {
+                let err: LiqidError = {
+                    code: 503,
+                    origin: 'controller',
+                    description: `Controller for fabric ${this.fabricId} is busy with a previous compose/create request. Please wait a few seconds and retry.`
+                }
+                console.log(err);
+                throw err;
+            }
+            if (this.liqidObs.getGroupById(id)) {
+                this.busy = true;
+                this.liqidObs.setBusyState(true);
+
+                await this.liqidObs.refresh();
+
+                if (!this.liqidObs.checkGroupIsEmpty(id)) {
+                    let err: LiqidError = {
+                        code: 422,
+                        origin: 'controller',
+                        description: `Group ${id} is not empty. Ensure all machines are removed from this group first.`
+                    }
+                    throw err;
+                }
+
+                let grp: Group = await this.liqidComm.deleteGroup(id);
+
+                await this.liqidObs.refresh();
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+
+                return grp;
+            }
+            else {
+                let err: LiqidError = {
+                    code: 404,
+                    origin: 'controller',
+                    description: `Group ${id} does not exist.`
+                }
+                throw err;
+            }
+        }
+        catch (err) {
+            if (err.code == null || err.code != 503) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
+
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                console.log(err);
+                let error: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: 'Undocumented error occurred in group deletion.'
+                }
+                throw error;
+            }
         }
     }
 
@@ -98,34 +242,85 @@ export class LiqidController {
      * @param {ComposeOptions} options  Specify parts needed either by name or by how many
      * @return {Machine}                Machine object, returned from Liqid
      */
-    public compose = async (options: ComposeOptions): Promise<Machine> => {
-        let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
+    public async compose(options: ComposeOptions): Promise<Machine> {
+        function delay(time) {
+            return new Promise(resolve => { setTimeout(() => resolve(''), time); });
+        }
         try {
-            if (!this.ready)
-                throw new Error('Controller Error: Controller has not started.');
+            if (!this.ready) {
+                let err: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: `Controller for fabric ${options.fabrId} is not ready. Server may be unable to connect to this Liqid system.`
+                }
+                console.log(err);
+                throw err;
+            }
 
             await this.liqidObs.refresh();
 
-            if (this.busy)
-                throw new Error('Controller Busy Error: A compose task is currently running.')
-            else
-                this.busy = true;
-
-            //determine group
-            if (options.groupId) {
-                var group = this.liqidObs.getGroupById(options.groupId);
-                if (!group)
-                    throw new Error(`Group Assignment Error: The group with id ${options.groupId} does not exist.`)
+            if (this.busy) {
+                let err: LiqidError = {
+                    code: 503,
+                    origin: 'controller',
+                    description: `Controller for fabric ${options.fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry.`
+                }
+                console.log(err);
+                throw err;
             }
             else {
-                var group = this.liqidObs.getGroupById();
-                if (!group)
-                    throw new Error('Group Assignment Error: There are currently no available groups (You should create one first).')
+                this.busy = true;
+                this.liqidObs.setBusyState(true);
+            }
+
+            //determine group
+            if (options.grpId) {
+                if (typeof options.grpId !== 'number') {
+                    let err: LiqidError = {
+                        code: 400,
+                        origin: 'controller',
+                        description: 'grpId has to be a number.'
+                    }
+                    throw err;
+                }
+                var group = this.liqidObs.getGroupById(options.grpId);
+                if (!group) {
+                    let err: LiqidError = {
+                        code: 404,
+                        origin: 'controller',
+                        description: `Group ${options.grpId} does not exist.`
+                    }
+                    throw err;
+                }
+            }
+            else {
+                let grpId = this.liqidObs.getGroupIdByName('UngroupedGroup');
+                if (grpId > 0)
+                    var group = this.liqidObs.getGroupById(grpId);
+                else {
+                    var group = await this.createGroup('UngroupedGroup', true);
+                    await this.liqidObs.refresh();
+                }
             }
 
             //check machine name
             if (this.liqidObs.checkMachNameExists(options.name)) {
-                throw new Error('Machine Name Error: The given machine name is already in use.')
+                let err: LiqidError = {
+                    code: 422,
+                    origin: 'controller',
+                    description: 'The given machine name is already in use.'
+                }
+                throw err;
+            }
+
+            //check machine name is only letters
+            if (!options.name.match(/^[A-Za-z]+$/)) {
+                let err: LiqidError = {
+                    code: 422,
+                    origin: 'controller',
+                    description: 'Do not use special characters for a machine name.'
+                }
+                throw err;
             }
 
             //grab all current devices
@@ -133,10 +328,22 @@ export class LiqidController {
                 cpu: options.cpu,
                 gpu: options.gpu,
                 ssd: options.ssd,
+                optane: options.optane,
                 nic: options.nic,
                 fpga: options.fpga,
                 gatherUnused: true
             });
+
+            //ensure there is at least one device
+            if (deviceStatuses.length == 0) {
+                let err: LiqidError = {
+                    code: 422,
+                    origin: 'controller',
+                    description: 'Machine specification must have at least one device.'
+                }
+                throw err;
+            }
+
             //move all devices to machine's group
             await this.moveDevicesToGroup(deviceStatuses, group.grp_id);
 
@@ -168,18 +375,39 @@ export class LiqidController {
             if (!assembleSuccessful) {
                 await this.liqidComm.deleteMachine(machineId);
                 delay(1000);
-                throw new Error('Move Device To Machine Error: One or more devices were not properly moved to new machine. Removing Machine.');
+                let err: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: 'One or more requested devices did not get assigned properly. Aborting compose!'
+                }
+                console.log(err);
+                throw err;
             }
 
-            this.busy = false;
             await this.liqidObs.refresh();
+            this.busy = false;
+            this.liqidObs.setBusyState(false);
             return this.liqidObs.getMachineById(machine.mach_id);
         }
         catch (err) {
-            this.busy = false;
+            if (err.code == null || err.code != 503) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
             // if (poolEditMode) this.liqidComm.cancelPoolEdit();
             // if (fabricEditMode) this.liqidComm.cancelFabricEdit();
-            throw new Error(err + ' Aborting Compose!');
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                console.log(err);
+                let error: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: 'Undocumented error occurred in composing machine.'
+                }
+                throw error;
+            }
         }
     }
 
@@ -189,8 +417,10 @@ export class LiqidController {
      * @param {DeviceStatus[]}  devices Array of devices that will be moved
      * @param {number}          grpId   gid/cid: The target group's ID
      */
-    public moveDevicesToGroup = async (devices: DeviceStatus[], grpId: number): Promise<void> => {
-        let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
+    public async moveDevicesToGroup(devices: DeviceStatus[], grpId: number): Promise<void> {
+        function delay(time) {
+            return new Promise(resolve => { setTimeout(() => resolve(''), time); });
+        }
         try {
             if (devices.length == 0) return;
             await this.liqidObs.refresh();
@@ -300,7 +530,7 @@ export class LiqidController {
             // for (let i = 0; i < grpIds.length; i++) {
             //     await this.liqidComm.cancelPoolEdit(grpsInEditMode[grpIds[i]]);
             // }
-            throw new Error(err);
+            throw err;
         }
     }
 
@@ -310,11 +540,12 @@ export class LiqidController {
      * @param {DeviceStatus[]}  devices Array of devices that will be moved
      * @param {number}          machId  mach_id: The target machine's ID
      */
-    public moveDevicesToMachine = async (devices: DeviceStatus[], machId: number): Promise<void> => {
-        let delay = (time) => { return new Promise((resolve) => { setTimeout(() => resolve(''), time) }) };
+    public async moveDevicesToMachine(devices: DeviceStatus[], machId: number): Promise<void> {
+        function delay(time) {
+            return new Promise(resolve => { setTimeout(() => resolve(''), time); });
+        }
         try {
             if (devices.length == 0) return;
-            this.liqidObs.setBusyState(true);
             await this.liqidObs.refresh();
             //gather all neccessary pieces and enter fabric edit mode
             var machine: Machine = this.liqidObs.getMachineById(machId);
@@ -365,11 +596,108 @@ export class LiqidController {
             }
             await this.liqidObs.refresh();
             await this.liqidComm.reprogramFabric(machine);
-            this.liqidObs.setBusyState(false);
         }
         catch (err) {
-            this.liqidObs.setBusyState(false);
-            throw new Error(err);
+            throw err;
+        }
+    }
+
+    /**
+     * Decompose a machine and return devices to fabric layer
+     * @param {Machine} machine The machine to be decomposed
+     */
+    public async decompose(id: number): Promise<Machine> {
+        try {
+            if (!this.ready) {
+                let err: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: `Controller for fabric ${this.fabricId} is not ready. Server may be unable to connect to this Liqid system.`
+                }
+                console.log(err);
+                throw err;
+            }
+            if (this.busy) {
+                let err: LiqidError = {
+                    code: 503,
+                    origin: 'controller',
+                    description: `Controller for fabric ${this.fabricId} is busy with a previous compose/create request. Please wait a few seconds and retry.`
+                }
+                console.log(err);
+                throw err;
+            }
+
+            let machine = this.liqidObs.getMachineById(id);
+            if (machine) {
+                this.busy = true;
+                this.liqidObs.setBusyState(true);
+                let deviceStatuses = this.liqidObs.convertHistToDevStatuses(machine.connection_history);
+                await this.liqidComm.deleteMachine(machine.mach_id);
+                //move devices out of group...
+                if (deviceStatuses.length == 0) return machine;
+                let grpPool: GroupPool = {
+                    coordinates: deviceStatuses[0].location,
+                    grp_id: machine.grp_id,
+                    fabr_id: machine.fabr_id
+                }
+                await this.liqidComm.enterPoolEditMode(grpPool);
+                for (let i = 0; i < deviceStatuses.length; i++) {
+                    let groupDeviceRelator: GroupDeviceRelator = {
+                        deviceStatus: deviceStatuses[i],
+                        group: await this.liqidObs.getGroupById(grpPool.grp_id)
+                    };
+                    switch (deviceStatuses[i].type) {
+                        case 'ComputeDeviceStatus':
+                            await this.liqidComm.removeCpuFromPool(groupDeviceRelator);
+                            break;
+                        case 'GpuDeviceStatus':
+                            await this.liqidComm.removeGpuFromPool(groupDeviceRelator);
+                            break;
+                        case 'SsdDeviceStatus':
+                            await this.liqidComm.removeStorageFromPool(groupDeviceRelator);
+                            break;
+                        case 'LinkDeviceStatus':
+                            await this.liqidComm.removeNetCardFromPool(groupDeviceRelator);
+                            break;
+                        case 'FpgaDeviceStatus':
+                            await this.liqidComm.removeFpgaFromPool(groupDeviceRelator);
+                            break;
+                    }
+                }
+                await this.liqidComm.savePoolEdit(grpPool);
+                this.liqidObs.refresh();
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+
+                return machine;
+            }
+            else {
+                let err: LiqidError = {
+                    code: 404,
+                    origin: 'controller',
+                    description: `Machine ${id} does not exist.`
+                }
+                throw err;
+            }
+        }
+        catch (err) {
+            if (err.code == null || err.code != 503) {
+                this.busy = false;
+                this.liqidObs.setBusyState(false);
+            }
+
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                console.log(err);
+                let error: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: 'Undocumented error occurred in machine deletion.'
+                }
+                throw error;
+            }
         }
     }
 
@@ -377,7 +705,7 @@ export class LiqidController {
      * Decompose a machine
      * @param {Machine} machine The machine to be decomposed
      */
-    public decompose = async (machine: Machine): Promise<void> => {
+    public async decomposeBasic(machine: Machine): Promise<void> {
         try {
             if (machine)
                 await this.liqidComm.deleteMachine(machine.mach_id);
