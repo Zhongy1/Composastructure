@@ -25,15 +25,15 @@ const morgan = require("morgan");
 const liqid_observer_1 = require("./liqid-observer");
 const liqid_controller_1 = require("./liqid-controller");
 const LocalStrategy = passportLocal.Strategy;
-var DeviceType;
-(function (DeviceType) {
-    DeviceType["cpu"] = "cpu";
-    DeviceType["gpu"] = "gpu";
-    DeviceType["ssd"] = "ssd";
-    DeviceType["nic"] = "nic";
-    DeviceType["optane"] = "optane";
-    DeviceType["fpga"] = "fpga";
-})(DeviceType = exports.DeviceType || (exports.DeviceType = {}));
+var MachineDeviceType;
+(function (MachineDeviceType) {
+    MachineDeviceType["cpu"] = "cpu";
+    MachineDeviceType["gpu"] = "gpu";
+    MachineDeviceType["ssd"] = "ssd";
+    MachineDeviceType["nic"] = "nic";
+    MachineDeviceType["optane"] = "optane";
+    MachineDeviceType["fpga"] = "fpga";
+})(MachineDeviceType = exports.MachineDeviceType || (exports.MachineDeviceType = {}));
 // export interface SuccessResponse<T> {
 //     code: number,
 //     description: string,
@@ -134,6 +134,7 @@ class RestServer {
                 rejectUnauthorized: true,
                 honorCipherOrder: true
             }, this.app);
+        this.adminLogin = (config.adminLogin) ? config.adminLogin : { username: 'admin', password: 'compose' };
         this.io = socketio(this.https, {
             pingTimeout: 600000
         });
@@ -146,11 +147,11 @@ class RestServer {
             try {
                 if (this.ready)
                     return;
-                for (let i = 0; i < this.config.ips.length; i++) {
-                    let obs = new liqid_observer_1.LiqidObserver(this.config.ips[i], this.config.names[i]);
+                for (let i = 0; i < this.config.liqidSystems.length; i++) {
+                    let obs = new liqid_observer_1.LiqidObserver(this.config.liqidSystems[i].ip, this.config.liqidSystems[i].name);
                     let res = yield obs.start();
                     this.liqidObservers[obs.getFabricId()] = obs;
-                    let ctrl = new liqid_controller_1.LiqidController(this.config.ips[i], this.config.names[i]);
+                    let ctrl = new liqid_controller_1.LiqidController(this.config.liqidSystems[i].ip, this.config.liqidSystems[i].name);
                     res = yield ctrl.start();
                     this.liqidControllers[ctrl.getFabricId()] = ctrl;
                 }
@@ -177,7 +178,7 @@ class RestServer {
             return;
         this.socketioStarted = true;
         this.https.listen(this.config.hostPort, () => {
-            console.log(`listening on *:${this.config.hostPort}`);
+            //console.log(`listening on *:${this.config.hostPort}`);
         });
         this.io.on('connection', (socket) => {
             socket.emit('init-config', { fabrIds: Object.keys(this.liqidObservers) });
@@ -261,16 +262,16 @@ class RestServer {
         });
         passport.deserializeUser((id, done) => {
             if (id == 'mainUser') {
-                done(null, { name: 'evlroot', id: 'mainUser' });
+                done(null, { name: this.adminLogin.username, id: 'mainUser' });
             }
         });
         passport.use(new LocalStrategy({
             passReqToCallback: true
         }, (req, username, password, done) => {
-            if (username != 'evlroot') {
+            if (username != this.adminLogin.username) {
                 return done(null, false, { message: 'Incorrect username.' });
             }
-            if (password != 'getaccess[asdjkl90-]') {
+            if (password != this.adminLogin.password) {
                 return done(null, false, { message: 'Incorrect password.' });
             }
             return done(null, { name: username, id: 'mainUser' });
@@ -965,23 +966,23 @@ class RestServer {
             return null;
         switch (deviceStatus.type) {
             case 'ComputeDeviceStatus':
-                device.type = DeviceType.cpu;
+                device.type = MachineDeviceType.cpu;
                 device.ipmi = this.liqidObservers[fabr_id].getIpmiAddressByName(name);
                 break;
             case 'GpuDeviceStatus':
-                device.type = DeviceType.gpu;
+                device.type = MachineDeviceType.gpu;
                 break;
             case 'SsdDeviceStatus':
                 if (deviceStatus.name.indexOf('ssd') >= 0)
-                    device.type = DeviceType.ssd;
+                    device.type = MachineDeviceType.ssd;
                 else
-                    device.type = DeviceType.optane;
+                    device.type = MachineDeviceType.optane;
                 break;
             case 'LinkDeviceStatus':
-                device.type = DeviceType.nic;
+                device.type = MachineDeviceType.nic;
                 break;
             case 'FpgaDeviceStatus':
-                device.type = DeviceType.fpga;
+                device.type = MachineDeviceType.fpga;
                 break;
         }
         device.lanes = deviceStatus.lanes;

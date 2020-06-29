@@ -56,7 +56,36 @@ interface RestServerConfig {
 
 This use case is similar to how Liqid does it: exposed API with browser GUI available for interfacing with the system. Currently the GUI is still work in progress, but you can still access it and get a visual of what the Liqid system(s) looks like. This section will focus on how to run and use the GUI. Fow how to use the REST endpoints, refer to the next section.
 
+```typescript
+// server.ts
+import * as fs from 'fs';
+import * as path from 'path';
+import { RestServerConfig, RestServer } from 'Composastructure';
 
+var config: RestServerConfig = {
+    liqidSystems: [{
+                ip: '10.0.100.125',
+                name: 'DevKit'
+        }],
+        hostPort: 3000,
+        enableGUI: true,
+        sslCert: {
+                privateKey: fs.readFileSync(path.join("keys", "_.evl.uic.edu.key"), 'utf8'),
+                certificate: fs.readFileSync(path.join("keys", "_.evl.uic.edu.crt"), 'utf8'),
+                ca: fs.readFileSync(path.join("keys", "_.evl.uic.edu-ca.crt"), 'utf8')
+        },
+        adminLogin: {
+                username: 'admin',
+                password: 'compose'
+        }
+}
+
+var Server = new RestServer(config);
+
+Server.start().then(() => {
+        console.log('Server started successfully');
+});
+```
 
 ### 1.2: REST API without built in browser GUI
 

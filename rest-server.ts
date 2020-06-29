@@ -38,7 +38,7 @@ export interface RestServerConfig {
     }
 }
 
-export enum DeviceType {
+export enum MachineDeviceType {
     cpu = 'cpu',
     gpu = 'gpu',
     ssd = 'ssd',
@@ -48,7 +48,7 @@ export enum DeviceType {
 }
 export interface Device {
     id: string,
-    type: DeviceType,
+    type: MachineDeviceType,
     fabr_id: number,
     grp_id: number,
     gname: string,
@@ -231,7 +231,7 @@ export class RestServer {
         this.socketioStarted = true;
 
         this.https.listen(this.config.hostPort, () => {
-            console.log(`listening on *:${this.config.hostPort}`);
+            //console.log(`listening on *:${this.config.hostPort}`);
         });
         this.io.on('connection', (socket) => {
             socket.emit('init-config', { fabrIds: Object.keys(this.liqidObservers) });
@@ -1035,23 +1035,23 @@ export class RestServer {
         if (!deviceStatus) return null;
         switch (deviceStatus.type) {
             case 'ComputeDeviceStatus':
-                device.type = DeviceType.cpu;
+                device.type = MachineDeviceType.cpu;
                 device.ipmi = this.liqidObservers[fabr_id].getIpmiAddressByName(name);
                 break;
             case 'GpuDeviceStatus':
-                device.type = DeviceType.gpu;
+                device.type = MachineDeviceType.gpu;
                 break;
             case 'SsdDeviceStatus':
                 if (deviceStatus.name.indexOf('ssd') >= 0)
-                    device.type = DeviceType.ssd;
+                    device.type = MachineDeviceType.ssd;
                 else
-                    device.type = DeviceType.optane;
+                    device.type = MachineDeviceType.optane;
                 break;
             case 'LinkDeviceStatus':
-                device.type = DeviceType.nic;
+                device.type = MachineDeviceType.nic;
                 break;
             case 'FpgaDeviceStatus':
-                device.type = DeviceType.fpga;
+                device.type = MachineDeviceType.fpga;
                 break;
         }
         device.lanes = deviceStatus.lanes;

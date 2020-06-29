@@ -1,12 +1,22 @@
 import { Run } from './models';
 export interface RestServerConfig {
-    ips: string[];
-    names: string[];
+    liqidSystems: {
+        ip: string;
+        name: string;
+    }[];
     hostPort: number;
-    sslCert?: any;
     enableGUI?: boolean;
+    sslCert?: {
+        privateKey: string;
+        certificate: string;
+        ca: string;
+    };
+    adminLogin?: {
+        username: string;
+        password: string;
+    };
 }
-export declare enum DeviceType {
+export declare enum MachineDeviceType {
     cpu = "cpu",
     gpu = "gpu",
     ssd = "ssd",
@@ -16,7 +26,7 @@ export declare enum DeviceType {
 }
 export interface Device {
     id: string;
-    type: DeviceType;
+    type: MachineDeviceType;
     fabr_id: number;
     grp_id: number;
     gname: string;
@@ -102,6 +112,7 @@ export declare class RestServer {
     private ready;
     private enableGUI;
     private socketioStarted;
+    private adminLogin;
     constructor(config: RestServerConfig);
     start(): Promise<void>;
     private startSocketIOAndServer;
