@@ -4,8 +4,11 @@ var fabrics;
 var fabricSelected;
 var liqidView;
 var groupedView = true;
+
 var secondaryConfigShown = false;
 var secondaryConfigLocked = false;
+var mainConfigShown = false;
+var mainConfigLocked = false;
 
 var viewOptions = [
     {
@@ -37,28 +40,86 @@ var miscOptions = [
     {
         name: 'Create New Group',
         function: () => {
-            let sideHeaderTitle = document.getElementById('drawer-header-title');
-            sideHeaderTitle.innerHTML = '';
-            let secondarySideContent = document.getElementById('secondary-side-content');
-            secondarySideContent.innerHTML = '';
+            loadGroupSimpleConfig();
             showSecondarySideConfig();
         }
     },
     {
         name: 'Compose New Machine',
         function: () => {
-            let sideHeaderTitle = document.getElementById('drawer-header-title');
-            sideHeaderTitle.innerHTML = '';
-            let secondarySideContent = document.getElementById('secondary-side-content');
-            secondarySideContent.innerHTML = '';
+            loadMachineSimpleConfig();
             showSecondarySideConfig();
         }
     }
-]
+];
 
+function generateGroupCreateForm() {
+    let form = document.createElement('form');
+    form.setAttribute('id', 'simple-group-form');
+    ['name', 'fabrId'].forEach(property => {
+        let formLine = document.createElement('div');
+        let label = document.createElement('label');
+        label.innerHTML = property;
+        formLine.appendChild(label);
+        let input = document.createElement('input');
+        input.setAttribute('type', 'text');
+        input.setAttribute('name', property);
+        formLine.appendChild(input);
+    });
+    let submit = document.createElement('input');
+    submit.setAttribute('type', 'submit');
+    submit.setAttribute('value', 'submit');
+    form.appendChild(submit);
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        console.log(getFormData('simple-group-form'));
+    });
+    return form;
+}
+var groupCreateForm = generateGroupCreateForm();
+
+function generateSimpleMachineComposeForm() {
+    let form = document.createElement('form');
+    form.setAttribute('id', 'simple-machine-form');
+    ['cpu', 'gpu', 'ssd', 'optane', 'nic', 'fpga'].forEach(property => {
+        let formLine = document.createElement('div');
+        let label = document.createElement('label');
+        label.innerHTML = property;
+        formLine.appendChild(label);
+        let input = document.createElement('input');
+        input.setAttribute('type', 'number');
+        input.setAttribute('name', property);
+        formLine.appendChild(input);
+    });
+    ['name', 'grpId', 'fabrId'].forEach(property => {
+        let formLine = document.createElement('div');
+        let label = document.createElement('label');
+        label.innerHTML = property;
+        formLine.appendChild(label);
+        let input = document.createElement('input');
+        input.setAttribute('type', 'text');
+        input.setAttribute('name', property);
+        formLine.appendChild(input);
+    });
+    let submit = document.createElement('input');
+    submit.setAttribute('type', 'submit');
+    submit.setAttribute('value', 'submit');
+    form.appendChild(submit);
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        console.log(getFormData('simple-group-form'));
+    });
+}
+var simpleMachineComposeForm = generateSimpleMachineComposeForm();
+
+function selectFabric(fabricId) {
+    if (!fabricId || fabricId == fabricSelected) return;
+    fabricSelected = fabricId;
+    displayFabric(fabricId);
+}
 function displayFabric(fabricId) {
-    liqidView.innerHTML = '';
     if (!fabrics.fabrIds.includes(fabricId)) return;
+    liqidView.innerHTML = '';
     if (groupedView)
         displayInGroupModeOn(fabricId);
     else
@@ -75,7 +136,7 @@ function displayInGroupModeOn(fabricId) {
         groupHeader.innerHTML = group.gname;
         groupHeader.setAttribute('id', 'card-group-' + group.grpId);
         groupHeader.addEventListener('click', (e) => {
-            loadGroupDetails(group);
+            loadGroupSimpleDetails(group);
             showSecondarySideConfig();
         });
         groupCard.appendChild(groupHeader);
@@ -85,7 +146,7 @@ function displayInGroupModeOn(fabricId) {
             machineCard.setAttribute('class', 'card card-machine');
             machineCard.setAttribute('id', 'card-machine-' + machine.machId);
             machineCard.addEventListener('click', (e) => {
-                loadMachineDetails(machine);
+                loadMachineSimpleDetails(machine);
                 showSecondarySideConfig();
             });
 
@@ -135,7 +196,7 @@ function displayInGroupModeOff(fabricId) {
             machineCard.setAttribute('class', 'card card-machine');
             machineCard.setAttribute('id', 'card-machine-' + machine.machId);
             machineCard.addEventListener('click', (e) => {
-                loadMachineDetails(machine);
+                loadMachineSimpleDetails(machine);
                 showSecondarySideConfig();
             });
 
@@ -209,12 +270,6 @@ function getMachineCharacteristics(deviceArray) {
     return characteristics;
 }
 
-function selectFabric(fabricId) {
-    if (!fabricId || fabricId == fabricSelected) return;
-    fabricSelected = fabricId;
-    displayFabric(fabricId);
-}
-
 function prepareSideConfig() {
     let goBackButton = document.getElementById('side-config-return');
     goBackButton.addEventListener('click', (e) => {
@@ -227,7 +282,6 @@ function prepareSideConfig() {
     });
     populateMainSideContent();
 }
-
 function populateMainSideContent() {
     //Prepare main side content
     let mainSideContent = document.getElementById('main-side-content');
@@ -273,9 +327,38 @@ function populateMainSideContent() {
         miscOptionsList.appendChild(listElement);
     });
 }
+function prepareMainConfig() {
+    let goBackButton = document.getElementById('main-config-return');
+    goBackButton.addEventListener('click', (e) => {
+        if (mainConfigLocked) return;
+        $('#side-config-drawer')
+            .css({ bottom: '0%' })
+            .animate({ bottom: '100%' }, 500, () => {
+                mainConfigShown = false;
+            });
+    });
+}
+
+function loadMachineSimpleDetails(machine) {
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
+    sideHeaderTitle.innerHTML = machine.mname + ' (id: ' + machine.machId + ')';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+    let someText = document.createTextNode(JSON.stringify(machine));
+    secondarySideContent.appendChild(someText);
+}
+
+function loadGroupSimpleDetails(group) {
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
+    sideHeaderTitle.innerHTML = group.gname + ' (id: ' + group.grpId + ')';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+    let someText = document.createTextNode(JSON.stringify(group));
+    secondarySideContent.appendChild(someText);
+}
 
 function loadDevices() {
-    let sideHeaderTitle = document.getElementById('drawer-header-title');
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
     sideHeaderTitle.innerHTML = 'Devices';
     let secondarySideContent = document.getElementById('secondary-side-content');
     secondarySideContent.innerHTML = '';
@@ -302,22 +385,28 @@ function loadDevices() {
     });
 }
 
-function loadMachineDetails(machine) {
-    let sideHeaderTitle = document.getElementById('drawer-header-title');
-    sideHeaderTitle.innerHTML = machine.mname + ' (id: ' + machine.machId + ')';
+function loadGroupSimpleConfig() {
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
+    sideHeaderTitle.innerHTML = 'Group Create';
     let secondarySideContent = document.getElementById('secondary-side-content');
     secondarySideContent.innerHTML = '';
-    let someText = document.createTextNode(JSON.stringify(machine));
-    secondarySideContent.appendChild(someText);
+    secondarySideContent.appendChild(groupCreateForm);
 }
 
-function loadGroupDetails(group) {
-    let sideHeaderTitle = document.getElementById('drawer-header-title');
-    sideHeaderTitle.innerHTML = group.gname + ' (id: ' + group.grpId + ')';
+function loadGroupComplexConfig() {
+
+}
+
+function loadMachineSimpleConfig() {
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
+    sideHeaderTitle.innerHTML = 'Machine Compose';
     let secondarySideContent = document.getElementById('secondary-side-content');
     secondarySideContent.innerHTML = '';
-    let someText = document.createTextNode(JSON.stringify(group));
-    secondarySideContent.appendChild(someText);
+    secondarySideContent.appendChild(simpleMachineComposeForm);
+}
+
+function loadMachineComplexConfig() {
+
 }
 
 function showSecondarySideConfig() {
@@ -329,23 +418,44 @@ function showSecondarySideConfig() {
         });
 }
 
+function showMainConfig() {
+    if (mainConfigShown) return;
+    $('#main-config-drawer')
+        .css({ bottom: '100%' })
+        .animate({ bottom: '0%' }, 500, () => {
+            mainConfigShown = true;
+        });
+}
+
 $(document).ready(() => {
     liqidView = document.getElementById('liqid-view');
     prepareSideConfig();
+    prepareMainConfig();
 });
 
-socket.on('connect', () => {
-    socket.on('initialize', (data) => {
-        fabrics = data;
-        selectFabric(fabrics.fabrIds[0]);
-        populateMainSideContent();
-    });
-    socket.on('fabric-update', (data) => {
-        if (fabrics && fabrics.fabrIds.includes(data.fabrIds[0])) {
-            let index = fabrics.fabrIds.indexOf(data.fabrIds[0]);
-            fabrics.groups[index] = data.groups[0];
-            fabrics.devices[index] = data.devices[0];
-            if (fabricSelected == data.fabrIds[0]) displayFabric(data.fabrIds[0]);
-        }
-    });
+function getFormData(formId) {
+    return $(`#${formId}`).serializeArray().reduce(function (obj, item) {
+        obj[item.name] = item.value;
+        return obj;
+    }, {});
+}
+
+// socket.on('connect', () => {
+
+// });
+socket.on('initialize', (data) => {
+    fabrics = data;
+    selectFabric(fabrics.fabrIds[0]);
+    populateMainSideContent();
+});
+socket.on('fabric-update', (data) => {
+    if (fabrics && fabrics.fabrIds.includes(data.fabrIds[0])) {
+        let index = fabrics.fabrIds.indexOf(data.fabrIds[0]);
+        fabrics.groups[index] = data.groups[0];
+        fabrics.devices[index] = data.devices[0];
+        if (fabricSelected == data.fabrIds[0]) displayFabric(data.fabrIds[0]);
+    }
+});
+socket.on('busy', (busyData) => {
+
 });

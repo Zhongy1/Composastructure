@@ -4,7 +4,7 @@ This README is up to date for features available as of 6/28/2020. Try to look fo
 
 Composastructure is a library/tool built off of Liqid's API for composing machines. The goal is to abstract away the lower level logic required to compose a machine and give you a new API that can do the same thing with as little as just one function call.
 
-**[Important]** Composastructure is meant to be used as an npm module, but since it's not at that stage yet, you can clone this repo into your project's node_modules folder and use it the same way as any other npm module.
+**[Important]** Composastructure is meant to be used as an npm module, but since it's not at that stage yet, you can clone this repo into your project's node_modules folder and use it the same way as any other npm module. One last thing to do after cloning though, is to navigate into Composastructure and do `npm install`. The development branch is the default branch, but you can switch to a different one if you'd like.
 
 ## Installation (In the future)
 
@@ -52,10 +52,21 @@ interface RestServerConfig {
 }
 ```
 
+Expected file structure
+```
+ 📂 root_directory
+ |- 📄 server.ts 
+ |- ...
+ \- 📂 node_modules
+    |- 📁 Composastructure
+    \- ...
+```
+
 ### 1.1: REST API with built in browser GUI
 
 This use case is similar to how Liqid does it: exposed API with browser GUI available for interfacing with the system. Currently the GUI is still work in progress, but you can still access it and get a visual of what the Liqid system(s) looks like. This section will focus on how to run and use the GUI. Fow how to use the REST endpoints, refer to the next section.
 
+If you don't have an SSL certificate available, exclude the sslCert property from the config. Notice the property enableGUI is set to true here. A normal javascript variant is shown in the next section.
 ```typescript
 // server.ts
 import * as fs from 'fs';
@@ -64,32 +75,63 @@ import { RestServerConfig, RestServer } from 'Composastructure';
 
 var config: RestServerConfig = {
     liqidSystems: [{
-                ip: '10.0.100.125',
-                name: 'DevKit'
-        }],
-        hostPort: 3000,
-        enableGUI: true,
-        sslCert: {
-                privateKey: fs.readFileSync(path.join("keys", "_.evl.uic.edu.key"), 'utf8'),
-                certificate: fs.readFileSync(path.join("keys", "_.evl.uic.edu.crt"), 'utf8'),
-                ca: fs.readFileSync(path.join("keys", "_.evl.uic.edu-ca.crt"), 'utf8')
-        },
-        adminLogin: {
-                username: 'admin',
-                password: 'compose'
-        }
+        ip: '10.0.100.125',
+        name: 'DevKit'
+    }],
+    hostPort: 3000,
+    enableGUI: true,
+    sslCert: {
+        privateKey: fs.readFileSync(path.join("keys", "_.evl.uic.edu.key"), 'utf8'),
+        certificate: fs.readFileSync(path.join("keys", "_.evl.uic.edu.crt"), 'utf8'),
+        ca: fs.readFileSync(path.join("keys", "_.evl.uic.edu-ca.crt"), 'utf8')
+    },
+    adminLogin: {
+        username: 'admin',
+        password: 'compose'
+    }
 }
 
 var Server = new RestServer(config);
 
 Server.start().then(() => {
-        console.log('Server started successfully');
+    console.log('Server started successfully');
 });
 ```
-
 ### 1.2: REST API without built in browser GUI
 
 Built in browser GUI use is set to false as the default value. This use case is ideal if you know you are not needing a GUI, or if you want to build your own.
+
+You may not be as familiar with TypeScript as JavaScript, or you just want to keep things as simple as possible. In that case, here's the same file in JavaScript. Notice the property enableGUI is set to false here. You can also leave this property out entirely.
+```typescript
+// server.js
+var fs = require('fs');
+var path = require('path');
+var Composastructure = require('Composastructure');
+
+var config = {
+    liqidSystems: [{
+        ip: '10.0.100.125',
+        name: 'DevKit'
+    }],
+    hostPort: 3000,
+    enableGUI: false,
+    sslCert: {
+        privateKey: fs.readFileSync(path.join("keys", "_.evl.uic.edu.key"), 'utf8'),
+        certificate: fs.readFileSync(path.join("keys", "_.evl.uic.edu.crt"), 'utf8'),
+        ca: fs.readFileSync(path.join("keys", "_.evl.uic.edu-ca.crt"), 'utf8')
+    },
+    adminLogin: {
+        username: 'admin',
+        password: 'compose'
+    }
+}
+
+var Server = new Composastructure.RestServer(config);
+
+Server.start().then(() => {
+    console.log('Server started successfully');
+});
+```
 
 ## 2. Integrated
 
