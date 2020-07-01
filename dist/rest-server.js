@@ -819,21 +819,21 @@ class RestServer {
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
                 this.liqidControllers[req.body.fabrId].createGroup(req.body.name)
                     .then((group) => {
-                    let data = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
-                    if (data) {
-                        res.json(data);
-                        this.liqidObservers[req.params.fabr_id].refresh()
-                            .then(() => {
+                    this.liqidObservers[req.params.fabr_id].refresh()
+                        .then(() => {
+                        let data = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
+                        if (data) {
+                            res.json(data);
                             this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
-                        }, err => {
-                            console.log('Group creation refresh failed: ' + err);
-                        });
-                    }
-                    else {
-                        let err = { code: 500, description: 'Group seems to be created, but final verification failed.' };
-                        console.log(err);
-                        res.status(err.code).json(err);
-                    }
+                        }
+                        else {
+                            let err = { code: 500, description: 'Group seems to be created, but final verification failed.' };
+                            console.log(err);
+                            res.status(err.code).json(err);
+                        }
+                    }, err => {
+                        console.log('Group creation refresh failed: ' + err);
+                    });
                 }, err => {
                     let error = { code: err.code, description: err.description };
                     res.status(error.code).json(error);
@@ -892,21 +892,21 @@ class RestServer {
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
                 this.liqidControllers[req.body.fabrId].compose(req.body)
                     .then((mach) => {
-                    let data = this.prepareMachineInfo(Math.floor(req.body.fabrId), mach.mach_id);
-                    if (data) {
-                        res.json(data);
-                        this.liqidObservers[req.params.fabr_id].refresh()
-                            .then(() => {
+                    this.liqidObservers[req.params.fabr_id].refresh()
+                        .then(() => {
+                        let data = this.prepareMachineInfo(Math.floor(req.body.fabrId), mach.mach_id);
+                        if (data) {
+                            res.json(data);
                             this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
-                        }, err => {
-                            console.log('Machine compose refresh failed: ' + err);
-                        });
-                    }
-                    else {
-                        let err = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
-                        console.log(err);
-                        res.status(err.code).json(err);
-                    }
+                        }
+                        else {
+                            let err = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
+                            console.log(err);
+                            res.status(err.code).json(err);
+                        }
+                    }, err => {
+                        console.log('Machine compose refresh failed: ' + err);
+                    });
                 }, err => {
                     let error = { code: err.code, description: err.description };
                     res.status(error.code).json(error);

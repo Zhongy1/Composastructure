@@ -78,7 +78,7 @@ function generateGroupCreateForm() {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         console.log(getFormData('simple-group-form'));
-        postGroupCreateData();
+        postGroupCreateData(getFormData('simple-group-form'));
     });
     return form;
 }
@@ -119,6 +119,7 @@ function generateSimpleMachineComposeForm() {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         console.log(getFormData('simple-machine-form'));
+        postMachineComposeData();
     });
     return form;
 }
@@ -358,6 +359,32 @@ function loadMachineSimpleDetails(machine) {
     secondarySideContent.innerHTML = '';
     let someText = document.createTextNode(JSON.stringify(machine));
     secondarySideContent.appendChild(someText);
+    let deleteButton = document.createElement('button');
+    deleteButton.setAttribute('class', 'delete-button');
+    deleteButton.innerHTML = 'Delete';
+    deleteButton.addEventListener('click', (e) => {
+        console.log('delete machine ' + machine.machId);
+        $.ajax({
+            url: `api/machine/${fabricSelected}/${machine.machId}`,
+            type: 'DELETE',
+            dataType: 'json',
+            success: (data) => {
+                console.log('From server: ' + JSON.stringify(data));
+            },
+            error: (err) => {
+                console.log('got error: ' + JSON.stringify(err));
+                generateAlert({
+                    id: 'tempA',
+                    title: 'Error: ' + err.responseJSON.code,
+                    message: 'Message: ' + err.responseJSON.description,
+                    duration: 5000,
+                    ignorable: true
+                });
+
+            }
+        });
+    });
+    secondarySideContent.appendChild(deleteButton);
 }
 
 function loadGroupSimpleDetails(group) {
@@ -367,6 +394,32 @@ function loadGroupSimpleDetails(group) {
     secondarySideContent.innerHTML = '';
     let someText = document.createTextNode(JSON.stringify(group));
     secondarySideContent.appendChild(someText);
+    let deleteButton = document.createElement('button');
+    deleteButton.setAttribute('class', 'delete-button');
+    deleteButton.innerHTML = 'Delete';
+    deleteButton.addEventListener('click', (e) => {
+        console.log('delete group ' + group.grpId);
+        $.ajax({
+            url: `api/group/${fabricSelected}/${group.grpId}`,
+            type: 'DELETE',
+            dataType: 'json',
+            success: (data) => {
+                console.log('From server: ' + JSON.stringify(data));
+            },
+            error: (err) => {
+                console.log('got error: ' + JSON.stringify(err));
+                generateAlert({
+                    id: 'tempB',
+                    title: 'Error: ' + err.responseJSON.code,
+                    message: 'Message: ' + err.responseJSON.description,
+                    duration: 5000,
+                    ignorable: true
+                });
+
+            }
+        });
+    });
+    secondarySideContent.appendChild(deleteButton);
 }
 
 function loadDevices() {
@@ -441,51 +494,75 @@ function showMainConfig() {
 
 function postGroupCreateData(data) {
     try {
-        generateAlert({
-            id: 'test',
-            title: 'Error: 400',
-            message: 'Message: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt',
-            duration: 2000,
-            ignorable: false
-        })
-    }
-    catch {
+        // generateAlert({
+        //     id: 'test',
+        //     title: 'Error: 400',
+        //     message: 'Message: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt',
+        //     duration: 5000,
+        //     ignorable: false
+        // });
+        $.ajax({
+            url: `api/group`,
+            type: 'POST',
+            data: JSON.stringify({
+                name: data.name,
+                fabrId: parseInt(fabricSelected)
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: 'json',
+            success: (data) => {
+                console.log('From server: ' + JSON.stringify(data));
+            },
+            error: (err) => {
+                console.log('got error: ' + JSON.stringify(err));
+                generateAlert({
+                    id: 'tempB',
+                    title: 'Error: ' + err.responseJSON.code,
+                    message: 'Message: ' + err.responseJSON.description,
+                    duration: 5000,
+                    ignorable: true
+                });
 
+            }
+        });
+    }
+    catch (err) {
+        throw 'My error: ' + err;
     }
 }
 
 function postMachineComposeData(data) {
     try {
-
+        // generateAlert({
+        //     id: 'test2',
+        //     title: 'Error: 500',
+        //     message: 'Message: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt',
+        //     duration: 5000,
+        //     ignorable: false
+        // });
     }
-    catch {
-
+    catch (err) {
+        throw err;
     }
 }
 
 /*
  * alert: id, title, message, duration, ignorable
  */
-function generateAlert(alert) {
-    if (alerts.hasOwnProperty(id)) return;
+function generateAlert(alertConfig) {
+    if (alerts.hasOwnProperty(alertConfig.id)) return;
     let alert = document.createElement('div');
     alert.setAttribute('class', 'alert-popup');
     let title = document.createElement('div');
-    title.innerHTML = alert.title;
+    title.innerHTML = alertConfig.title;
     alert.appendChild(title);
     let message = document.createElement('div');
-    message.innerHTML = alert.message;
+    message.innerHTML = alertConfig.message;
     alert.appendChild(message);
-    alerts[alert.id] = alert;
-    if (alert.ignorable) {
-        alert.addEventListener('click', (e) => {
-            deleteAlert(alert.id);
-        });
-    }
-    setTimeout(() => {
-        deleteAlert(alert.id);
-    }, duration);
+    alerts[alertConfig.id] = alert;
 
+    $(alert).css('margin-top', '-104px');
+    $(alert).css('margin-left', '264px');
     let recentAlert = alertsRegion.firstChild;
     if (recentAlert != null) {
         alertsRegion.insertBefore(alert, recentAlert);
@@ -493,7 +570,22 @@ function generateAlert(alert) {
     else {
         alertsRegion.appendChild(alert);
     }
-
+    $(alert)
+        .css({ 'margin-top': '-104px' })
+        .animate({ 'margin-top': '0px' }, 300, () => {
+            $(alert)
+                .css({ 'margin-left': '264px' })
+                .animate({ 'margin-left': '0px' }, 300, () => {
+                    if (alertConfig.ignorable) {
+                        alert.addEventListener('click', (e) => {
+                            deleteAlert(alertConfig.id);
+                        });
+                    }
+                    setTimeout(() => {
+                        deleteAlert(alertConfig.id);
+                    }, alertConfig.duration);
+                });
+        });
     return alert;
 }
 
