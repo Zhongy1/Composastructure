@@ -15,6 +15,11 @@ h1 {
     justify-content: space-around;
 }
 
+.config-label {
+    display: inline-block;
+    width: 50px;
+}
+
 .side-config {
     float: left;
     width: 300px;
@@ -224,4 +229,27 @@ h1 {
 
 #liqid-view::-webkit-scrollbar {
     display: none;
+}
+
+.alerts-region {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    padding: 10px;
+    width: 254px;
+    height: 100vh;
+    overflow: auto;
+}
+.alerts-region::-webkit-scrollbar {
+    display: none;
+}
+.alert-popup {
+    padding: 10px;
+    margin-bottom: 10px;
+    width: 230px;
+    height: 70px;
+    border: 2px solid black;
+    border-radius: 7px;
+    background-color: white;
+    overflow: hidden;
 }

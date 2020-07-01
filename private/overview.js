@@ -10,6 +10,9 @@ var secondaryConfigLocked = false;
 var mainConfigShown = false;
 var mainConfigLocked = false;
 
+var alertsRegion;
+var alerts = {};
+
 var viewOptions = [
     {
         name: 'Grouped View',
@@ -56,15 +59,17 @@ var miscOptions = [
 function generateGroupCreateForm() {
     let form = document.createElement('form');
     form.setAttribute('id', 'simple-group-form');
-    ['name', 'fabrId'].forEach(property => {
+    ['name'].forEach(property => {
         let formLine = document.createElement('div');
         let label = document.createElement('label');
+        label.setAttribute('class', 'config-label');
         label.innerHTML = property;
         formLine.appendChild(label);
         let input = document.createElement('input');
         input.setAttribute('type', 'text');
         input.setAttribute('name', property);
         formLine.appendChild(input);
+        form.appendChild(formLine);
     });
     let submit = document.createElement('input');
     submit.setAttribute('type', 'submit');
@@ -73,6 +78,7 @@ function generateGroupCreateForm() {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         console.log(getFormData('simple-group-form'));
+        postGroupCreateData();
     });
     return form;
 }
@@ -84,22 +90,27 @@ function generateSimpleMachineComposeForm() {
     ['cpu', 'gpu', 'ssd', 'optane', 'nic', 'fpga'].forEach(property => {
         let formLine = document.createElement('div');
         let label = document.createElement('label');
+        label.setAttribute('class', 'config-label');
         label.innerHTML = property;
         formLine.appendChild(label);
         let input = document.createElement('input');
         input.setAttribute('type', 'number');
+        input.setAttribute('min', '1');
         input.setAttribute('name', property);
         formLine.appendChild(input);
+        form.appendChild(formLine);
     });
-    ['name', 'grpId', 'fabrId'].forEach(property => {
+    ['name', 'grpId'].forEach(property => {
         let formLine = document.createElement('div');
         let label = document.createElement('label');
+        label.setAttribute('class', 'config-label');
         label.innerHTML = property;
         formLine.appendChild(label);
         let input = document.createElement('input');
         input.setAttribute('type', 'text');
         input.setAttribute('name', property);
         formLine.appendChild(input);
+        form.appendChild(formLine);
     });
     let submit = document.createElement('input');
     submit.setAttribute('type', 'submit');
@@ -107,8 +118,9 @@ function generateSimpleMachineComposeForm() {
     form.appendChild(submit);
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        console.log(getFormData('simple-group-form'));
+        console.log(getFormData('simple-machine-form'));
     });
+    return form;
 }
 var simpleMachineComposeForm = generateSimpleMachineComposeForm();
 
@@ -427,11 +439,70 @@ function showMainConfig() {
         });
 }
 
-$(document).ready(() => {
-    liqidView = document.getElementById('liqid-view');
-    prepareSideConfig();
-    prepareMainConfig();
-});
+function postGroupCreateData(data) {
+    try {
+        generateAlert({
+            id: 'test',
+            title: 'Error: 400',
+            message: 'Message: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt',
+            duration: 2000,
+            ignorable: false
+        })
+    }
+    catch {
+
+    }
+}
+
+function postMachineComposeData(data) {
+    try {
+
+    }
+    catch {
+
+    }
+}
+
+/*
+ * alert: id, title, message, duration, ignorable
+ */
+function generateAlert(alert) {
+    if (alerts.hasOwnProperty(id)) return;
+    let alert = document.createElement('div');
+    alert.setAttribute('class', 'alert-popup');
+    let title = document.createElement('div');
+    title.innerHTML = alert.title;
+    alert.appendChild(title);
+    let message = document.createElement('div');
+    message.innerHTML = alert.message;
+    alert.appendChild(message);
+    alerts[alert.id] = alert;
+    if (alert.ignorable) {
+        alert.addEventListener('click', (e) => {
+            deleteAlert(alert.id);
+        });
+    }
+    setTimeout(() => {
+        deleteAlert(alert.id);
+    }, duration);
+
+    let recentAlert = alertsRegion.firstChild;
+    if (recentAlert != null) {
+        alertsRegion.insertBefore(alert, recentAlert);
+    }
+    else {
+        alertsRegion.appendChild(alert);
+    }
+
+    return alert;
+}
+
+function deleteAlert(id) {
+    if (!alerts.hasOwnProperty(id)) return;
+    let alert = alerts[id];
+    delete alerts[id];
+    alert.remove();
+}
 
 function getFormData(formId) {
     return $(`#${formId}`).serializeArray().reduce(function (obj, item) {
@@ -439,6 +510,13 @@ function getFormData(formId) {
         return obj;
     }, {});
 }
+
+$(document).ready(() => {
+    liqidView = document.getElementById('liqid-view');
+    alertsRegion = document.getElementById('alerts');
+    prepareSideConfig();
+    prepareMainConfig();
+});
 
 // socket.on('connect', () => {
 
@@ -456,6 +534,6 @@ socket.on('fabric-update', (data) => {
         if (fabricSelected == data.fabrIds[0]) displayFabric(data.fabrIds[0]);
     }
 });
-socket.on('busy', (busyData) => {
+// socket.on('busy', (busyData) => {
 
-});
+// });
