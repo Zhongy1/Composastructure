@@ -887,12 +887,12 @@ export class RestServer {
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
                 this.liqidControllers[req.body.fabrId].createGroup(req.body.name)
                     .then((group) => {
-                        this.liqidObservers[req.params.fabr_id].refresh()
+                        this.liqidObservers[req.body.fabrId].refresh()
                             .then(() => {
                                 let data: GroupInfo = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
                                 if (data) {
                                     res.json(data);
-                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.body.fabrId)));
                                 }
                                 else {
                                     let err: BasicError = { code: 500, description: 'Group seems to be created, but final verification failed.' };
@@ -961,12 +961,12 @@ export class RestServer {
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
                 this.liqidControllers[req.body.fabrId].compose(req.body)
                     .then((mach) => {
-                        this.liqidObservers[req.params.fabr_id].refresh()
+                        this.liqidObservers[req.body.fabrId].refresh()
                             .then(() => {
                                 let data: MachineInfo = this.prepareMachineInfo(Math.floor(req.body.fabrId), mach.mach_id);
                                 if (data) {
                                     res.json(data);
-                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
+                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.body.fabrId)));
                                 }
                                 else {
                                     let err: BasicError = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };

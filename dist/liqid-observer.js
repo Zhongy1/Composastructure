@@ -609,7 +609,7 @@ class LiqidObserver {
                 if (typeof options.cpu === 'number') {
                     options.cpu = (options.cpu < 0) ? 0 : Math.floor(options.cpu);
                     let deviceNames = Object.keys(deviceStats.cpu);
-                    if (deviceNames.length > 1) {
+                    if (options.cpu > 1) {
                         let err = {
                             code: 422,
                             origin: 'observer',
