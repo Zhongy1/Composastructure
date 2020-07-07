@@ -173,31 +173,31 @@ Server.start().then(() => {
 |      |                                     | 500 BasicError     | - Undocumented error occurred in getting group details. |
 
 **Control**
-| Type   | Endpoint                   | Request Data Type  | Response and Type | Error Message |
-|--------|----------------------------|--------------------|-------------------|---------------|
-| POST   | /api/group                 | GroupCreateOptions | 200 GroupInfo     | N/A           |
-|        |                            |                    | 400 BasicError    | - Request body is missing one or more required properties.<br>- fabrId has to be a number.<br>- name has to be a string. |
-|        |                            |                    | 404 BasicError    | - Fabric {fabrId} does not exist. |
-|        |                            |                    | 422 BasicError    | - Use a different group name. The one provided is already in use or is reserved.<br>- Do not use special characters for a group name. |
-|        |                            |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group creation.<br>- Group seems to be created, but final verification failed. |
-|        |                            |                    | 503 BasicError    | - Controller for fabric {fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry. |
-| POST   | /api/machine               | ComposeOptions     | 200 MachineInfo   | N/A           |
-|        |                            |                    | 400 BasicError    | - Request body is missing one or more required properties.<br>- fabrId has to be a number.<br>- name has to be a string.<br>- grpId has to be a number.<br>- DEVICE specification is neither a number nor a string array. |
-|        |                            |                    | 404 BasicError    | - Fabric {fabrId} does not exist.<br>- Group {grpId} does not exist.<br>- DEVICE {device_id} does not exist. |
-|        |                            |                    | 422 BasicError    | - The given machine name is already in use.<br>- Do not use special characters for a machine name.<br>- Machine specification must have at least one device.<br>- CPU count can not be more than 1.<br>- CPU specification should have no more than 1.<br>- The specified number of DEVICEs is more than what is currently available.<br>- The specified number of DEVICEs is more than the number of DEVICEs that are unused.<br>- DEVICE specification either contains duplicates or non string elements.<br>- DEVICE {device_id} is currently in use by machine {mach_name}.<br>- CPU with IPMI {ipmi} is currently in use by machine {machine_name}. |
-|        |                            |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- One or more requested devices did not get assigned properly. Aborting compose!<br>- Undocumented error occurred in gathering resources.<br>- Undocumented error occurred in composing machine.<br>- Machine seems to be composed, but final verification failed. |
-|        |                            |                    | 503 BasicError    | - Controller for fabric {fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry. |
-| DELETE | /api/group{fabr_id}/{id}   | N/A                | 200 GroupInfo     | N/A           |
-|        |                            |                    | 400 BasicError    | - fabr_id has to be a number.<br>- id has to be a number. |
-|        |                            |                    | 404 BasicError    | - Group {id} does not exist.<br>- Fabric {fabr_id} does not exist. |
-|        |                            |                    | 422 BasicError    | - Group {id} is not empty. Ensure all machines are removed from this group first. |
-|        |                            |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
-|        |              |                    | 503 BasicError    | - Controller for fabric {fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry. |
-| DELETE | /api/machine{fabr_id}/{id} | N/A                | 200 MachineInfo   | N/A           |
-|        |                            |                    | 400 BasicError    | - fabr_id has to be a number.<br>- id has to be a number. |
-|        |                            |                    | 404 BasicError    | - Machine {id} does not exist.<br>- Fabric {fabr_id} does not exist. |
-|        |                            |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in machine deletion. |
-|        |                            |                    | 503 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
+| Type   | Endpoint                    | Request Data Type  | Response and Type | Error Message |
+|--------|-----------------------------|--------------------|-------------------|---------------|
+| POST   | /api/group                  | GroupCreateOptions | 200 GroupInfo     | N/A           |
+|        |                             |                    | 400 BasicError    | - Request body is missing one or more required properties.<br>- fabrId has to be a number.<br>- name has to be a string. |
+|        |                             |                    | 404 BasicError    | - Fabric {fabrId} does not exist. |
+|        |                             |                    | 422 BasicError    | - Use a different group name. The one provided is already in use or is reserved.<br>- Do not use special characters for a group name. |
+|        |                             |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group creation.<br>- Group seems to be created, but final verification failed. |
+|        |                             |                    | 503 BasicError    | - Controller for fabric {fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry. |
+| POST   | /api/machine                | ComposeOptions     | 200 MachineInfo   | N/A           |
+|        |                             |                    | 400 BasicError    | - Request body is missing one or more required properties.<br>- fabrId has to be a number.<br>- name has to be a string.<br>- grpId has to be a number.<br>- DEVICE specification is neither a number nor a string array. |
+|        |                             |                    | 404 BasicError    | - Fabric {fabrId} does not exist.<br>- Group {grpId} does not exist.<br>- DEVICE {device_id} does not exist. |
+|        |                             |                    | 422 BasicError    | - The given machine name is already in use.<br>- Do not use special characters for a machine name.<br>- Machine specification must have at least one device.<br>- CPU count can not be more than 1.<br>- CPU specification should have no more than 1.<br>- The specified number of DEVICEs is more than what is currently available.<br>- The specified number of DEVICEs is more than the number of DEVICEs that are unused.<br>- DEVICE specification either contains duplicates or non string elements.<br>- DEVICE {device_id} is currently in use by machine {mach_name}.<br>- CPU with IPMI {ipmi} is currently in use by machine {machine_name}. |
+|        |                             |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- One or more requested devices did not get assigned properly. Aborting compose!<br>- Undocumented error occurred in gathering resources.<br>- Undocumented error occurred in composing machine.<br>- Machine seems to be composed, but final verification failed. |
+|        |                             |                    | 503 BasicError    | - Controller for fabric {fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry. |
+| DELETE | /api/group/{fabr_id}/{id}   | N/A                | 200 GroupInfo     | N/A           |
+|        |                             |                    | 400 BasicError    | - fabr_id has to be a number.<br>- id has to be a number. |
+|        |                             |                    | 404 BasicError    | - Group {id} does not exist.<br>- Fabric {fabr_id} does not exist. |
+|        |                             |                    | 422 BasicError    | - Group {id} is not empty. Ensure all machines are removed from this group first. |
+|        |                             |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
+|        |                             |                    | 503 BasicError    | - Controller for fabric {fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry. |
+| DELETE | /api/machine/{fabr_id}/{id} | N/A                | 200 MachineInfo   | N/A           |
+|        |                             |                    | 400 BasicError    | - fabr_id has to be a number.<br>- id has to be a number. |
+|        |                             |                    | 404 BasicError    | - Machine {id} does not exist.<br>- Fabric {fabr_id} does not exist. |
+|        |                             |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in machine deletion. |
+|        |                             |                    | 503 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
 
 ## 2. Integrated
 
