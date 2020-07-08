@@ -1,6 +1,6 @@
 # Composastructure
 
-This README is up to date for features available as of 6/28/2020. Try to look for a more updated version in a newer branch if there are any. These branches will have a date in its name.
+This README is up to date for features available as of 7/07/2020. Try to look for a more updated version in a newer branch if there are any. These branches will have a date in its name.
 
 Composastructure is a library/tool built off of Liqid's API for composing machines. The goal is to abstract away the lower level logic required to compose a machine and give you a new API that can do the same thing with as little as just one function call.
 
@@ -16,7 +16,7 @@ npm install Composastructure
 
 ## Main Use Cases
 
-Composastructure is both a library and a tool. The following is a list of ways you can use it (ranked from easiet to more complicated to use).
+Composastructure is both a library and a tool. The following is a list of ways you can use it (ranked from easiet to more complicated to use). The further you go down this readme, the more you will have to learn the little details involved with creating groups or composing machines.
 
 ```
 1: Standalone
@@ -191,13 +191,13 @@ Server.start().then(() => {
 |        |                             |                    | 400 BasicError    | - fabr_id has to be a number.<br>- id has to be a number. |
 |        |                             |                    | 404 BasicError    | - Group {id} does not exist.<br>- Fabric {fabr_id} does not exist. |
 |        |                             |                    | 422 BasicError    | - Group {id} is not empty. Ensure all machines are removed from this group first. |
-|        |                             |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
-|        |                             |                    | 503 BasicError    | - Controller for fabric {fabrId} is busy with a previous compose/create request. Please wait a few seconds and retry. |
+|        |                             |                    | 500 BasicError    | - Controller for fabric {fabr_id} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
+|        |                             |                    | 503 BasicError    | - Controller for fabric {fabr_id} is busy with a previous compose/create request. Please wait a few seconds and retry. |
 | DELETE | /api/machine/{fabr_id}/{id} | N/A                | 200 MachineInfo   | N/A           |
 |        |                             |                    | 400 BasicError    | - fabr_id has to be a number.<br>- id has to be a number. |
 |        |                             |                    | 404 BasicError    | - Machine {id} does not exist.<br>- Fabric {fabr_id} does not exist. |
-|        |                             |                    | 500 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in machine deletion. |
-|        |                             |                    | 503 BasicError    | - Controller for fabric {fabrId} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
+|        |                             |                    | 500 BasicError    | - Controller for fabric {fabr_id} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in machine deletion. |
+|        |                             |                    | 503 BasicError    | - Controller for fabric {fabr_id} is not ready. Server may be unable to connect to this Liqid system.<br>- Undocumented error occurred in group deletion. |
 
 ## 2. Integrated
 
@@ -205,16 +205,103 @@ If you are building an application and you want more control over the system, yo
 
 ### 2.1: Composastructure API
 
-Composastructure implements the core functionalities from the Liqid API and makes it easier to work with in your application. 
+Composastructure implements the core functionalities from the Liqid API and makes it easier to work with in your application. Currently, the majority of error responses are in the form http error responses. This'll likely change in the future.
 
-### 2.2: Liqid API
+#### LiqidObserver
 
-Because Composastructure is built on Liqid's API, all of its endpoints are also available for use. Liqid's REST endpoints are wrapped in functions that return only the needed data instead of the entire http response.
+Use the LiqidObserver class to pull relevant information about a Liqid system. The methods in this class will not affect the state of groups, machines, or devices in the system. Here are example use cases for public methods. Compared to the LiqidController class, you have multiple observer instances observing a system since they won't interfere with one another. You will notice that the methods are grouped by collections, lookup, and details just like the REST API, but do notice that some of the data types are not the same. Most, if not all, data types are provided by the Liqid API. You can find all of them in models.ts.
+```typescript
+import { LiqidObserver } from 'Composastructure';
+var observer = new LiqidObserver('10.0.100.125', 'DevKit');
 
-# Documentation
+// Calling start will allow the observer to grab its first set of data
+// as well as establish a stomp connection to the system for real time updates.
+// You can use observer.stop() to stop the observer.
+observer.start().then((success) => {
+    if (success) console.log('Observer successfully started. Now observing DevKit system.');
+});
+```
 
-## REST API
+**Collections**
+```typescript
+let groups: { [key: string]: Group } = observer.getGroups(); //group id as key
+let machines: { [key: string]: Machine } = observer.getMachines(); // machine id as key
+let predevices: { [key: string]: PreDevice } = observer.getPreDevices(); // device name as key
+let deviceStatuses: { [key: string]: DeviceStatus } = observer.getDeviceStatuses(); // device name as key
+```
 
-## Composastructure API
+**Lookup**
+```typescript
+let group: Group = observer.getGroupById(1);
+let groupId: number = observer.getGroupIdByName('SomeGroup');
+let machine: Machine = observer.getMachineById(1);
+let predevice: PreDevice = observer.getPreDeviceByName('cpu0');
+let deviceStatus: DeviceStatus = observer.getDeviceStatusByName('cpu0');
+```
 
-## Liqid API
+**Details**
+```typescript
+observer.fetchGroupDetails(1).then((grpDetails: GroupDetails) => { /* ... */ });
+observer.fetchMachineDetails(1).then((machDetails: MachineDetails) => { /* ... */ });
+observer.fetchDeviceDetails('cpu0').then((deviceDetails: DeviceDetails) => { /* ... */ });
+```
+
+**Intended Mainly for Controller Use**
+```typescript
+// Transform connection history to something more usable
+let connectionHistList: ConnectionHistory[] = [ /* ... */ ];
+let deviceStatuses: DeviceStatus[] = observer.convertHistToDevStatuses(connectionHistList);
+
+// You can get DeviceStatuses using .getDeviceStatuses, but you can use this if you
+// you prefer it be categorized by device type.
+let deviceStatuses: OrganizedDeviceStatuses = observer.getDeviceStatusesOrganized();
+
+// This is the core function for selecting deviceStatuses to be used in a machine
+// This is the function that can handle quantities of devices, list of device names, and/or list of device names.
+// GatheringDevStatsOptions has a property called gatherUnused. If set to false, it will select from devices
+// that are used by other machines. Idealy, set this to true.
+let options: GatheringDevStatsOptions = { /* ... */ };
+let deviceStatuses: DeviceStatus[] = observer.gatherRequiredDeviceStatuses(options);
+```
+
+**Miscellaneous**
+```typescript
+
+// Get the fabric ID associated with this system
+let id: number = observer.getFabricId();
+
+// Set the busy state of the system. Intended for use by the LiqidController.
+// True if you want to disable real time updates.
+// False if you want to re-enable real time updates.
+observer.setBusyState(false);
+
+// Use the name of a cpu device to get its ipmi address
+let ipmi: string = observer.getIpmiAddressByName('cpu0');
+
+// Provide the group id to check if the group is empty or not.
+let isEmpty: boolean = observer.checkGroupIsEmpty(1);
+
+// Check to see if a machine name is used; for determining if machine name can be used or not
+let exists: boolean = observer.checkMachNameExists('MachName');
+
+// After a compose/create operation, the observer may not get notified right away,
+// or its busy state is set to true. Use refresh to update the observer.
+observer.refresh().then(() => { console.log('Observer refreshed.') });
+```
+
+#### LiqidController
+
+```typescript
+import { LiqidController } from 'Composastructure';
+var controller = new LiqidObserver('10.0.100.125', 'DevKit');
+
+// Calling start will allow the controller to start its own private observer instance
+// It will use this to determine if your create/compose command is valid or not
+controller.start().then((success) => {
+    if (success) console.log('Controller successfully started. You can now create/compose on DevKit system.');
+});
+```
+
+### 2.2: Liqid API (Composastructure as wrapper)
+
+Because Composastructure is built on Liqid's API, almost all of its endpoints are also available for use. Liqid's REST endpoints are wrapped in functions that return only the needed data instead of the entire http response.
