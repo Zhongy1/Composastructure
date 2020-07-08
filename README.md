@@ -266,7 +266,6 @@ let deviceStatuses: DeviceStatus[] = observer.gatherRequiredDeviceStatuses(optio
 
 **Miscellaneous**
 ```typescript
-
 // Get the fabric ID associated with this system
 let id: number = observer.getFabricId();
 
@@ -291,6 +290,7 @@ observer.refresh().then(() => { console.log('Observer refreshed.') });
 
 #### LiqidController
 
+Use the LiqidController class to modify the state of the Liqid system. Almost all methods in this class will affect the state of the system in some way. Avoid creating multiple instances of this class on the same system. Using two instances at the same time can result in undefined behavior, because there's a high chance that one instance may nullify the commands of the other instance.
 ```typescript
 import { LiqidController } from 'Composastructure';
 var controller = new LiqidObserver('10.0.100.125', 'DevKit');
@@ -300,6 +300,41 @@ var controller = new LiqidObserver('10.0.100.125', 'DevKit');
 controller.start().then((success) => {
     if (success) console.log('Controller successfully started. You can now create/compose on DevKit system.');
 });
+```
+
+**Control-Groups**
+
+These methods for groups are the same ones available in the REST API.
+```typescript
+let group: Group = await controller.createGroup('GroupName');
+let deletedGroup: Group = await controller.deleteGroup(1); // provide group id
+```
+
+**Control-Machines**
+
+These methods for machines are the same ones available in the REST API.
+```typescript
+let composeOptions: ComposeOptions = { /* ... */ };
+let machine: Machine = await controller.compose(composeOptions);
+let deletedMachine: Machine = await controller.decompose(1); // provide machine id
+```
+
+**Control-Devices**
+
+These methods for devices are not available in the REST API. They are used in the controller.compose(), but they are available for use if you choose. Some things to keep in mind though: 
+- moveDevicesToGroup works on any device that is not in a machine
+- moveDevicesToMachine works only on devices that are in the same group as the machine
+- you can't get a device out of a machine, but you can decompose the machine to get back the devices
+```typescript
+let deviceStatuses: DeviceStatus[] = [ /* ... */ ];
+await controller.moveDevicesToGroup(deviceStatuses, 1); // provide target group id
+await controller.moveDevicesToMachine(deviceStatuses, 1); // provide target machine id
+```
+
+**Miscellaneous**
+```typescript
+// Get the fabric ID associated with this system
+let id: number = controller.getFabricId();
 ```
 
 ### 2.2: Liqid API (Composastructure as wrapper)
