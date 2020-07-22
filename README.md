@@ -209,7 +209,7 @@ Composastructure implements the core functionalities from the Liqid API and make
 
 #### LiqidObserver
 
-Use the LiqidObserver class to pull relevant information about a Liqid system. The methods in this class will not affect the state of groups, machines, or devices in the system. Here are example use cases for public methods. Compared to the LiqidController class, you have multiple observer instances observing a system since they won't interfere with one another. You will notice that the methods are grouped by collections, lookup, and details just like the REST API, but do notice that some of the data types are not the same. Most, if not all, data types are provided by the Liqid API. You can find all of them in models.ts.
+Use the LiqidObserver class to pull relevant information about a Liqid system. The methods in this class will not affect the state of groups, machines, or devices in the system. Here are examples of how to use the public methods. Compared to the LiqidController class, you can have multiple observer instances observing a system, since they won't interfere with one another. You will notice that the methods are grouped by collections, lookup, and details just like the REST API, but do notice that some of the data types are not the same. Most, if not all, data types are provided by the Liqid API. You can find all of them in models.ts.
 ```typescript
 import { LiqidObserver } from 'Composastructure';
 var observer = new LiqidObserver('10.0.100.125', 'DevKit');
@@ -237,6 +237,7 @@ let groupId: number = observer.getGroupIdByName('SomeGroup');
 let machine: Machine = observer.getMachineById(1);
 let predevice: PreDevice = observer.getPreDeviceByName('cpu0');
 let deviceStatus: DeviceStatus = observer.getDeviceStatusByName('cpu0');
+let ipmi: string = observer.getIpmiAddressByName('cpu0');
 ```
 
 **Details**
@@ -257,9 +258,10 @@ let deviceStatuses: DeviceStatus[] = observer.convertHistToDevStatuses(connectio
 let deviceStatuses: OrganizedDeviceStatuses = observer.getDeviceStatusesOrganized();
 
 // This is the core function for selecting deviceStatuses to be used in a machine
-// This is the function that can handle quantities of devices, list of device names, and/or list of device names.
-// GatheringDevStatsOptions has a property called gatherUnused. If set to false, it will select from devices
-// that are used by other machines. Idealy, set this to true.
+// It can handle quantities of devices, list of device names, and list of ipmi's.
+// GatheringDevStatsOptions has a property called gatherUnused. 
+// If set to false, it will select from devices that are used by other machines.
+// Ideally, set this to true.
 let options: GatheringDevStatsOptions = { /* ... */ };
 let deviceStatuses: DeviceStatus[] = observer.gatherRequiredDeviceStatuses(options);
 ```
@@ -274,13 +276,11 @@ let id: number = observer.getFabricId();
 // False if you want to re-enable real time updates.
 observer.setBusyState(false);
 
-// Use the name of a cpu device to get its ipmi address
-let ipmi: string = observer.getIpmiAddressByName('cpu0');
-
 // Provide the group id to check if the group is empty or not.
 let isEmpty: boolean = observer.checkGroupIsEmpty(1);
 
-// Check to see if a machine name is used; for determining if machine name can be used or not
+// Check to see if a machine name is used;
+// for determining if machine name can be used or not
 let exists: boolean = observer.checkMachNameExists('MachName');
 
 // After a compose/create operation, the observer may not get notified right away,
@@ -295,7 +295,7 @@ Use the LiqidController class to modify the state of the Liqid system. Almost al
 import { LiqidController } from 'Composastructure';
 var controller = new LiqidObserver('10.0.100.125', 'DevKit');
 
-// Calling start will allow the controller to start its own private observer instance
+// Calling start will allow the controller to start its own observer instance
 // It will use this to determine if your create/compose command is valid or not
 controller.start().then((success) => {
     if (success) console.log('Controller successfully started. You can now create/compose on DevKit system.');
@@ -328,7 +328,7 @@ These methods for devices are not available in the REST API. They are used in th
 ```typescript
 let deviceStatuses: DeviceStatus[] = [ /* ... */ ];
 await controller.moveDevicesToGroup(deviceStatuses, 1); // provide target group id
-await controller.moveDevicesToMachine(deviceStatuses, 1); // provide target machine id
+await controller.moveDevicesToMachine(deviceStatuses, 1); // provide target mach id
 ```
 
 **Miscellaneous**
@@ -339,4 +339,4 @@ let id: number = controller.getFabricId();
 
 ### 2.2: Liqid API (Composastructure as wrapper)
 
-Because Composastructure is built on Liqid's API, almost all of its endpoints are also available for use. Liqid's REST endpoints are wrapped in functions that return only the needed data instead of the entire http response.
+Because Composastructure is built on Liqid's API, almost all of its endpoints are also available for use. Liqid's REST endpoints are wrapped in functions that return only the needed data instead of the entire http response. There is too much to describe, but here are some important things to know.

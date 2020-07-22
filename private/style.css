@@ -6,13 +6,166 @@ h1 {
     margin: 0px 80px 0px 80px;
 }
 
+.shade {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    background-color: rgba(0, 0, 0, 0);
+    width: 100%;
+    height: 100%;
+    transition: background-color 0.5s;
+    pointer-events: none;
+}
+.shade.shown {
+    background-color: rgba(0, 0, 0, 0.7);
+    pointer-events: initial;
+}
+
+.icon-normal {
+    width: 22px;
+    height: 22px;
+    font-size: 22px !important;
+}
+
+.fabric-indicator {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 240px;
+    height: 60px;
+    margin: 20px;
+    background-color: #00aa00; /*white*/
+    color: black;
+    transition: background-color 0.5s, box-shadow 0.5s;
+}
+.fabric-indicator::after {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0px;
+    box-shadow: 0 0 6px 1px black inset;
+    pointer-events: none;
+    content: '';
+    transition: box-shadow 0.5s;
+}
+.fabric-unlocked {
+    background-color: #000077;
+}
+.fabric-blocked {
+    background-color: #ff0000;
+    box-shadow: 0px 0px 15px 1px #ff0000;
+}
+.fabric-blocked::after {
+    box-shadow: initial;
+}
+.fabric-details {
+    float: left;
+    height: calc(100% - 20px);
+    width: 170px;
+    padding: 10px 0px 10px 10px;
+}
+.fabric-details>div {
+    height: 20px;
+    width: 100%;
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+#fabric-lock {
+    float: left;
+    width: 40px;
+    height: 40px;
+    margin: 10px;
+    font-size: 40px;
+    text-align: center;
+    cursor: pointer;
+}
+
+#menu-toggler {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    margin: 10px;
+    cursor: pointer;
+}
+
+.side-menu {
+    position: absolute;
+    top: 0px;
+    right: 100%;
+    width: 250px;
+    height: 100vh;
+    background-color: #0088cc; /*#ddd*/
+    box-shadow: none;
+    transition: right 0.5s, box-shadow 0.5s;
+    color: white;
+}
+.side-menu.shown {
+    right: calc(100% - 250px);
+    box-shadow: 1px 0px 15px black;
+}
+
+.side-config-form {
+    overflow: hidden;
+}
+.side-config-form .form-item {
+    display: flex;
+    width: 150px;
+    align-items: center;
+    padding-left: 5px;
+    border-width: 5px 0px 5px 5px;
+    border-color: rgba(0,0,0,0);
+    border-style: solid;
+    border-left: 5px solid white;
+}
+.side-config-form .item-label {
+    display: block;
+    width: 70px;
+    float: left;
+    text-align: center;
+    font-size: 20px;
+}
+.side-config-form .integer-input {
+    font-size: 18px;
+    float: left;
+    margin: 0px 5px;
+}
+.side-config-form .integer-input>.integer-incrementer {
+    text-align: center;
+    border: 3px solid;
+    border-bottom-color: rgba(0,0,0,0);
+    cursor: pointer;
+}
+.side-config-form .integer-input>.value-displayer {
+    text-align: center;
+    width: 30px;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0);
+    border-right: 3px solid white;
+    background-color: inherit;
+    color: white;
+}
+.side-config-form .integer-input>.integer-decrementer {
+    text-align: center;
+    border: 3px solid;
+    border-top-color: rgba(0,0,0,0);
+    cursor: pointer;
+}
+.value-displayer:focus {
+    outline: none;
+}
+
 .header {
     width: 100%;
     height: 100px;
-    background-color: #999;
+    background-color: #000033; /*#999*/
     display: flex;
     align-items: center;
     justify-content: space-around;
+    color: white;
 }
 
 .config-label {
@@ -24,27 +177,28 @@ h1 {
     float: left;
     width: 300px;
     height: calc(100vh - 100px);
-    background-color: #ccc;
+    background-color: #002050; /*#ccc*/
     overflow: hidden;
     position: relative;
     border-right: 1px solid black;
+    color: white;
 }
 
 .side-config>#main-side-content {
-    width: 97.5%;
-    height: 97.5%;
+    width: 95%;
+    height: 100%;
     position: absolute;
-    padding: 2.5%;
+    padding: 0px 2.5%;
 }
 .side-config>.drawer {
     width: 100%;
     height: 100%;
-    background-color: #bbb;
+    background-color: #001742; /*#bbb*/
     position: absolute;
     left: 100%;
 }
 .side-config>.drawer>.drawer-header {
-    background-color: #aaa;
+    background-color: #000835; /*#aaa*/
     width: calc(100% - 10px);
     height: 30px;
     padding: 5px;
@@ -54,9 +208,12 @@ h1 {
     height: 30px;
     cursor: pointer;
     float: left;
-    background-image: url('images/arrow-left.png');
+    color: white;
+    font-size: 30px;
+    text-align: center;
+    /* background-image: url('images/arrow-left.png');
     background-size: 100%;
-    background-repeat: no-repeat;
+    background-repeat: no-repeat; */
 }
 .side-config>.drawer>.drawer-content {
     width: calc(100% - 10px);
@@ -156,12 +313,6 @@ h1 {
     cursor: pointer;
 }
 
-#fabric-indicator {
-    width: 100px;
-    height: 40px;
-    background-color: white;
-}
-
 #configure {
     width: 100px;
     height: 40px;
@@ -172,16 +323,17 @@ h1 {
     overflow: hidden;
     white-space: nowrap;
     position: relative;
+    background-color: #002050; /*white*/
 }
 .main-config>.drawer {
     width: 100%;
     height: 100%;
-    background-color: #bbb;
+    background-color: #001742; /*#bbb*/
     position: absolute;
     bottom: 100%;
 }
 .main-config>.drawer>.drawer-header {
-    background-color: #aaa;
+    background-color: #000835; /*aaa*/
     width: calc(100% - 10px);
     height: 30px;
     padding: 5px;
@@ -191,10 +343,13 @@ h1 {
     height: 30px;
     cursor: pointer;
     float: left;
-    background-image: url('images/arrow-left.png');
+    color: white;
+    font-size: 30px;
+    text-align: center;
+    /* background-image: url('images/arrow-left.png');
     background-size: 100%;
     background-repeat: no-repeat;
-    transform: rotate(90deg);
+    transform: rotate(90deg); */
 }
 .main-config>.drawer>.drawer-content {
     width: calc(100% - 10px);
@@ -215,7 +370,7 @@ h1 {
     overflow-x: scroll;
     overflow-y: hidden;
     white-space: nowrap;
-    background-color: white;
+    background-color: #000022; /*white*/
     height: calc(100vh - 100px);
 }
 
@@ -274,4 +429,25 @@ h1 {
     padding: 5px;
     cursor: pointer;
     background-color: inherit;
+}
+
+.side-config::after {
+    width: 105%;
+    height: 105%;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    box-shadow: inset 0 0 15px black;
+    pointer-events: none;
+    content: '';
+}
+.main-config::after {
+    width: 105%;
+    height: 105%;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    box-shadow: inset 0 0 15px 2px black;
+    pointer-events: none;
+    content: '';
 }

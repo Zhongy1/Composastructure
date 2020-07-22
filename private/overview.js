@@ -1,6 +1,11 @@
 const socket = io();
 
-var fabrics;
+var fabrics = {
+    fabrIds: [],
+    names: [],
+    groups: [],
+    devices: []
+};
 var fabricSelected;
 var liqidView;
 var groupedView = true;
@@ -14,6 +19,10 @@ var alertsRegion;
 var alerts = {};
 var alertsGenerated = 0;
 var usableAlertIds = [];
+
+var fabricLocked = true;
+var lastControlOperation = 0;
+var relockStarted = false;
 
 var viewOptions = [
     {
@@ -125,6 +134,9 @@ function generateSimpleMachineComposeForm() {
     });
     return form;
 }
+function generateSimpleMachineComposeFormX() {
+
+}
 var simpleMachineComposeForm = generateSimpleMachineComposeForm();
 
 function selectFabric(fabricId) {
@@ -143,6 +155,7 @@ function displayFabric(fabricId) {
 function displayInGroupModeOn(fabricId) {
     liqidView.setAttribute('class', '');
     let index = fabrics.fabrIds.indexOf(fabricId);
+    if (index == -1) return;
     fabrics.groups[index].forEach(group => {
         let groupCard = document.createElement('div');
         groupCard.setAttribute('class', 'card card-group');
@@ -205,6 +218,7 @@ function displayInGroupModeOn(fabricId) {
 function displayInGroupModeOff(fabricId) {
     liqidView.setAttribute('class', 'unified');
     let index = fabrics.fabrIds.indexOf(fabricId);
+    if (index == -1) return;
     fabrics.groups[index].forEach(group => {
         group.machines.forEach(machine => {
             let machineCard = document.createElement('div');
@@ -285,6 +299,78 @@ function getMachineCharacteristics(deviceArray) {
     return characteristics;
 }
 
+function indicateOperationBlocked() {
+    let indicator = document.getElementById('indicator');
+    indicator.classList.add('fabric-blocked');
+    setTimeout(() => {
+        indicator.classList.remove('fabric-blocked');
+    }, 1000);
+}
+
+function attemptRelockWhenInactive() {
+    let lockState = document.getElementById('lock-state');
+    let indicator = document.getElementById('indicator');
+    if (!relockStarted) {
+        relockStarted = true;
+    }
+    setTimeout(() => {
+        if (Date.now() >= lastControlOperation + 5000) {
+            lockState.classList.remove('fa-unlock');
+            lockState.classList.add('fa-lock');
+            fabricLocked = true;
+            indicator.classList.remove('fabric-unlocked');
+            relockStarted = false;
+        }
+        else {
+            attemptRelockWhenInactive();
+        }
+    }, 5000);
+}
+
+function prepareSideMenu() {
+    let menuToggler = document.getElementById('menu-toggler');
+    let menu = document.getElementById('menu');
+    let shade = document.getElementById('view-coverer');
+    menuToggler.addEventListener('click', (e) => {
+        if (menu.classList.contains('shown')) {
+            menu.classList.remove('shown');
+            shade.classList.remove('shown');
+        }
+        else {
+            menu.classList.add('shown');
+            shade.classList.add('shown');
+        }
+    });
+    shade.addEventListener('click', (e) => {
+        menu.classList.remove('shown');
+        shade.classList.remove('shown');
+    })
+}
+
+function prepareFabricIndicator() {
+    let lock = document.getElementById('fabric-lock');
+    let lockState = document.getElementById('lock-state');
+    let indicator = document.getElementById('indicator');
+    lock.addEventListener('click', (e) => {
+        if (fabricLocked) {
+            lockState.classList.remove('fa-lock');
+            lockState.classList.add('fa-unlock');
+            fabricLocked = false;
+            indicator.classList.remove('fabric-blocked');
+            indicator.classList.add('fabric-unlocked');
+            if (!relockStarted) {
+                attemptRelockWhenInactive();
+            }
+        }
+        else {
+            lockState.classList.remove('fa-unlock');
+            lockState.classList.add('fa-lock');
+            fabricLocked = true;
+            indicator.classList.remove('fabric-unlocked');
+        }
+    })
+}
+
 function prepareSideConfig() {
     let goBackButton = document.getElementById('side-config-return');
     goBackButton.addEventListener('click', (e) => {
@@ -346,7 +432,7 @@ function prepareMainConfig() {
     let goBackButton = document.getElementById('main-config-return');
     goBackButton.addEventListener('click', (e) => {
         if (mainConfigLocked) return;
-        $('#side-config-drawer')
+        $('#main-config-drawer')
             .css({ bottom: '0%' })
             .animate({ bottom: '100%' }, 500, () => {
                 mainConfigShown = false;
@@ -365,26 +451,30 @@ function loadMachineSimpleDetails(machine) {
     deleteButton.setAttribute('class', 'delete-button');
     deleteButton.innerHTML = 'Delete';
     deleteButton.addEventListener('click', (e) => {
-        console.log('delete machine ' + machine.machId);
-        $.ajax({
-            url: `api/machine/${fabricSelected}/${machine.machId}`,
-            type: 'DELETE',
-            dataType: 'json',
-            success: (data) => {
-                console.log('From server: ' + JSON.stringify(data));
-            },
-            error: (err) => {
-                console.log('got error: ' + JSON.stringify(err));
-                generateAlert({
-                    // id: 'tempA',
-                    title: 'Error: ' + err.responseJSON.code,
-                    message: 'Message: ' + err.responseJSON.description,
-                    duration: 5000,
-                    ignorable: true
-                });
-
-            }
-        });
+        decomposeMachine(machine);
+        // if (fabricLocked) {
+        //     indicateOperationBlocked();
+        //     return;
+        // }
+        // console.log('delete machine ' + machine.machId);
+        // $.ajax({
+        //     url: `api/machine/${fabricSelected}/${machine.machId}`,
+        //     type: 'DELETE',
+        //     dataType: 'json',
+        //     success: (data) => {
+        //         console.log('From server: ' + JSON.stringify(data));
+        //     },
+        //     error: (err) => {
+        //         console.log('got error: ' + JSON.stringify(err));
+        //         generateAlert({
+        //             // id: 'tempA',
+        //             title: 'Error: ' + err.responseJSON.code,
+        //             message: 'Message: ' + err.responseJSON.description,
+        //             duration: 5000,
+        //             ignorable: true
+        //         });
+        //     }
+        // });
     });
     secondarySideContent.appendChild(deleteButton);
 }
@@ -400,26 +490,31 @@ function loadGroupSimpleDetails(group) {
     deleteButton.setAttribute('class', 'delete-button');
     deleteButton.innerHTML = 'Delete';
     deleteButton.addEventListener('click', (e) => {
-        console.log('delete group ' + group.grpId);
-        $.ajax({
-            url: `api/group/${fabricSelected}/${group.grpId}`,
-            type: 'DELETE',
-            dataType: 'json',
-            success: (data) => {
-                console.log('From server: ' + JSON.stringify(data));
-            },
-            error: (err) => {
-                console.log('got error: ' + JSON.stringify(err));
-                generateAlert({
-                    // id: 'tempB',
-                    title: 'Error: ' + err.responseJSON.code,
-                    message: 'Message: ' + err.responseJSON.description,
-                    duration: 5000,
-                    ignorable: true
-                });
+        deleteGroup(group);
+        // if (fabricLocked) {
+        //     indicateOperationBlocked();
+        //     return;
+        // }
+        // console.log('delete group ' + group.grpId);
+        // $.ajax({
+        //     url: `api/group/${fabricSelected}/${group.grpId}`,
+        //     type: 'DELETE',
+        //     dataType: 'json',
+        //     success: (data) => {
+        //         console.log('From server: ' + JSON.stringify(data));
+        //     },
+        //     error: (err) => {
+        //         console.log('got error: ' + JSON.stringify(err));
+        //         generateAlert({
+        //             // id: 'tempB',
+        //             title: 'Error: ' + err.responseJSON.code,
+        //             message: 'Message: ' + err.responseJSON.description,
+        //             duration: 5000,
+        //             ignorable: true
+        //         });
 
-            }
-        });
+        //     }
+        // });
     });
     secondarySideContent.appendChild(deleteButton);
 }
@@ -442,7 +537,9 @@ function loadDevices() {
     let assignedDevicesList = document.createElement('ul');
     secondarySideContent.appendChild(assignedDevicesList);
 
-    fabrics.devices[fabrics.fabrIds.indexOf(fabricSelected)].forEach(device => {
+    let index = fabrics.fabrIds.indexOf(fabricSelected);
+    if (index == -1) return;
+    fabrics.devices[index].forEach(device => {
         let listElement = document.createElement('li');
         listElement.innerHTML = device.id;
         if (device.mach_id == null)
@@ -496,6 +593,11 @@ function showMainConfig() {
 
 function postGroupCreateData(data) {
     try {
+        if (fabricLocked) {
+            indicateOperationBlocked();
+            return;
+        }
+        lastControlOperation = Date.now();
         let name = (data.name) ? data.name : '';
         let alertId = generateAlert({
             title: 'Creating: ' + name,
@@ -536,6 +638,11 @@ function postGroupCreateData(data) {
 
 function deleteGroup(group) {
     try {
+        if (fabricLocked) {
+            indicateOperationBlocked();
+            return;
+        }
+        lastControlOperation = Date.now();
         let alertId = generateAlert({
             title: 'Deleting: ' + group.gname,
             message: 'Message: ' + 'Trying to delete your group. Please wait...',
@@ -570,6 +677,11 @@ function deleteGroup(group) {
 
 function postMachineComposeData(data) {
     try {
+        if (fabricLocked) {
+            indicateOperationBlocked();
+            return;
+        }
+        lastControlOperation = Date.now();
         let groupId = parseInt(data.grpId);
         if (typeof groupId != 'number' || isNaN(groupId) || groupId <= 0) {
             groupId = null;
@@ -621,6 +733,11 @@ function postMachineComposeData(data) {
 
 function decomposeMachine(machine) {
     try {
+        if (fabricLocked) {
+            indicateOperationBlocked();
+            return;
+        }
+        lastControlOperation = Date.now();
         let alertId = generateAlert({
             title: 'Decomposing: ' + machine.mname,
             message: 'Message: ' + 'Trying to decompose your machine. Please wait...',
@@ -744,6 +861,8 @@ function getFormData(formId) {
 $(document).ready(() => {
     liqidView = document.getElementById('liqid-view');
     alertsRegion = document.getElementById('alerts');
+    prepareSideMenu();
+    prepareFabricIndicator();
     prepareSideConfig();
     prepareMainConfig();
 });
