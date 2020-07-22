@@ -624,7 +624,7 @@ export class LiqidCommunicator {
     //GET '/manager/{type}' List all known managed entities; available types: ipmi, device
     public getManageableIpmiAddresses(): Promise<ManageableIpmiAddress[]> {
         return new Promise<ManageableIpmiAddress[]>((resolve, reject) => {
-            axios.get(this.liqidUri + '/manager/ipmi')
+            axios.get(this.liqidUri + '/manager/network/ipmi/cpu')
                 .then(res => {
                     resolve(res.data.response.data);
                 }, err => {

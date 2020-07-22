@@ -373,7 +373,7 @@ export interface ManageableIpmiAddress {
     type: string,
     cpu_name: string,
     credentials: any,
-    ipmi_address: string,
+    ip_address: string,
     port: number
 }
 export interface NodeConfiguration {
