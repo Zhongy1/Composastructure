@@ -310,7 +310,7 @@ h1 {
     background-color: white;
     border: 3px solid black;
     border-radius: 5px;
-    box-shadow: 2px 3px 3px #777;
+    box-shadow: 2px 3px 3px black;
     margin: 10px;
     padding: 10px;
     display: inline-block;
@@ -322,6 +322,7 @@ h1 {
     height: calc(100% - 25px);
     padding: 0px;
     overflow-x: auto;
+    background-color: #1f1f7a;
     -ms-overflow-style: none;
 }
 .card-group::-webkit-scrollbar {
@@ -353,7 +354,7 @@ h1 {
 .card-machine-header {
     height: 25px;
     width: 100%;
-    background-color: gray;
+    background-color: #1f1f7a;
     text-align: center;
     font-size: 20px;
     overflow: hidden;
@@ -478,7 +479,7 @@ h1 {
     height: 70px;
     border: 2px solid black;
     border-radius: 7px;
-    background-color: white;
+    background-color: cornflowerblue;
     overflow: hidden;
 }
 
@@ -493,6 +494,9 @@ h1 {
     background-color: inherit;
     margin: 10px 0px;
 }
+.submit-button:focus {
+    outline: none;
+}
 
 .delete-button {
     width: 100%;
@@ -503,6 +507,9 @@ h1 {
     padding: 5px;
     cursor: pointer;
     background-color: inherit;
+}
+.delete-button:focus {
+    outline: none;
 }
 
 .side-config::after {

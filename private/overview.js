@@ -488,12 +488,7 @@ function prepareFabricIndicator() {
 function prepareSideConfig() {
     let goBackButton = document.getElementById('side-config-return');
     goBackButton.addEventListener('click', (e) => {
-        if (secondaryConfigLocked) return;
-        $('#side-config-drawer')
-            .css({ left: '0%' })
-            .animate({ left: '100%' }, 500, () => {
-                secondaryConfigShown = false;
-            });
+        hideSecondarySideConfig();
     });
     populateMainSideContent();
 }
@@ -566,29 +561,7 @@ function loadMachineSimpleDetails(machine) {
     deleteButton.innerHTML = 'Delete';
     deleteButton.addEventListener('click', (e) => {
         decomposeMachine(machine);
-        // if (fabricLocked) {
-        //     indicateOperationBlocked();
-        //     return;
-        // }
-        // console.log('delete machine ' + machine.machId);
-        // $.ajax({
-        //     url: `api/machine/${fabricSelected}/${machine.machId}`,
-        //     type: 'DELETE',
-        //     dataType: 'json',
-        //     success: (data) => {
-        //         console.log('From server: ' + JSON.stringify(data));
-        //     },
-        //     error: (err) => {
-        //         console.log('got error: ' + JSON.stringify(err));
-        //         generateAlert({
-        //             // id: 'tempA',
-        //             title: 'Error: ' + err.responseJSON.code,
-        //             message: 'Message: ' + err.responseJSON.description,
-        //             duration: 5000,
-        //             ignorable: true
-        //         });
-        //     }
-        // });
+        hideSecondarySideConfig();
     });
     secondarySideContent.appendChild(deleteButton);
 }
@@ -605,30 +578,7 @@ function loadGroupSimpleDetails(group) {
     deleteButton.innerHTML = 'Delete';
     deleteButton.addEventListener('click', (e) => {
         deleteGroup(group);
-        // if (fabricLocked) {
-        //     indicateOperationBlocked();
-        //     return;
-        // }
-        // console.log('delete group ' + group.grpId);
-        // $.ajax({
-        //     url: `api/group/${fabricSelected}/${group.grpId}`,
-        //     type: 'DELETE',
-        //     dataType: 'json',
-        //     success: (data) => {
-        //         console.log('From server: ' + JSON.stringify(data));
-        //     },
-        //     error: (err) => {
-        //         console.log('got error: ' + JSON.stringify(err));
-        //         generateAlert({
-        //             // id: 'tempB',
-        //             title: 'Error: ' + err.responseJSON.code,
-        //             message: 'Message: ' + err.responseJSON.description,
-        //             duration: 5000,
-        //             ignorable: true
-        //         });
-
-        //     }
-        // });
+        hideSecondarySideConfig();
     });
     secondarySideContent.appendChild(deleteButton);
 }
@@ -696,6 +646,15 @@ function showSecondarySideConfig() {
         });
 }
 
+function hideSecondarySideConfig() {
+    if (!secondaryConfigShown) return;
+    $('#side-config-drawer')
+        .css({ left: '0%' })
+        .animate({ left: '100%' }, 500, () => {
+            secondaryConfigShown = false;
+        });
+}
+
 function showMainConfig() {
     if (mainConfigShown) return;
     $('#main-config-drawer')
@@ -729,19 +688,19 @@ function postGroupCreateData(data) {
             dataType: 'json',
             success: (res) => {
                 // console.log('From server: ' + JSON.stringify(res));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Success: ' + name + ' has been created.',
                     message: 'Message: Create task completed.'
                 });
-                deleteAlert(alertId);
             },
             error: (err) => {
                 // console.log('got error: ' + JSON.stringify(err));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Error: ' + err.responseJSON.code,
                     message: 'Message: ' + err.responseJSON.description,
                 });
-                deleteAlert(alertId);
             }
         });
     }
@@ -768,19 +727,19 @@ function deleteGroup(group) {
             dataType: 'json',
             success: (data) => {
                 // console.log('From server: ' + JSON.stringify(data));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Success: ' + group.gname + ' has been deleted.',
                     message: 'Message: Delete task completed.'
                 });
-                deleteAlert(alertId);
             },
             error: (err) => {
                 // console.log('got error: ' + JSON.stringify(err));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Error: ' + err.responseJSON.code,
                     message: 'Message: ' + err.responseJSON.description
                 });
-                deleteAlert(alertId);
             }
         });
     }
@@ -824,19 +783,19 @@ function postMachineComposeData(data) {
             dataType: 'json',
             success: (res) => {
                 // console.log('From server: ' + JSON.stringify(res));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Success: ' + name + ' has been composed.',
                     message: 'Message: Compose task completed.'
                 });
-                deleteAlert(alertId);
             },
             error: (err) => {
                 // console.log('got error: ' + JSON.stringify(err));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Compose Failed: ' + err.responseJSON.code,
                     message: 'Message: ' + err.responseJSON.description
                 });
-                deleteAlert(alertId);
             }
         });
     }
@@ -863,19 +822,19 @@ function decomposeMachine(machine) {
             dataType: 'json',
             success: (data) => {
                 // console.log('From server: ' + JSON.stringify(data));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Success: ' + machine.mname + ' has been decomposed.',
                     message: 'Message: Decompose task completed.'
                 });
-                deleteAlert(alertId);
             },
             error: (err) => {
                 // console.log('got error: ' + JSON.stringify(err));
+                deleteAlert(alertId);
                 generateAlert({
                     title: 'Error: ' + err.responseJSON.code,
                     message: 'Message: ' + err.responseJSON.description
                 });
-                deleteAlert(alertId);
             }
         });
     }
