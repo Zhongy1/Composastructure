@@ -67,7 +67,7 @@ var miscOptions = [
     }
 ];
 
-function generateGroupCreateForm() {
+function generateGroupCreateFormV1() {
     let form = document.createElement('form');
     form.setAttribute('id', 'simple-group-form');
     ['name'].forEach(property => {
@@ -93,9 +93,35 @@ function generateGroupCreateForm() {
     });
     return form;
 }
-var groupCreateForm = generateGroupCreateForm();
+function generateGroupCreateFormV2() {
+    let form = createElement('form', 'side-config-form');
+    form.setAttribute('id', 'simple-group-form');
+    ['name'].forEach(property => {
+        let formItem = createElement('div', 'form-item');
+        form.appendChild(formItem);
+        formItem.appendChild(createElement('label', 'item-label', property));
+        let valInput = createElement('div', 'value-input');
+        formItem.appendChild(valInput);
+        let valDisplayer = createElement('div', 'value-displayer');
+        valInput.appendChild(valDisplayer);
+        let input = createElement('input', 'form-value');
+        input.setAttribute('name', property);
+        valDisplayer.appendChild(input);
+    });
+    let submit = document.createElement('button');
+    submit.setAttribute('class', 'submit-button');
+    submit.innerHTML = 'Submit';
+    form.appendChild(submit);
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        console.log(getFormData('simple-group-form'));
+        postGroupCreateData(getFormData('simple-group-form'));
+    });
+    return form;
+}
+var groupCreateForm = generateGroupCreateFormV2();
 
-function generateSimpleMachineComposeForm() {
+function generateSimpleMachineComposeFormV1() {
     let form = document.createElement('form');
     form.setAttribute('id', 'simple-machine-form');
     ['cpu', 'gpu', 'ssd', 'optane', 'nic', 'fpga'].forEach(property => {
@@ -134,10 +160,98 @@ function generateSimpleMachineComposeForm() {
     });
     return form;
 }
-function generateSimpleMachineComposeFormX() {
-
+function generateSimpleMachineComposeFormV2() {
+    let form = createElement('form', 'side-config-form');
+    form.setAttribute('id', 'simple-machine-form');
+    ['cpu', 'gpu', 'ssd', 'optane', 'nic', 'fpga'].forEach(property => {
+        let val = 0;
+        let throttle = 0;
+        let formItem = createElement('div', 'form-item');
+        form.appendChild(formItem);
+        formItem.appendChild(createElement('label', 'item-label', property));
+        let intInput = createElement('div', 'integer-input');
+        formItem.appendChild(intInput);
+        let incrementer = createElement('div', 'integer-incrementer', '<i class="fa fa-chevron-up"></i>');
+        intInput.appendChild(incrementer);
+        let valDisplayer = createElement('div', 'value-displayer');
+        intInput.appendChild(valDisplayer);
+        let input = createElement('input', 'form-value');
+        input.setAttribute('value', '0');
+        input.setAttribute('name', property);
+        input.setAttribute('readonly', '');
+        valDisplayer.appendChild(input);
+        let decrementer = createElement('div', 'integer-decrementer', '<i class="fa fa-chevron-down"></i>');
+        intInput.appendChild(decrementer);
+        //scroll listener on intInput
+        intInput.addEventListener('wheel', (e) => {
+            if (e.deltaY >= 0) {
+                if (val >= 100) return;
+                if (e.deltaY >= 10) {
+                    val++;
+                    input.setAttribute('value', val);
+                }
+                else {
+                    throttle += e.deltaY;
+                    if (throttle >= 10) {
+                        throttle = 0;
+                        val++;
+                        input.setAttribute('value', val);
+                    }
+                }
+            }
+            else if (e.deltaY < 0) {
+                if (val <= 0) return;
+                if (e.deltaY <= -10) {
+                    val--;
+                    input.setAttribute('value', val);
+                }
+                else {
+                    throttle -= e.deltaY;
+                    if (throttle >= 10) {
+                        throttle = 0;
+                        val--;
+                        input.setAttribute('value', val);
+                    }
+                }
+            }
+        }, { passive: true });
+        //click listener on incrementer
+        incrementer.addEventListener('click', (e) => {
+            if (val >= 100) return;
+            val++;
+            input.setAttribute('value', val);
+        });
+        //click listen on decrementer
+        decrementer.addEventListener('click', (e) => {
+            if (val <= 0) return;
+            val--;
+            input.setAttribute('value', val);
+        });
+    });
+    ['name', 'grpId'].forEach(property => {
+        let formItem = createElement('div', 'form-item');
+        form.appendChild(formItem);
+        formItem.appendChild(createElement('label', 'item-label', property));
+        let valInput = createElement('div', 'value-input');
+        formItem.appendChild(valInput);
+        let valDisplayer = createElement('div', 'value-displayer');
+        valInput.appendChild(valDisplayer);
+        let input = createElement('input', 'form-value');
+        input.setAttribute('name', property);
+        valDisplayer.appendChild(input);
+    });
+    let submit = document.createElement('button');
+    submit.setAttribute('class', 'submit-button');
+    submit.innerHTML = 'Submit';
+    form.appendChild(submit);
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        console.log(getFormData('simple-machine-form'));
+        postMachineComposeData(getFormData('simple-machine-form'));
+    });
+    return form;
 }
-var simpleMachineComposeForm = generateSimpleMachineComposeForm();
+var simpleMachineComposeForm = generateSimpleMachineComposeFormV2();
 
 function selectFabric(fabricId) {
     if (!fabricId || fabricId == fabricSelected) return;
@@ -161,7 +275,7 @@ function displayInGroupModeOn(fabricId) {
         groupCard.setAttribute('class', 'card card-group');
         let groupHeader = document.createElement('div');
         groupHeader.setAttribute('class', 'card-group-header');
-        groupHeader.innerHTML = group.gname;
+        groupHeader.innerHTML = `${group.gname} (id: ${group.grpId})`;
         groupHeader.setAttribute('id', 'card-group-' + group.grpId);
         groupHeader.addEventListener('click', (e) => {
             loadGroupSimpleDetails(group);
@@ -180,7 +294,7 @@ function displayInGroupModeOn(fabricId) {
 
             let machineHeader = document.createElement('div');
             machineHeader.setAttribute('class', 'card-machine-header');
-            machineHeader.innerHTML = machine.mname;
+            machineHeader.innerHTML = `${machine.mname} (id: ${machine.machId})`;
             machineCard.appendChild(machineHeader);
 
             let characteristics = getMachineCharacteristics(machine.devices);
@@ -231,7 +345,7 @@ function displayInGroupModeOff(fabricId) {
 
             let machineHeader = document.createElement('div');
             machineHeader.setAttribute('class', 'card-machine-header');
-            machineHeader.innerHTML = machine.mname;
+            machineHeader.innerHTML = `${machine.mname} (id: ${machine.machId})`;
             machineCard.appendChild(machineHeader);
 
             let characteristics = getMachineCharacteristics(machine.devices);
@@ -314,7 +428,7 @@ function attemptRelockWhenInactive() {
         relockStarted = true;
     }
     setTimeout(() => {
-        if (Date.now() >= lastControlOperation + 5000) {
+        if (Date.now() >= lastControlOperation + 30000) {
             lockState.classList.remove('fa-unlock');
             lockState.classList.add('fa-lock');
             fabricLocked = true;
@@ -324,7 +438,7 @@ function attemptRelockWhenInactive() {
         else {
             attemptRelockWhenInactive();
         }
-    }, 5000);
+    }, 30000);
 }
 
 function prepareSideMenu() {
@@ -856,6 +970,15 @@ function getFormData(formId) {
         obj[item.name] = item.value;
         return obj;
     }, {});
+}
+
+function createElement(elementType, classes, content) {
+    let element = document.createElement(elementType);
+    element.setAttribute('class', classes);
+    if (content != null) {
+        element.innerHTML = content;
+    }
+    return element;
 }
 
 $(document).ready(() => {

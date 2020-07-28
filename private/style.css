@@ -6,6 +6,10 @@ h1 {
     margin: 0px 80px 0px 80px;
 }
 
+.fa {
+    pointer-events: none;
+}
+
 .shade {
     position: absolute;
     top: 0px;
@@ -112,13 +116,14 @@ h1 {
 }
 .side-config-form .form-item {
     display: flex;
-    width: 150px;
+    width: 100%;
     align-items: center;
     padding-left: 5px;
     border-width: 5px 0px 5px 5px;
     border-color: rgba(0,0,0,0);
     border-style: solid;
     border-left: 5px solid white;
+    box-sizing: border-box;
 }
 .side-config-form .item-label {
     display: block;
@@ -131,14 +136,25 @@ h1 {
     font-size: 18px;
     float: left;
     margin: 0px 5px;
+    -webkit-user-select: none;    
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 .side-config-form .integer-input>.integer-incrementer {
     text-align: center;
     border: 3px solid;
     border-bottom-color: rgba(0,0,0,0);
     cursor: pointer;
+    height: 10px;
+    position: relative;
+}
+.side-config-form .integer-input>.integer-incrementer>i {
+    position: relative;
+    top: -4px;
 }
 .side-config-form .integer-input>.value-displayer {
+    position: relative;
+    left: 0px;
     text-align: center;
     width: 30px;
     border-width: 3px;
@@ -146,15 +162,72 @@ h1 {
     border-color: rgba(0,0,0,0);
     border-right: 3px solid white;
     background-color: inherit;
-    color: white;
+    color: cyan;
+    transition: left 0.5s;
 }
 .side-config-form .integer-input>.integer-decrementer {
     text-align: center;
     border: 3px solid;
     border-top-color: rgba(0,0,0,0);
     cursor: pointer;
+    height: 10px;
+    position: relative;
 }
-.value-displayer:focus {
+.side-config-form .integer-input>.integer-decrementer>i {
+    position: relative;
+    top: -10px;
+}
+.integer-input .value-displayer>.form-value {
+    display: block;
+    width: 100%;
+    text-align: center;
+    border: 0px;
+    padding: 0px;
+    background-color: inherit;
+    color: cyan;
+    font-size: inherit;
+    font: inherit;
+}
+.integer-input .value-displayer>.form-value:focus {
+    outline: none;
+}
+.integer-input .value-displayer>.value-animator {
+    position: absolute;
+    top: 0px;
+    height: 100%;
+    width: 100%;
+    transition: top 1s 0.7s;
+}
+.side-config-form .value-input {
+    font-size: 18px;
+    margin: 0px 5px;
+}
+.side-config-form .value-input>.value-displayer{
+    width: 70%;
+    position: relative;
+    left: 0px;
+    text-align: center;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0);
+    border-right: 3px solid white;
+    border-bottom: 3px solid white;
+    background-color: inherit;
+    color: cyan;
+    transition: left 0.5s;
+}
+.value-input .value-displayer>.form-value {
+    display: block;
+    width: 100%;
+    text-align: center;
+    border: 0px;
+    padding: 0px;
+    background-color: inherit;
+    color: cyan;
+    font-size: inherit;
+    font: inherit;
+}
+.value-input .value-displayer>.form-value:focus {
     outline: none;
 }
 
@@ -418,6 +491,7 @@ h1 {
     padding: 5px;
     cursor: pointer;
     background-color: inherit;
+    margin: 10px 0px;
 }
 
 .delete-button {

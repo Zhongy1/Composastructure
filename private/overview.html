@@ -29,7 +29,7 @@
             <div id='main-side-content'></div>
             <div id='side-config-drawer' class='drawer'>
                 <div class='drawer-header'>
-                    <div id='side-config-return' class='icon fa fa-angle-left'></div>
+                    <div id='side-config-return' class='icon'><i class='fa fa-angle-left'></i></div>
                     <div id='secondary-drawer-header-title'></div>
                 </div>
                 <div id='secondary-side-content' class='drawer-content'>
@@ -39,20 +39,23 @@
                             <label class="item-label">cpu</label>
                             <div class='integer-input'>
                                 <div class='integer-incrementer'><i class='fa fa-chevron-up'></i></div>
-                                <div class='value-displayer'>1</div>
+                                <div class='value-displayer'>
+                                    <input class='form-value' value='1' readonly>
+                                    <div class='value-animator'></div>
+                                </div>
                                 <div class='integer-decrementer'><i class='fa fa-chevron-down'></i></div>
                             </div>
                         </div>
-                    </form>
-                    <form class='side-config-form'>
                         <div class='form-item'>
                             <label class="item-label">optane</label>
-                            <div class='integer-input'>
-                                <div class='integer-incrementer'><i class='fa fa-chevron-up'></i></div>
-                                <div class='value-displayer'>1</div>
-                                <div class='integer-decrementer'><i class='fa fa-chevron-down'></i></div>
+                            <div class='value-input'>
+                                <div class='value-displayer'>
+                                    <input class='form-value'>
+                                    <div class='value-animator'></div>
+                                </div>
                             </div>
                         </div>
+                        <button class='submit-button'>Submit</button>
                     </form>
 
                 </div>
