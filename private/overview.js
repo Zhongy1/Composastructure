@@ -96,6 +96,7 @@ function generateGroupCreateFormV1() {
 function generateGroupCreateFormV2() {
     let form = createElement('form', 'side-config-form');
     form.setAttribute('id', 'simple-group-form');
+    form.setAttribute('spellcheck', 'false');
     ['name'].forEach(property => {
         let formItem = createElement('div', 'form-item');
         form.appendChild(formItem);
@@ -163,6 +164,7 @@ function generateSimpleMachineComposeFormV1() {
 function generateSimpleMachineComposeFormV2() {
     let form = createElement('form', 'side-config-form');
     form.setAttribute('id', 'simple-machine-form');
+    form.setAttribute('spellcheck', 'false');
     ['cpu', 'gpu', 'ssd', 'optane', 'nic', 'fpga'].forEach(property => {
         let val = 0;
         let throttle = 0;

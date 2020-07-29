@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 
 <head>
-
+    <link href='entry.css' rel='stylesheet' type='text/css'>
 </head>
 
 <body>
-    <form action="/login" method="post">
-        <div>
-            <label>Username:</label>
-            <input type="text" name="username" />
-        </div>
-        <div>
-            <label>Password:</label>
-            <input type="password" name="password" />
-        </div>
-        <div>
-            <input type="submit" value="Log In" />
-        </div>
-    </form>
+    <div class='main-view'>
+        <form class='login-form' action="/login" method="post" spellcheck="false">
+            <h2 class='form-header'>COMPaaS DLV</h2>
+            <div class='form-item'>
+                <label>Username</label>
+                <div class='value-input'>
+                    <input type="text" name="username">
+                </div>
+
+            </div>
+            <div class='form-item'>
+                <label>Password</label>
+                <div class='value-input'>
+                    <input type="password" name="password">
+                </div>
+            </div>
+            <button class='submit-button'>Submit</button>
+        </form>
+    </div>
 </body>
