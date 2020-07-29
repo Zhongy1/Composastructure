@@ -342,7 +342,9 @@ h1 {
     height: 35px;
     width: 100%;
     padding-top: 5px;
-    background-color: gray;
+    background-color: #0f0f3e;
+    box-shadow: 0px 1px 8px black;
+    color: white;
     position: sticky;
     top: 0;
     text-align: center;
@@ -354,7 +356,8 @@ h1 {
 .card-machine-header {
     height: 25px;
     width: 100%;
-    background-color: #1f1f7a;
+    background-color: #0f0f3e;
+    color: white;
     text-align: center;
     font-size: 20px;
     overflow: hidden;
@@ -507,6 +510,7 @@ h1 {
     padding: 5px;
     cursor: pointer;
     background-color: inherit;
+    margin: 10px 0px;
 }
 .delete-button:focus {
     outline: none;
