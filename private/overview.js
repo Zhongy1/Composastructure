@@ -46,10 +46,10 @@ var miscOptions = [
         name: 'List Devices',
         function: () => {
             if (secondaryConfigShown) {
-                hideSecondarySideConfig(loadDevices, showSecondarySideConfig);
+                hideSecondarySideConfig(loadDevicesV2, showSecondarySideConfig);
             }
             else {
-                loadDevices();
+                loadDevicesV2();
                 showSecondarySideConfig();
             }
         }
@@ -586,14 +586,14 @@ function prepareDocumentEventHandlers() {
         if (!beginDeviceMoveEvent) return;
         if (!deviceMovement && (Math.abs(e.pageX - startLoc.x) > 5 || Math.abs(e.pageY - startLoc.y) > 5)) {
             deviceMovement = true;
-            draggableLabel.style.top = e.pageY;
-            draggableLabel.style.left = e.pageX;
+            draggableLabel.style.top = e.pageY + 'px';
+            draggableLabel.style.left = e.pageX + 'px';
             draggableLabel.innerHTML = deviceId;
             draggableLabel.classList.remove('hidden');
         }
         else if (deviceMovement) {
-            draggableLabel.style.top = e.pageY;
-            draggableLabel.style.left = e.pageX;
+            draggableLabel.style.top = e.pageY + 'px';
+            draggableLabel.style.left = e.pageX + 'px';
         }
     });
     document.addEventListener('mouseup', (e) => {
@@ -732,7 +732,7 @@ function loadMachineSimpleConfig() {
     secondarySideContent.appendChild(simpleMachineComposeForm);
     let moreOptionsButton = createElement('div', 'more-options-button', '<i class="fa fa-cogs"></i>');
     moreOptionsButton.addEventListener('click', () => {
-        hideSecondarySideConfig(loadDevices, showSecondarySideConfig);
+        hideSecondarySideConfig(loadDevicesV2, showSecondarySideConfig);
         loadMachineComplexConfig();
         showMainConfig();
     });
@@ -742,6 +742,13 @@ function loadMachineSimpleConfig() {
 function loadMachineComplexConfig() {
     let mainHeaderTitle = document.getElementById('main-drawer-header-title');
     mainHeaderTitle.innerHTML = 'Machine Compose';
+    let mainConfigContent = document.getElementById('main-config-content');
+    mainConfigContent.innerHTML = '';
+
+    let deviceStoreWrapper = createElement('div', 'device-label-store-wrapper');
+    deviceStoreWrapper.appendChild(createElement('div', 'header', 'GPUs'));
+    deviceStoreWrapper.appendChild(createElement('div', 'device-label-store'));
+    mainConfigContent.appendChild(deviceStoreWrapper);
 }
 
 function showSecondarySideConfig() {

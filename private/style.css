@@ -35,6 +35,8 @@ h1 {
     cursor: pointer;
     padding: 5px 0px;
     text-align: center;
+    color: white;
+    user-select: none;
 }
 .device-list .device-item>.info-table {
 
@@ -45,7 +47,7 @@ h1 {
     top: 0px;
     left: 0px;
     pointer-events: none;
-    transform: translate(50%, 50%);
+    transform: translate(-50%, -50%);
 }
 #draggable-label.hidden {
     display: none;
@@ -58,6 +60,24 @@ h1 {
     border: 1px solid white;
     font-size: 20px;
     line-height: 100%;
+    color: white;
+    text-align: center;
+}
+
+.device-label-store-wrapper {
+    width: 100px;
+    border: 2px solid white;
+}
+.device-label-store-wrapper .header {
+    width: 100%;
+    height: 30px;
+    font-size: 20px;
+    line-height: 100%;
+    background-color: gray;
+}
+.device-label-store {
+    width: 100%;
+    min-height: 300px;
 }
 
 .fa {
@@ -144,6 +164,7 @@ h1 {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+    line-height: 100%;
 }
 #fabric-lock {
     float: left;
@@ -208,6 +229,7 @@ h1 {
     -webkit-user-select: none;    
     -moz-user-select: none;
     -ms-user-select: none;
+    user-select: none;
 }
 .side-config-form .integer-input>.integer-incrementer {
     text-align: center;
