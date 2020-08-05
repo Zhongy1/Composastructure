@@ -11,9 +11,7 @@ var liqidView;
 var groupedView = true;
 
 var secondaryConfigShown = false;
-var secondaryConfigLocked = false;
 var mainConfigShown = false;
-var mainConfigLocked = false;
 
 var alertsRegion;
 var alerts = {};
@@ -47,22 +45,37 @@ var miscOptions = [
     {
         name: 'List Devices',
         function: () => {
-            loadDevices();
-            showSecondarySideConfig();
+            if (secondaryConfigShown) {
+                hideSecondarySideConfig(loadDevices, showSecondarySideConfig);
+            }
+            else {
+                loadDevices();
+                showSecondarySideConfig();
+            }
         }
     },
     {
         name: 'Create New Group',
         function: () => {
-            loadGroupSimpleConfig();
-            showSecondarySideConfig();
+            if (secondaryConfigShown) {
+                hideSecondarySideConfig(loadGroupSimpleConfig, showSecondarySideConfig);
+            }
+            else {
+                loadGroupSimpleConfig();
+                showSecondarySideConfig();
+            }
         }
     },
     {
         name: 'Compose New Machine',
         function: () => {
-            loadMachineSimpleConfig();
-            showSecondarySideConfig();
+            if (secondaryConfigShown) {
+                hideSecondarySideConfig(loadMachineSimpleConfig, showSecondarySideConfig);
+            }
+            else {
+                loadMachineSimpleConfig();
+                showSecondarySideConfig();
+            }
         }
     }
 ];
@@ -255,6 +268,11 @@ function generateSimpleMachineComposeFormV2() {
 }
 var simpleMachineComposeForm = generateSimpleMachineComposeFormV2();
 
+function generateComplexMachineComposeForm() {
+
+}
+var complexMachineComposeForm = generateComplexMachineComposeForm();
+
 function selectFabric(fabricId) {
     if (!fabricId || fabricId == fabricSelected) return;
     fabricSelected = fabricId;
@@ -263,6 +281,9 @@ function selectFabric(fabricId) {
 function displayFabric(fabricId) {
     if (!fabrics.fabrIds.includes(fabricId)) return;
     liqidView.innerHTML = '';
+    let index = fabrics.fabrIds.indexOf(fabricId);
+    document.getElementById('fabric-id').innerHTML = fabricId;
+    document.getElementById('fabric-name').innerHTML = fabrics.names[index];
     if (groupedView)
         displayInGroupModeOn(fabricId);
     else
@@ -460,7 +481,7 @@ function prepareSideMenu() {
     shade.addEventListener('click', (e) => {
         menu.classList.remove('shown');
         shade.classList.remove('shown');
-    })
+    });
 }
 
 function prepareFabricIndicator() {
@@ -491,6 +512,7 @@ function prepareSideConfig() {
     let goBackButton = document.getElementById('side-config-return');
     goBackButton.addEventListener('click', (e) => {
         hideSecondarySideConfig();
+        hideMainConfig();
     });
     populateMainSideContent();
 }
@@ -502,12 +524,13 @@ function populateMainSideContent() {
     fabricOptionsHeader.innerHTML = 'Fabric Options';
     mainSideContent.appendChild(fabricOptionsHeader);
     if (fabricSelected) {
-        let fabricOptionsList = document.createElement('ul');
+        let fabricOptionsList = createElement('ul', 'config-list');
         mainSideContent.appendChild(fabricOptionsList);
         fabrics.fabrIds.forEach(id => {
+            let index = fabrics.fabrIds.indexOf(id);
             let listElement = document.createElement('li');
-            listElement.setAttribute('class', 'clickable');
-            listElement.innerHTML = id;
+            // listElement.setAttribute('class', 'clickable');
+            listElement.innerHTML = id + ' - ' + fabrics.names[index];
             listElement.addEventListener('click', () => {
                 selectFabric(id);
             });
@@ -517,11 +540,11 @@ function populateMainSideContent() {
     let viewOptionsHeader = document.createElement('h3');
     viewOptionsHeader.innerHTML = 'View Options'
     mainSideContent.appendChild(viewOptionsHeader);
-    let viewOptionsList = document.createElement('ul');
+    let viewOptionsList = createElement('ul', 'config-list');
     mainSideContent.appendChild(viewOptionsList);
     viewOptions.forEach(option => {
         let listElement = document.createElement('li');
-        listElement.setAttribute('class', 'clickable');
+        // listElement.setAttribute('class', 'clickable');
         listElement.innerHTML = option.name;
         listElement.addEventListener('click', option.function);
         viewOptionsList.appendChild(listElement);
@@ -529,11 +552,11 @@ function populateMainSideContent() {
     let miscOptionsHeader = document.createElement('h3');
     miscOptionsHeader.innerHTML = 'Misc. Options';
     mainSideContent.appendChild(miscOptionsHeader);
-    miscOptionsList = document.createElement('ul');
+    miscOptionsList = createElement('ul', 'config-list');
     mainSideContent.appendChild(miscOptionsList);
     miscOptions.forEach(option => {
         let listElement = document.createElement('li');
-        listElement.setAttribute('class', 'clickable');
+        // listElement.setAttribute('class', 'clickable');
         listElement.innerHTML = option.name;
         listElement.addEventListener('click', option.function);
         miscOptionsList.appendChild(listElement);
@@ -542,14 +565,56 @@ function populateMainSideContent() {
 function prepareMainConfig() {
     let goBackButton = document.getElementById('main-config-return');
     goBackButton.addEventListener('click', (e) => {
-        if (mainConfigLocked) return;
-        $('#main-config-drawer')
-            .css({ bottom: '0%' })
-            .animate({ bottom: '100%' }, 500, () => {
-                mainConfigShown = false;
-            });
+        hideMainConfig();
     });
 }
+
+function prepareDocumentEventHandlers() {
+    let beginDeviceMoveEvent = false;
+    let startLoc = { x: 0, y: 0 };
+    let deviceId = null;
+    let deviceMovement = false;
+    let draggableLabel = document.getElementById('draggable-label');
+    document.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('device-label')) {
+            beginDeviceMoveEvent = true;
+            startLoc = { x: e.pageX, y: e.pageY };
+            deviceId = e.target.getAttribute('data-value');
+        }
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!beginDeviceMoveEvent) return;
+        if (!deviceMovement && (Math.abs(e.pageX - startLoc.x) > 5 || Math.abs(e.pageY - startLoc.y) > 5)) {
+            deviceMovement = true;
+            draggableLabel.style.top = e.pageY;
+            draggableLabel.style.left = e.pageX;
+            draggableLabel.innerHTML = deviceId;
+            draggableLabel.classList.remove('hidden');
+        }
+        else if (deviceMovement) {
+            draggableLabel.style.top = e.pageY;
+            draggableLabel.style.left = e.pageX;
+        }
+    });
+    document.addEventListener('mouseup', (e) => {
+        if (!beginDeviceMoveEvent) return;
+        if (deviceMovement) { //drag event
+            if (e.target.classList.contains('device-label-store')) {
+                let label = createElement('div', 'device-label-block', deviceId);
+                e.target.appendChild(label);
+            }
+        }
+        else { //normal click event
+
+        }
+
+        draggableLabel.classList.add('hidden');
+        beginDeviceMoveEvent = false;
+        deviceMovement = false;
+    });
+}
+
+// function 
 
 function loadMachineSimpleDetails(machine) {
     let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
@@ -563,7 +628,8 @@ function loadMachineSimpleDetails(machine) {
     deleteButton.innerHTML = 'Delete';
     deleteButton.addEventListener('click', (e) => {
         decomposeMachine(machine);
-        hideSecondarySideConfig();
+        if (!fabricLocked)
+            hideSecondarySideConfig();
     });
     secondarySideContent.appendChild(deleteButton);
 }
@@ -580,7 +646,8 @@ function loadGroupSimpleDetails(group) {
     deleteButton.innerHTML = 'Delete';
     deleteButton.addEventListener('click', (e) => {
         deleteGroup(group);
-        hideSecondarySideConfig();
+        if (!fabricLocked)
+            hideSecondarySideConfig();
     });
     secondarySideContent.appendChild(deleteButton);
 }
@@ -614,6 +681,36 @@ function loadDevices() {
             assignedDevicesList.appendChild(listElement);
     });
 }
+function loadDevicesV2() {
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
+    sideHeaderTitle.innerHTML = 'Devices';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+
+    let unassignedDevicesHeader = createElement('h3', '', 'Unassigned');
+    secondarySideContent.appendChild(unassignedDevicesHeader);
+    let unassignedDevicesList = createElement('div', 'device-list');
+    secondarySideContent.appendChild(unassignedDevicesList);
+
+    let assignedDevicesHeader = createElement('h3', '', 'Assigned');
+    secondarySideContent.appendChild(assignedDevicesHeader);
+    let assignedDevicesList = createElement('div', 'device-list');
+    secondarySideContent.appendChild(assignedDevicesList);
+
+    let index = fabrics.fabrIds.indexOf(fabricSelected);
+    if (index == -1) return;
+    fabrics.devices[index].forEach(device => {
+        let deviceItem = createElement('div', 'device-item');
+        let deviceLabel = createElement('div', 'device-label', device.id);
+        deviceLabel.setAttribute('data-value', device.id);
+        deviceItem.appendChild(deviceLabel);
+
+        if (device.mach_id == null)
+            unassignedDevicesList.appendChild(deviceItem);
+        else
+            assignedDevicesList.appendChild(deviceItem);
+    });
+}
 
 function loadGroupSimpleConfig() {
     let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
@@ -623,9 +720,9 @@ function loadGroupSimpleConfig() {
     secondarySideContent.appendChild(groupCreateForm);
 }
 
-function loadGroupComplexConfig() {
+// function loadGroupComplexConfig() {
 
-}
+// }
 
 function loadMachineSimpleConfig() {
     let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
@@ -633,10 +730,18 @@ function loadMachineSimpleConfig() {
     let secondarySideContent = document.getElementById('secondary-side-content');
     secondarySideContent.innerHTML = '';
     secondarySideContent.appendChild(simpleMachineComposeForm);
+    let moreOptionsButton = createElement('div', 'more-options-button', '<i class="fa fa-cogs"></i>');
+    moreOptionsButton.addEventListener('click', () => {
+        hideSecondarySideConfig(loadDevices, showSecondarySideConfig);
+        loadMachineComplexConfig();
+        showMainConfig();
+    });
+    secondarySideContent.appendChild(moreOptionsButton);
 }
 
 function loadMachineComplexConfig() {
-
+    let mainHeaderTitle = document.getElementById('main-drawer-header-title');
+    mainHeaderTitle.innerHTML = 'Machine Compose';
 }
 
 function showSecondarySideConfig() {
@@ -648,12 +753,39 @@ function showSecondarySideConfig() {
         });
 }
 
-function hideSecondarySideConfig() {
+function hideSecondarySideConfig(...callbacks) {
     if (!secondaryConfigShown) return;
     $('#side-config-drawer')
         .css({ left: '0%' })
         .animate({ left: '100%' }, 500, () => {
             secondaryConfigShown = false;
+            if (callbacks) {
+                callbacks.forEach(cb => {
+                    cb();
+                });
+            }
+        });
+}
+
+function showMainConfig() {
+    if (mainConfigShown) return;
+    $('#main-config-drawer')
+        .css({ bottom: '1000%' })
+        .animate({ bottom: '0%' }, 500, () => {
+            mainConfigShown = true;
+        });
+}
+function hideMainConfig(...callbacks) {
+    if (!mainConfigShown) return;
+    $('#main-config-drawer')
+        .css({ bottom: '0%' })
+        .animate({ bottom: '100%' }, 500, () => {
+            mainConfigShown = false;
+            if (callbacks) {
+                callbacks.forEach(cb => {
+                    cb();
+                });
+            }
         });
 }
 
@@ -949,6 +1081,7 @@ $(document).ready(() => {
     prepareFabricIndicator();
     prepareSideConfig();
     prepareMainConfig();
+    prepareDocumentEventHandlers();
 });
 
 // socket.on('connect', () => {
@@ -965,6 +1098,9 @@ socket.on('fabric-update', (data) => {
         fabrics.groups[index] = data.groups[0];
         fabrics.devices[index] = data.devices[0];
         if (fabricSelected == data.fabrIds[0]) displayFabric(data.fabrIds[0]);
+        if (secondaryConfigShown && document.getElementById('secondary-drawer-header-title').innerHTML == 'Devices') {
+
+        }
     }
 });
 // socket.on('busy', (busyData) => {

@@ -3,6 +3,7 @@
 <html>
 
 <head>
+    <link href='https://fonts.googleapis.com/css?family=Open Sans' rel='stylesheet'>
     <link href='style.css' rel='stylesheet' type='text/css'>
     <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css' rel='stylesheet'
         type='text/css'>
@@ -18,8 +19,8 @@
         <!-- <div id='configure'>Configure</div> -->
         <div id='indicator' class='fabric-indicator'>
             <div class='fabric-details'>
-                <div>FabricID: <span id='fabric-id'>70</span></div>
-                <div>Name: <span id='fabric-name'>DevKit</span></div>
+                <div>FabricID: <span id='fabric-id'></span></div>
+                <div>Name: <span id='fabric-name'></span></div>
             </div>
             <div id='fabric-lock'><i id='lock-state' class='fa fa-lock'></i></div>
         </div>
@@ -39,7 +40,7 @@
             <div id='liqid-view' class=''></div>
             <div id='main-config-drawer' class='drawer'>
                 <div class='drawer-header'>
-                    <div id='main-config-return' class='icon fa fa-angle-up'></div>
+                    <div id='main-config-return' class='icon'><i class='fa fa-angle-up'></i></div>
                     <div id='main-drawer-header-title'></div>
                 </div>
                 <div id='main-side-content' class='drawer-content'></div>
@@ -49,6 +50,7 @@
     </div>
     <div id='view-coverer' class='shade'></div>
     <div id='menu' class='side-menu'></div>
+    <div id='draggable-label' class='device-label-block hidden'></div>
 </body>
 
 </html>

@@ -1,9 +1,63 @@
+
+html {
+    font-family: 'Open Sans';
+}
+
 body {
     margin: 0px;
     overflow: hidden;
 }
 h1 {
     margin: 0px 80px 0px 80px;
+}
+
+.config-list {
+    padding: 0px;
+}
+.config-list li {
+    cursor: pointer;
+    padding: 5px 0px;
+    border-bottom: 2px solid white;
+    text-align: center;
+}
+.config-list li:first-child {
+    border-top: 2px solid white;
+}
+
+.device-list .device-item {
+    border-bottom: 2px solid white;
+    color: white;
+}
+.device-list .device-item:first-child {
+    border-top: 2px solid white;
+}
+.device-list .device-item>.device-label {
+    cursor: pointer;
+    padding: 5px 0px;
+    text-align: center;
+}
+.device-list .device-item>.info-table {
+
+}
+
+#draggable-label {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    pointer-events: none;
+    transform: translate(50%, 50%);
+}
+#draggable-label.hidden {
+    display: none;
+}
+.device-label-block {
+    box-sizing: border-box;
+    width: 80px;
+    height: 37px;
+    padding: 5px;
+    border: 1px solid white;
+    font-size: 20px;
+    line-height: 100%;
 }
 
 .fa {
@@ -29,6 +83,20 @@ h1 {
     width: 22px;
     height: 22px;
     font-size: 22px !important;
+    line-height: 100%;
+}
+
+.more-options-button {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 30px;
+    height: 30px;
+    margin: 5px;
+    font-size: 25px;
+    text-align: center;
+    cursor: pointer;
+    line-height: 100%;
 }
 
 .fabric-indicator {
@@ -85,6 +153,7 @@ h1 {
     font-size: 40px;
     text-align: center;
     cursor: pointer;
+    line-height: 100%;
 }
 
 #menu-toggler {
@@ -147,10 +216,11 @@ h1 {
     cursor: pointer;
     height: 10px;
     position: relative;
+    line-height: 100%;
 }
 .side-config-form .integer-input>.integer-incrementer>i {
     position: relative;
-    top: -4px;
+    top: -3px;
 }
 .side-config-form .integer-input>.value-displayer {
     position: relative;
@@ -172,10 +242,11 @@ h1 {
     cursor: pointer;
     height: 10px;
     position: relative;
+    line-height: 100%;
 }
 .side-config-form .integer-input>.integer-decrementer>i {
     position: relative;
-    top: -10px;
+    top: -9px;
 }
 .integer-input .value-displayer>.form-value {
     display: block;
@@ -284,6 +355,7 @@ h1 {
     color: white;
     font-size: 30px;
     text-align: center;
+    line-height: 100%;
     /* background-image: url('images/arrow-left.png');
     background-size: 100%;
     background-repeat: no-repeat; */
@@ -294,6 +366,7 @@ h1 {
     padding: 5px;
     overflow-wrap: break-word;
     overflow-y: auto;
+    position: relative;
 }
 #secondary-drawer-header-title {
     white-space: nowrap;
@@ -401,6 +474,7 @@ h1 {
     white-space: nowrap;
     position: relative;
     background-color: #002050; /*white*/
+    color: white;
 }
 .main-config>.drawer {
     width: 100%;
@@ -423,6 +497,7 @@ h1 {
     color: white;
     font-size: 30px;
     text-align: center;
+    line-height: 100%;
     /* background-image: url('images/arrow-left.png');
     background-size: 100%;
     background-repeat: no-repeat;
