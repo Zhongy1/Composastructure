@@ -38,6 +38,9 @@ h1 {
     color: white;
     user-select: none;
 }
+.device-list .device-item>.device-label.selected {
+    color: gray;
+}
 .device-list .device-item>.info-table {
 
 }
@@ -62,11 +65,20 @@ h1 {
     line-height: 100%;
     color: white;
     text-align: center;
+    pointer-events: none;
 }
 
 .device-label-store-wrapper {
     width: 100px;
     border: 2px solid white;
+    float: left;
+    box-sizing: border-box;
+}
+.device-label-store-wrapper:first-child {
+    width: 400px;
+}
+.device-label-store-wrapper:nth-child(2) {
+    clear: left;
 }
 .device-label-store-wrapper .header {
     width: 100%;
@@ -77,8 +89,58 @@ h1 {
 }
 .device-label-store {
     width: 100%;
-    min-height: 300px;
+    min-height: 150px;
 }
+.device-label-store.cpu-variant {
+    min-height: unset;
+    height: 50px;
+}
+
+.complex-compose-form-wrapper {
+    overflow: auto;
+    width: 400px;
+}
+.complex-compose-form-wrapper .form-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    padding-left: 5px;
+    border-width: 5px 0px 5px 5px;
+    border-color: rgba(0,0,0,0);
+    border-style: solid;
+    border-left: 5px solid white;
+    box-sizing: border-box;
+}
+.complex-compose-form-wrapper .item-label {
+    display: block;
+    width: 70px;
+    float: left;
+    text-align: center;
+    font-size: 20px;
+}
+.complex-compose-form-wrapper .value-input {
+    font-size: 18px;
+    margin: 0px 5px;
+}
+.complex-compose-form-wrapper .value-input>.value-displayer{
+    width: 100%;
+    position: relative;
+    left: 0px;
+    text-align: center;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0);
+    border-right: 3px solid white;
+    border-bottom: 3px solid white;
+    background-color: inherit;
+    color: cyan;
+    transition: left 0.5s;
+}
+.complex-compose-form-wrapper .submit-button {
+    width: 50%;
+    float: left;
+}
+
 
 .fa {
     pointer-events: none;
@@ -465,6 +527,7 @@ h1 {
     font-size: 20px;
     text-align: center;
     padding: 2.5px 5% 2.5px 5%;
+    color: black;
 }
 .card-machine-textblock-2 {
     height: 18px;
@@ -472,6 +535,7 @@ h1 {
     float: left;
     font-size: 18px;
     padding: 3.5px 5% 3.5px 5%;
+    color: black;
 }
 
 .green {
@@ -593,6 +657,7 @@ h1 {
     cursor: pointer;
     background-color: inherit;
     margin: 10px 0px;
+    box-sizing: border-box;
 }
 .submit-button:focus {
     outline: none;
@@ -608,6 +673,7 @@ h1 {
     cursor: pointer;
     background-color: inherit;
     margin: 10px 0px;
+    box-sizing: border-box;
 }
 .delete-button:focus {
     outline: none;

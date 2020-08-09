@@ -1,4 +1,6 @@
-const socket = io();
+const socket = io({
+    reconnectionDelayMax: 30000
+});
 
 var fabrics = {
     fabrIds: [],
@@ -21,6 +23,15 @@ var usableAlertIds = [];
 var fabricLocked = true;
 var lastControlOperation = 0;
 var relockStarted = false;
+
+var complexComposeTracker = {
+    cpu: [],
+    gpu: [],
+    ssd: [],
+    optane: [],
+    nic: []
+}
+var deviceDetailsCache = {}
 
 var viewOptions = [
     {
@@ -255,9 +266,7 @@ function generateSimpleMachineComposeFormV2() {
         input.setAttribute('name', property);
         valDisplayer.appendChild(input);
     });
-    let submit = document.createElement('button');
-    submit.setAttribute('class', 'submit-button');
-    submit.innerHTML = 'Submit';
+    let submit = createElement('button', 'submit-button', 'Submit');
     form.appendChild(submit);
     form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -269,7 +278,61 @@ function generateSimpleMachineComposeFormV2() {
 var simpleMachineComposeForm = generateSimpleMachineComposeFormV2();
 
 function generateComplexMachineComposeForm() {
+    let formWrapper = createElement('div', 'complex-compose-form-wrapper');
 
+    let cpuStoreWrapper = createElement('div', 'device-label-store-wrapper');
+    cpuStoreWrapper.appendChild(createElement('div', 'header', 'CPU'));
+    let labelStore = createElement('div', 'device-label-store cpu-variant');
+    labelStore.setAttribute('data-type', 'cpu');
+    labelStore.setAttribute('id', 'store-cpu');
+    cpuStoreWrapper.appendChild(labelStore);
+    formWrapper.appendChild(cpuStoreWrapper);
+    ['GPU', 'SSD', 'OPTANE', 'NIC'].forEach((type) => {
+        let deviceStoreWrapper = createElement('div', 'device-label-store-wrapper');
+        deviceStoreWrapper.appendChild(createElement('div', 'header', type + 's'));
+        let labelStore = createElement('div', 'device-label-store');
+        labelStore.setAttribute('data-type', type.toLowerCase());
+        labelStore.setAttribute('id', 'store-' + type.toLowerCase());
+        deviceStoreWrapper.appendChild(labelStore);
+        formWrapper.appendChild(deviceStoreWrapper);
+    });
+
+    let form = createElement('form');
+    form.setAttribute('id', 'complex-machine-form');
+    form.setAttribute('spellcheck', 'false');
+    ['name', 'grpId'].forEach(property => {
+        let formItem = createElement('div', 'form-item');
+        form.appendChild(formItem);
+        formItem.appendChild(createElement('label', 'item-label', property));
+        let valInput = createElement('div', 'value-input');
+        formItem.appendChild(valInput);
+        let valDisplayer = createElement('div', 'value-displayer');
+        valInput.appendChild(valDisplayer);
+        let input = createElement('input', 'form-value');
+        input.setAttribute('name', property);
+        valDisplayer.appendChild(input);
+    });
+    let reset = createElement('button', 'submit-button', 'Reset');
+    reset.setAttribute('type', 'reset');
+    reset.addEventListener('click', () => {
+        clearComposeTrackerAndLabels();
+    });
+    form.appendChild(reset);
+    let submit = createElement('button', 'submit-button', 'Submit');
+    form.appendChild(submit);
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let fullFormData = {
+            ...complexComposeTracker,
+            ...getFormData('complex-machine-form')
+        }
+        console.log(fullFormData);
+        postMachineComposeData(fullFormData, true);
+    });
+
+    formWrapper.appendChild(form);
+
+    return formWrapper;
 }
 var complexMachineComposeForm = generateComplexMachineComposeForm();
 
@@ -301,7 +364,7 @@ function displayInGroupModeOn(fabricId) {
         groupHeader.innerHTML = `${group.gname} (id: ${group.grpId})`;
         groupHeader.setAttribute('id', 'card-group-' + group.grpId);
         groupHeader.addEventListener('click', (e) => {
-            loadGroupSimpleDetails(group);
+            loadGroupDetailsV2(group);
             showSecondarySideConfig();
         });
         groupCard.appendChild(groupHeader);
@@ -311,7 +374,7 @@ function displayInGroupModeOn(fabricId) {
             machineCard.setAttribute('class', 'card card-machine');
             machineCard.setAttribute('id', 'card-machine-' + machine.machId);
             machineCard.addEventListener('click', (e) => {
-                loadMachineSimpleDetails(machine);
+                loadMachineDetailsV2(machine);
                 showSecondarySideConfig();
             });
 
@@ -362,7 +425,7 @@ function displayInGroupModeOff(fabricId) {
             machineCard.setAttribute('class', 'card card-machine');
             machineCard.setAttribute('id', 'card-machine-' + machine.machId);
             machineCard.addEventListener('click', (e) => {
-                loadMachineSimpleDetails(machine);
+                loadMachineDetailsV2(machine);
                 showSecondarySideConfig();
             });
 
@@ -571,15 +634,22 @@ function prepareMainConfig() {
 
 function prepareDocumentEventHandlers() {
     let beginDeviceMoveEvent = false;
+    let targetAlreadySelected = false;
     let startLoc = { x: 0, y: 0 };
     let deviceId = null;
     let deviceMovement = false;
     let draggableLabel = document.getElementById('draggable-label');
+    let tempElement;
     document.addEventListener('mousedown', (e) => {
-        if (e.target.classList.contains('device-label')) {
+        if (e.target.classList.contains('device-label') && e.target.classList.contains('selected')) {
+            targetAlreadySelected = true;
+            deviceId = e.target.getAttribute('data-value');
+        }
+        else if (e.target.classList.contains('device-label')) {
             beginDeviceMoveEvent = true;
             startLoc = { x: e.pageX, y: e.pageY };
             deviceId = e.target.getAttribute('data-value');
+            tempElement = e.target;
         }
     });
     document.addEventListener('mousemove', (e) => {
@@ -597,35 +667,64 @@ function prepareDocumentEventHandlers() {
         }
     });
     document.addEventListener('mouseup', (e) => {
-        if (!beginDeviceMoveEvent) return;
+        if (!beginDeviceMoveEvent && !targetAlreadySelected) return;
         if (deviceMovement) { //drag event
             if (e.target.classList.contains('device-label-store')) {
+                let type = e.target.getAttribute('data-type');
                 let label = createElement('div', 'device-label-block', deviceId);
-                e.target.appendChild(label);
+                if (type == 'cpu' && deviceId.indexOf('cpu') >= 0) {
+                    if (complexComposeTracker.cpu.length == 0) {
+                        complexComposeTracker.cpu.push(deviceId);
+                        tempElement.classList.add('selected');
+                        e.target.appendChild(label);
+                    }
+                }
+                else {
+                    if (tempElement.getAttribute('data-type') == type) {
+                        complexComposeTracker[type].push(deviceId);
+                        tempElement.classList.add('selected');
+                        e.target.appendChild(label);
+                    }
+                }
             }
         }
         else { //normal click event
-
+            fetchDeviceDetails(deviceId, document.getElementById('details-section'));
         }
 
         draggableLabel.classList.add('hidden');
         beginDeviceMoveEvent = false;
+        targetAlreadySelected = false;
         deviceMovement = false;
     });
 }
 
-// function 
-
-function loadMachineSimpleDetails(machine) {
+function loadMachineDetails(machine) {
     let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
     sideHeaderTitle.innerHTML = machine.mname + ' (id: ' + machine.machId + ')';
     let secondarySideContent = document.getElementById('secondary-side-content');
     secondarySideContent.innerHTML = '';
     let someText = document.createTextNode(JSON.stringify(machine));
     secondarySideContent.appendChild(someText);
-    let deleteButton = document.createElement('button');
-    deleteButton.setAttribute('class', 'delete-button');
-    deleteButton.innerHTML = 'Delete';
+    let deleteButton = createElement('button', 'delete-button', 'Delete');
+    deleteButton.addEventListener('click', (e) => {
+        decomposeMachine(machine);
+        if (!fabricLocked)
+            hideSecondarySideConfig();
+    });
+    secondarySideContent.appendChild(deleteButton);
+}
+function loadMachineDetailsV2(machine) {
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
+    sideHeaderTitle.innerHTML = machine.mname + ' (id: ' + machine.machId + ')';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+
+    let detailsBlock = createElement('div');
+    secondarySideContent.appendChild(detailsBlock);
+    fetchMachineDetails(machine.machId, detailsBlock);
+
+    let deleteButton = createElement('button', 'delete-button', 'Delete');
     deleteButton.addEventListener('click', (e) => {
         decomposeMachine(machine);
         if (!fabricLocked)
@@ -634,16 +733,33 @@ function loadMachineSimpleDetails(machine) {
     secondarySideContent.appendChild(deleteButton);
 }
 
-function loadGroupSimpleDetails(group) {
+function loadGroupDetails(group) {
     let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
     sideHeaderTitle.innerHTML = group.gname + ' (id: ' + group.grpId + ')';
     let secondarySideContent = document.getElementById('secondary-side-content');
     secondarySideContent.innerHTML = '';
     let someText = document.createTextNode(JSON.stringify(group));
     secondarySideContent.appendChild(someText);
-    let deleteButton = document.createElement('button');
-    deleteButton.setAttribute('class', 'delete-button');
-    deleteButton.innerHTML = 'Delete';
+    let deleteButton = createElement('button', 'delete-button', 'Delete');
+    deleteButton.addEventListener('click', (e) => {
+        deleteGroup(group);
+        if (!fabricLocked)
+            hideSecondarySideConfig();
+    });
+    secondarySideContent.appendChild(deleteButton);
+}
+
+function loadGroupDetailsV2(group) {
+    let sideHeaderTitle = document.getElementById('secondary-drawer-header-title');
+    sideHeaderTitle.innerHTML = group.gname + ' (id: ' + group.grpId + ')';
+    let secondarySideContent = document.getElementById('secondary-side-content');
+    secondarySideContent.innerHTML = '';
+
+    let detailsBlock = createElement('div');
+    secondarySideContent.appendChild(detailsBlock);
+    fetchGroupDetails(group.grpId, detailsBlock);
+
+    let deleteButton = createElement('button', 'delete-button', 'Delete');
     deleteButton.addEventListener('click', (e) => {
         deleteGroup(group);
         if (!fabricLocked)
@@ -697,12 +813,22 @@ function loadDevicesV2() {
     let assignedDevicesList = createElement('div', 'device-list');
     secondarySideContent.appendChild(assignedDevicesList);
 
+    let detailsHeader = createElement('h3', '', 'Details');
+    secondarySideContent.appendChild(detailsHeader);
+    let detailsSection = createElement('div');
+    detailsSection.setAttribute('id', 'details-section');
+    secondarySideContent.appendChild(detailsSection);
+
     let index = fabrics.fabrIds.indexOf(fabricSelected);
     if (index == -1) return;
     fabrics.devices[index].forEach(device => {
         let deviceItem = createElement('div', 'device-item');
         let deviceLabel = createElement('div', 'device-label', device.id);
+        if (complexComposeTracker.hasOwnProperty(device.type) && complexComposeTracker[device.type].includes(device.id)) {
+            deviceLabel.classList.add('selected');
+        }
         deviceLabel.setAttribute('data-value', device.id);
+        deviceLabel.setAttribute('data-type', device.type);
         deviceItem.appendChild(deviceLabel);
 
         if (device.mach_id == null)
@@ -744,11 +870,7 @@ function loadMachineComplexConfig() {
     mainHeaderTitle.innerHTML = 'Machine Compose';
     let mainConfigContent = document.getElementById('main-config-content');
     mainConfigContent.innerHTML = '';
-
-    let deviceStoreWrapper = createElement('div', 'device-label-store-wrapper');
-    deviceStoreWrapper.appendChild(createElement('div', 'header', 'GPUs'));
-    deviceStoreWrapper.appendChild(createElement('div', 'device-label-store'));
-    mainConfigContent.appendChild(deviceStoreWrapper);
+    mainConfigContent.appendChild(complexMachineComposeForm);
 }
 
 function showSecondarySideConfig() {
@@ -803,6 +925,67 @@ function showMainConfig() {
         .animate({ bottom: '0%' }, 500, () => {
             mainConfigShown = true;
         });
+}
+
+function displayDetails(details, targetElement) {
+    if (!targetElement) {
+        console.log(details);
+        return;
+    }
+    targetElement.innerHTML = '';
+    let list = createElement('ul');
+    Object.keys(details).forEach(detail => {
+        let listItem = createElement('li', '', `${detail}: ${details[detail]}`);
+        list.appendChild(listItem);
+    });
+    targetElement.appendChild(list);
+}
+
+function fetchDeviceDetails(id, targetElement) {
+    if (deviceDetailsCache.hasOwnProperty(id)) {
+        displayDetails(deviceDetailsCache[id], targetElement);
+        return;
+    }
+    $.ajax({
+        url: `api/details/device/${fabricSelected}/${id}`,
+        type: 'GET',
+        dataType: 'json',
+        success: (res) => {
+            deviceDetailsCache[id] = res;
+            displayDetails(res, targetElement);
+        },
+        error: (err) => {
+            displayDetails(err.responseJSON);
+        }
+    });
+}
+
+function fetchMachineDetails(id, targetElement) {
+    $.ajax({
+        url: `api/details/machine/${fabricSelected}/${id}`,
+        type: 'GET',
+        dataType: 'json',
+        success: (res) => {
+            displayDetails(res, targetElement);
+        },
+        error: (err) => {
+            displayDetails(err.responseJSON);
+        }
+    });
+}
+
+function fetchGroupDetails(id, targetElement) {
+    $.ajax({
+        url: `api/details/group/${fabricSelected}/${id}`,
+        type: 'GET',
+        dataType: 'json',
+        success: (res) => {
+            displayDetails(res, targetElement);
+        },
+        error: (err) => {
+            displayDetails(err.responseJSON);
+        }
+    });
 }
 
 function postGroupCreateData(data) {
@@ -889,7 +1072,7 @@ function deleteGroup(group) {
     }
 }
 
-function postMachineComposeData(data) {
+function postMachineComposeData(data, complex = false) {
     try {
         if (fabricLocked) {
             indicateOperationBlocked();
@@ -906,10 +1089,20 @@ function postMachineComposeData(data) {
             message: 'Message: ' + 'Trying to compose your machine. Please wait...',
             duration: -1
         });
-        $.ajax({
-            url: `api/machine`,
-            type: 'POST',
-            data: JSON.stringify({
+        if (complex) {
+            var json = JSON.stringify({
+                cpu: data.cpu,
+                gpu: data.gpu,
+                ssd: data.ssd,
+                optane: data.optane,
+                nic: data.nic,
+                name: name,
+                grpId: groupId,
+                fabrId: parseInt(fabricSelected)
+            });
+        }
+        else {
+            var json = JSON.stringify({
                 cpu: parseInt(data.cpu) | 0,
                 gpu: parseInt(data.gpu) | 0,
                 ssd: parseInt(data.ssd) | 0,
@@ -919,7 +1112,13 @@ function postMachineComposeData(data) {
                 name: name,
                 grpId: groupId,
                 fabrId: parseInt(fabricSelected)
-            }),
+            });
+        }
+        console.log(json);
+        $.ajax({
+            url: `api/machine`,
+            type: 'POST',
+            data: json,
             contentType: "application/json; charset=utf-8",
             dataType: 'json',
             success: (res) => {
@@ -1079,6 +1278,20 @@ function createElement(elementType, classes, content) {
         element.innerHTML = content;
     }
     return element;
+}
+
+function clearComposeTrackerAndLabels() {
+    complexComposeTracker = {
+        cpu: [],
+        gpu: [],
+        ssd: [],
+        optane: [],
+        nic: []
+    }
+    Object.keys(complexComposeTracker).forEach(type => {
+        document.getElementById('store-' + type).innerHTML = '';
+    });
+    loadDevicesV2();
 }
 
 $(document).ready(() => {

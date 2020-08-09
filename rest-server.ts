@@ -810,7 +810,7 @@ export class RestServer {
     }
 
     private initializeDetailsHandlers(): void {
-        this.apiRouter.get('/details/group/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -829,7 +829,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.apiRouter.get('/details/machine/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/machine/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -848,7 +848,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.apiRouter.get('/details/device/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/device/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };

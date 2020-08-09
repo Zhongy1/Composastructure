@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -743,7 +744,7 @@ class RestServer {
         });
     }
     initializeDetailsHandlers() {
-        this.apiRouter.get('/details/group/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err = { code: 400, description: 'fabr_id has to be a number.' };
@@ -762,7 +763,7 @@ class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.apiRouter.get('/details/machine/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/machine/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err = { code: 400, description: 'fabr_id has to be a number.' };
@@ -781,7 +782,7 @@ class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.apiRouter.get('/details/device/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/device/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err = { code: 400, description: 'fabr_id has to be a number.' };
