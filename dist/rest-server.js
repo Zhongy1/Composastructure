@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -26,6 +25,7 @@ const morgan = require("morgan");
 const liqid_observer_1 = require("./liqid-observer");
 const liqid_controller_1 = require("./liqid-controller");
 const LocalStrategy = passportLocal.Strategy;
+var MemoryStore = require('memorystore')(session);
 var MachineDeviceType;
 (function (MachineDeviceType) {
     MachineDeviceType["cpu"] = "cpu";
@@ -277,11 +277,14 @@ class RestServer {
             }
             return done(null, { name: username, id: 'mainUser' });
         }));
-        this.app.use(cookieParser());
-        this.app.use(bodyParser.urlencoded({ extended: false }));
+        this.app.use(cookieParser('secretmightwork'));
+        this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(bodyParser.json());
         this.app.use(session({
-            secret: 'thismightwork',
+            secret: 'secretmightwork',
+            store: new MemoryStore({
+                checkPeriod: 86400000
+            }),
             resave: false,
             saveUninitialized: true
         }));

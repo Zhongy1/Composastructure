@@ -20,6 +20,8 @@ import { Router } from 'express-serve-static-core';
 
 const LocalStrategy = passportLocal.Strategy;
 
+var MemoryStore = require('memorystore')(session)
+
 export interface RestServerConfig {
     liqidSystems: {
         ip: string,
@@ -332,11 +334,14 @@ export class RestServer {
             return done(null, { name: username, id: 'mainUser' });
         }));
 
-        this.app.use(cookieParser());
-        this.app.use(bodyParser.urlencoded({ extended: false }));
+        this.app.use(cookieParser('secretmightwork'));
+        this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(bodyParser.json());
         this.app.use(session({
-            secret: 'thismightwork',
+            secret: 'secretmightwork',
+            store: new MemoryStore({
+                checkPeriod: 86400000
+            }),
             resave: false,
             saveUninitialized: true
         }));

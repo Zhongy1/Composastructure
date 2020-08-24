@@ -1,10 +1,15 @@
 # Composastructure
 
-This README is up to date for features available as of 7/07/2020. Try to look for a more updated version in a newer branch if there are any. These branches will have a date in its name.
+This README is up to date for features available as of 8/24/2020. Try to look for a more updated version in a newer branch if there are any. These branches will have a date in its name.
 
 Composastructure is a library/tool built off of Liqid's API for composing machines. The goal is to abstract away the lower level logic required to compose a machine and give you a new API that can do the same thing with as little as just one function call.
 
 **[Important]** Composastructure is meant to be used as an npm module, but since it's not at that stage yet, you can clone this repo into your project's node_modules folder and use it the same way as any other npm module. One last thing to do after cloning though, is to navigate into Composastructure and do `npm install`. The development branch is the default branch, but you can switch to a different one if you'd like.
+
+If you've modified the code in typescript files, run this command to compile all your code.
+```
+tsc
+```
 
 ## Installation (In the future)
 

@@ -1114,7 +1114,6 @@ function postMachineComposeData(data, complex = false) {
                 fabrId: parseInt(fabricSelected)
             });
         }
-        console.log(json);
         $.ajax({
             url: `api/machine`,
             type: 'POST',
