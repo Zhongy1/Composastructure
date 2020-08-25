@@ -1,8 +1,22 @@
+import { Run } from './models';
 export interface RestServerConfig {
-    ips: string[];
+    liqidSystems: {
+        ip: string;
+        name: string;
+    }[];
     hostPort: number;
+    enableGUI?: boolean;
+    sslCert?: {
+        privateKey: string;
+        certificate: string;
+        ca: string;
+    };
+    adminLogin?: {
+        username: string;
+        password: string;
+    };
 }
-export declare enum DeviceType {
+export declare enum MachineDeviceType {
     cpu = "cpu",
     gpu = "gpu",
     ssd = "ssd",
@@ -12,13 +26,14 @@ export declare enum DeviceType {
 }
 export interface Device {
     id: string;
-    type: DeviceType;
+    type: MachineDeviceType;
     fabr_id: number;
     grp_id: number;
     gname: string;
     mach_id: number;
     mname: string;
     lanes: number;
+    ipmi?: string;
 }
 export interface SimplifiedMachine {
     mach_id: number;
@@ -46,17 +61,74 @@ export interface Fabric {
 export interface MainResponse {
     fabrics: Fabric[];
 }
+export interface MachineInfo {
+    fabrId: number;
+    machId: number;
+    mname: string;
+    grpId: number;
+    devices: Device[];
+    status?: Run;
+}
+export interface GroupInfo {
+    fabrId: number;
+    grpId: number;
+    gname: string;
+    machines: MachineInfo[];
+}
+export interface GroupWrapper {
+    fabrId: number;
+    groups: GroupInfo[];
+}
+export interface MachineWrapper {
+    fabrId: number;
+    machines: MachineInfo[];
+}
+export interface DeviceWrapper {
+    fabrId: number;
+    devices: Device[];
+}
+export interface Overview {
+    fabrIds: number[];
+    names: string[];
+    groups: GroupInfo[][];
+    devices: Device[][];
+}
+export interface GroupCreateOptions {
+    name: string;
+    fabrId: number;
+}
+export interface BasicError {
+    code: number;
+    description: string;
+}
 export declare class RestServer {
     private config;
     private liqidObservers;
     private liqidControllers;
     private app;
+    private apiRouter;
+    private https;
+    private io;
     private ready;
+    private enableGUI;
+    private socketioStarted;
+    private adminLogin;
     constructor(config: RestServerConfig);
+    start(): Promise<void>;
+    private startSocketIOAndServer;
+    private setupAuthMiddleware;
+    private useGUI;
+    useBuiltInGUI(): boolean;
+    observerCallback(fabrId: number): void;
+    private prepareFabricOverview;
+    private prepareGroupInfo;
+    private prepareMachineInfo;
+    private prepareDevices;
     private initializeCollectionsHandlers;
     private initializeLookupHandlers;
+    private initializeDetailsHandlers;
+    private initializeControlHandlers;
     private summarizeDevice;
     private summarizeAllDevices;
     private getInfoFromFabric;
-    start: () => Promise<void>;
 }

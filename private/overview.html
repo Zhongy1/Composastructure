@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Open Sans' rel='stylesheet'>
+    <link href='style.css' rel='stylesheet' type='text/css'>
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css' rel='stylesheet'
+        type='text/css'>
+    <script src="socket.io.js"></script>
+    <script src='jquery.min.js'></script>
+    <script src='overview.js'></script>
+</head>
+
+<body>
+    <div class='header'>
+        <div id='menu-toggler'><i class='icon-normal fa fa-bars'></i></div>
+        <h1>COMPaaS DLV</h1>
+        <!-- <div id='configure'>Configure</div> -->
+        <div id='indicator' class='fabric-indicator'>
+            <div class='fabric-details'>
+                <div>FabricID: <span id='fabric-id'></span></div>
+                <div>Name: <span id='fabric-name'></span></div>
+            </div>
+            <div id='fabric-lock'><i id='lock-state' class='fa fa-lock'></i></div>
+        </div>
+    </div>
+    <div>
+        <div class='side-config'>
+            <div id='main-side-content'></div>
+            <div id='side-config-drawer' class='drawer'>
+                <div class='drawer-header'>
+                    <div id='side-config-return' class='icon'><i class='fa fa-angle-left'></i></div>
+                    <div id='secondary-drawer-header-title'></div>
+                </div>
+                <div id='secondary-side-content' class='drawer-content'></div>
+            </div>
+        </div>
+        <div class='main-config'>
+            <div id='liqid-view' class=''></div>
+            <div id='main-config-drawer' class='drawer'>
+                <div class='drawer-header'>
+                    <div id='main-config-return' class='icon'><i class='fa fa-angle-up'></i></div>
+                    <div id='main-drawer-header-title'></div>
+                </div>
+                <div id='main-config-content' class='drawer-content'></div>
+            </div>
+        </div>
+        <div id='alerts' class='alerts-region'></div>
+    </div>
+    <div id='view-coverer' class='shade'></div>
+    <div id='menu' class='side-menu'></div>
+    <div id='draggable-label' class='device-label-block hidden'></div>
+</body>
+
+</html>

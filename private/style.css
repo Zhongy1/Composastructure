@@ -1,0 +1,701 @@
+
+html {
+    font-family: 'Open Sans';
+}
+
+body {
+    margin: 0px;
+    overflow: hidden;
+}
+h1 {
+    margin: 0px 80px 0px 80px;
+}
+
+.config-list {
+    padding: 0px;
+}
+.config-list li {
+    cursor: pointer;
+    padding: 5px 0px;
+    border-bottom: 2px solid white;
+    text-align: center;
+}
+.config-list li:first-child {
+    border-top: 2px solid white;
+}
+
+.device-list .device-item {
+    border-bottom: 2px solid white;
+    color: white;
+}
+.device-list .device-item:first-child {
+    border-top: 2px solid white;
+}
+.device-list .device-item>.device-label {
+    cursor: pointer;
+    padding: 5px 0px;
+    text-align: center;
+    color: white;
+    user-select: none;
+}
+.device-list .device-item>.device-label.selected {
+    color: gray;
+}
+.device-list .device-item>.info-table {
+
+}
+
+#draggable-label {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+#draggable-label.hidden {
+    display: none;
+}
+.device-label-block {
+    box-sizing: border-box;
+    width: 80px;
+    height: 37px;
+    padding: 5px;
+    border: 1px solid white;
+    font-size: 20px;
+    line-height: 100%;
+    color: white;
+    text-align: center;
+    pointer-events: none;
+}
+
+.device-label-store-wrapper {
+    width: 100px;
+    border: 2px solid white;
+    float: left;
+    box-sizing: border-box;
+}
+.device-label-store-wrapper:first-child {
+    width: 400px;
+}
+.device-label-store-wrapper:nth-child(2) {
+    clear: left;
+}
+.device-label-store-wrapper .header {
+    width: 100%;
+    height: 30px;
+    font-size: 20px;
+    line-height: 100%;
+    background-color: gray;
+}
+.device-label-store {
+    width: 100%;
+    min-height: 150px;
+}
+.device-label-store.cpu-variant {
+    min-height: unset;
+    height: 50px;
+}
+
+.complex-compose-form-wrapper {
+    overflow: auto;
+    width: 400px;
+}
+.complex-compose-form-wrapper .form-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    padding-left: 5px;
+    border-width: 5px 0px 5px 5px;
+    border-color: rgba(0,0,0,0);
+    border-style: solid;
+    border-left: 5px solid white;
+    box-sizing: border-box;
+}
+.complex-compose-form-wrapper .item-label {
+    display: block;
+    width: 70px;
+    float: left;
+    text-align: center;
+    font-size: 20px;
+}
+.complex-compose-form-wrapper .value-input {
+    font-size: 18px;
+    margin: 0px 5px;
+}
+.complex-compose-form-wrapper .value-input>.value-displayer{
+    width: 100%;
+    position: relative;
+    left: 0px;
+    text-align: center;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0);
+    border-right: 3px solid white;
+    border-bottom: 3px solid white;
+    background-color: inherit;
+    color: cyan;
+    transition: left 0.5s;
+}
+.complex-compose-form-wrapper .submit-button {
+    width: 50%;
+    float: left;
+}
+
+
+.fa {
+    pointer-events: none;
+}
+
+.shade {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    background-color: rgba(0, 0, 0, 0);
+    width: 100%;
+    height: 100%;
+    transition: background-color 0.5s;
+    pointer-events: none;
+}
+.shade.shown {
+    background-color: rgba(0, 0, 0, 0.7);
+    pointer-events: initial;
+}
+
+.icon-normal {
+    width: 22px;
+    height: 22px;
+    font-size: 22px !important;
+    line-height: 100%;
+}
+
+.more-options-button {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 30px;
+    height: 30px;
+    margin: 5px;
+    font-size: 25px;
+    text-align: center;
+    cursor: pointer;
+    line-height: 100%;
+}
+
+.fabric-indicator {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 240px;
+    height: 60px;
+    margin: 20px;
+    background-color: #00aa00; /*white*/
+    color: black;
+    transition: background-color 0.5s, box-shadow 0.5s;
+}
+.fabric-indicator::after {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0px;
+    box-shadow: 0 0 6px 1px black inset;
+    pointer-events: none;
+    content: '';
+    transition: box-shadow 0.5s;
+}
+.fabric-unlocked {
+    background-color: #000077;
+}
+.fabric-blocked {
+    background-color: #ff0000;
+    box-shadow: 0px 0px 15px 1px #ff0000;
+}
+.fabric-blocked::after {
+    box-shadow: initial;
+}
+.fabric-details {
+    float: left;
+    height: calc(100% - 20px);
+    width: 170px;
+    padding: 10px 0px 10px 10px;
+}
+.fabric-details>div {
+    height: 20px;
+    width: 100%;
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    line-height: 100%;
+}
+#fabric-lock {
+    float: left;
+    width: 40px;
+    height: 40px;
+    margin: 10px;
+    font-size: 40px;
+    text-align: center;
+    cursor: pointer;
+    line-height: 100%;
+}
+
+#menu-toggler {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    margin: 10px;
+    cursor: pointer;
+}
+
+.side-menu {
+    position: absolute;
+    top: 0px;
+    right: 100%;
+    width: 250px;
+    height: 100vh;
+    background-color: #0088cc; /*#ddd*/
+    box-shadow: none;
+    transition: right 0.5s, box-shadow 0.5s;
+    color: white;
+}
+.side-menu.shown {
+    right: calc(100% - 250px);
+    box-shadow: 1px 0px 15px black;
+}
+
+.side-config-form {
+    overflow: hidden;
+}
+.side-config-form .form-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    padding-left: 5px;
+    border-width: 5px 0px 5px 5px;
+    border-color: rgba(0,0,0,0);
+    border-style: solid;
+    border-left: 5px solid white;
+    box-sizing: border-box;
+}
+.side-config-form .item-label {
+    display: block;
+    width: 70px;
+    float: left;
+    text-align: center;
+    font-size: 20px;
+}
+.side-config-form .integer-input {
+    font-size: 18px;
+    float: left;
+    margin: 0px 5px;
+    -webkit-user-select: none;    
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.side-config-form .integer-input>.integer-incrementer {
+    text-align: center;
+    border: 3px solid;
+    border-bottom-color: rgba(0,0,0,0);
+    cursor: pointer;
+    height: 10px;
+    position: relative;
+    line-height: 100%;
+}
+.side-config-form .integer-input>.integer-incrementer>i {
+    position: relative;
+    top: -3px;
+}
+.side-config-form .integer-input>.value-displayer {
+    position: relative;
+    left: 0px;
+    text-align: center;
+    width: 30px;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0);
+    border-right: 3px solid white;
+    background-color: inherit;
+    color: cyan;
+    transition: left 0.5s;
+}
+.side-config-form .integer-input>.integer-decrementer {
+    text-align: center;
+    border: 3px solid;
+    border-top-color: rgba(0,0,0,0);
+    cursor: pointer;
+    height: 10px;
+    position: relative;
+    line-height: 100%;
+}
+.side-config-form .integer-input>.integer-decrementer>i {
+    position: relative;
+    top: -9px;
+}
+.integer-input .value-displayer>.form-value {
+    display: block;
+    width: 100%;
+    text-align: center;
+    border: 0px;
+    padding: 0px;
+    background-color: inherit;
+    color: cyan;
+    font-size: inherit;
+    font: inherit;
+}
+.integer-input .value-displayer>.form-value:focus {
+    outline: none;
+}
+.integer-input .value-displayer>.value-animator {
+    position: absolute;
+    top: 0px;
+    height: 100%;
+    width: 100%;
+    transition: top 1s 0.7s;
+}
+.side-config-form .value-input {
+    font-size: 18px;
+    margin: 0px 5px;
+}
+.side-config-form .value-input>.value-displayer{
+    width: 70%;
+    position: relative;
+    left: 0px;
+    text-align: center;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0);
+    border-right: 3px solid white;
+    border-bottom: 3px solid white;
+    background-color: inherit;
+    color: cyan;
+    transition: left 0.5s;
+}
+.value-input .value-displayer>.form-value {
+    display: block;
+    width: 100%;
+    text-align: center;
+    border: 0px;
+    padding: 0px;
+    background-color: inherit;
+    color: cyan;
+    font-size: inherit;
+    font: inherit;
+}
+.value-input .value-displayer>.form-value:focus {
+    outline: none;
+}
+
+.header {
+    width: 100%;
+    height: 100px;
+    background-color: #000033; /*#999*/
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    color: white;
+}
+
+.config-label {
+    display: inline-block;
+    width: 50px;
+}
+
+.side-config {
+    float: left;
+    width: 300px;
+    height: calc(100vh - 100px);
+    background-color: #002050; /*#ccc*/
+    overflow: hidden;
+    position: relative;
+    border-right: 1px solid black;
+    color: white;
+}
+
+.side-config>#main-side-content {
+    width: 95%;
+    height: 100%;
+    position: absolute;
+    padding: 0px 2.5%;
+}
+.side-config>.drawer {
+    width: 100%;
+    height: 100%;
+    background-color: #001742; /*#bbb*/
+    position: absolute;
+    left: 100%;
+}
+.side-config>.drawer>.drawer-header {
+    background-color: #000835; /*#aaa*/
+    width: calc(100% - 10px);
+    height: 30px;
+    padding: 5px;
+}
+.side-config>.drawer>.drawer-header>.icon {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    float: left;
+    color: white;
+    font-size: 30px;
+    text-align: center;
+    line-height: 100%;
+    /* background-image: url('images/arrow-left.png');
+    background-size: 100%;
+    background-repeat: no-repeat; */
+}
+.side-config>.drawer>.drawer-content {
+    width: calc(100% - 10px);
+    height: calc(100% - 50px);
+    padding: 5px;
+    overflow-wrap: break-word;
+    overflow-y: auto;
+    position: relative;
+}
+#secondary-drawer-header-title {
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 20px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+}
+
+.card {
+    width: 100px;
+    height: 100px;
+    background-color: white;
+    border: 3px solid black;
+    border-radius: 5px;
+    box-shadow: 2px 3px 3px black;
+    margin: 10px;
+    padding: 10px;
+    display: inline-block;
+    overflow-x: hidden;
+}
+
+.card-group {
+    width: 276px;
+    height: calc(100% - 25px);
+    padding: 0px;
+    overflow-x: auto;
+    background-color: #1f1f7a;
+    -ms-overflow-style: none;
+}
+.card-group::-webkit-scrollbar {
+    display: none;
+}
+
+.card-machine {
+    padding: 0px;
+    width: 250px;
+    height: 100px;
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.card-group-header {
+    height: 35px;
+    width: 100%;
+    padding-top: 5px;
+    background-color: #0f0f3e;
+    box-shadow: 0px 1px 8px black;
+    color: white;
+    position: sticky;
+    top: 0;
+    text-align: center;
+    font-size: 23px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.card-machine-header {
+    height: 25px;
+    width: 100%;
+    background-color: #0f0f3e;
+    color: white;
+    text-align: center;
+    font-size: 20px;
+    overflow: hidden;
+}
+
+.card-machine-textblock-1 {
+    height: 20px;
+    width: 90%;
+    float: left;
+    font-size: 20px;
+    text-align: center;
+    padding: 2.5px 5% 2.5px 5%;
+    color: black;
+}
+.card-machine-textblock-2 {
+    height: 18px;
+    width: 40%;
+    float: left;
+    font-size: 18px;
+    padding: 3.5px 5% 3.5px 5%;
+    color: black;
+}
+
+.green {
+    background-color: #88ff88;
+}
+.red {
+    background-color: #ff8888;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+#configure {
+    width: 100px;
+    height: 40px;
+    background-color: white;
+}
+
+.main-config {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    background-color: #002050; /*white*/
+    color: white;
+}
+.main-config>.drawer {
+    width: 100%;
+    height: 100%;
+    background-color: #001742; /*#bbb*/
+    position: absolute;
+    bottom: 100%;
+}
+.main-config>.drawer>.drawer-header {
+    background-color: #000835; /*aaa*/
+    width: calc(100% - 10px);
+    height: 30px;
+    padding: 5px;
+}
+.main-config>.drawer>.drawer-header>.icon {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    float: left;
+    color: white;
+    font-size: 30px;
+    text-align: center;
+    line-height: 100%;
+    /* background-image: url('images/arrow-left.png');
+    background-size: 100%;
+    background-repeat: no-repeat;
+    transform: rotate(90deg); */
+}
+.main-config>.drawer>.drawer-content {
+    width: calc(100% - 10px);
+    height: calc(100% - 50px);
+    padding: 5px;
+    overflow-y: auto;
+}
+#main-drawer-header-title {
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 20px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+}
+
+#liqid-view {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    white-space: nowrap;
+    background-color: #000022; /*white*/
+    height: calc(100vh - 100px);
+}
+
+.unified {
+    overflow-x: hidden !important;
+    overflow-y: scroll !important;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+
+#liqid-view::-webkit-scrollbar {
+    display: none;
+}
+
+.alerts-region {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    padding: 10px;
+    width: 254px;
+    height: 10px;
+    overflow: visible;
+}
+.alerts-region::-webkit-scrollbar {
+    display: none;
+}
+.alert-popup {
+    padding: 10px;
+    margin-bottom: 10px;
+    width: 230px;
+    height: 70px;
+    border: 2px solid black;
+    border-radius: 7px;
+    background-color: cornflowerblue;
+    overflow: hidden;
+}
+
+.submit-button {
+    width: 100%;
+    border: 2px solid blue;
+    color: blue;
+    font-size: 20px;
+    text-align: center;
+    padding: 5px;
+    cursor: pointer;
+    background-color: inherit;
+    margin: 10px 0px;
+    box-sizing: border-box;
+}
+.submit-button:focus {
+    outline: none;
+}
+
+.delete-button {
+    width: 100%;
+    border: 2px solid red;
+    color: red;
+    font-size: 20px;
+    text-align: center;
+    padding: 5px;
+    cursor: pointer;
+    background-color: inherit;
+    margin: 10px 0px;
+    box-sizing: border-box;
+}
+.delete-button:focus {
+    outline: none;
+}
+
+.side-config::after {
+    width: 105%;
+    height: 105%;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    box-shadow: inset 0 0 15px black;
+    pointer-events: none;
+    content: '';
+}
+.main-config::after {
+    width: 105%;
+    height: 105%;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    box-shadow: inset 0 0 15px 2px black;
+    pointer-events: none;
+    content: '';
+}
