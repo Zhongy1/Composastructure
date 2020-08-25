@@ -10,7 +10,7 @@ const communicator = new LiqidCommunicator(ip);
 class LiqidCommunicator {
     constructor(liqidIp) {
         this.liqidIp = liqidIp;
-        this.liqidUri = 'http://' + this.liqidIp + ':8080/liqidui';
+        this.liqidUri = 'http://' + this.liqidIp + ':8080/liqid/api/v2';
     }
     //Assembly Controller
     //POST '/assembly/assemble' Assemble a specific machine. Requires MachineAssembly
@@ -575,7 +575,7 @@ class LiqidCommunicator {
     //GET '/manager/{type}' List all known managed entities; available types: ipmi, device
     getManageableIpmiAddresses() {
         return new Promise((resolve, reject) => {
-            axios_1.default.get(this.liqidUri + '/manager/ipmi')
+            axios_1.default.get(this.liqidUri + '/manager/network/ipmi/cpu')
                 .then(res => {
                 resolve(res.data.response.data);
             }, err => {

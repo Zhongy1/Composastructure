@@ -20,15 +20,27 @@ import { Router } from 'express-serve-static-core';
 
 const LocalStrategy = passportLocal.Strategy;
 
+var MemoryStore = require('memorystore')(session)
+
 export interface RestServerConfig {
-    ips: string[],
-    names: string[],
+    liqidSystems: {
+        ip: string,
+        name: string,
+    }[],
     hostPort: number,
-    sslCert?: any,
-    enableGUI?: boolean
+    enableGUI?: boolean,
+    sslCert?: {
+        privateKey: string,
+        certificate: string,
+        ca: string
+    },
+    adminLogin?: {
+        username: string,
+        password: string
+    }
 }
 
-export enum DeviceType {
+export enum MachineDeviceType {
     cpu = 'cpu',
     gpu = 'gpu',
     ssd = 'ssd',
@@ -38,7 +50,7 @@ export enum DeviceType {
 }
 export interface Device {
     id: string,
-    type: DeviceType,
+    type: MachineDeviceType,
     fabr_id: number,
     grp_id: number,
     gname: string,
@@ -148,6 +160,10 @@ export class RestServer {
     private ready: boolean;
     private enableGUI: boolean;
     private socketioStarted: boolean;
+    private adminLogin: {
+        username: string,
+        password: string
+    }
 
     constructor(private config: RestServerConfig) {
         this.liqidObservers = {};
@@ -171,6 +187,9 @@ export class RestServer {
                 rejectUnauthorized: true,
                 honorCipherOrder: true
             }, this.app);
+
+        this.adminLogin = (config.adminLogin) ? config.adminLogin : { username: 'admin', password: 'compose' };
+
         this.io = socketio(this.https, {
             pingTimeout: 600000
         });
@@ -183,11 +202,11 @@ export class RestServer {
     public async start(): Promise<void> {
         try {
             if (this.ready) return;
-            for (let i = 0; i < this.config.ips.length; i++) {
-                let obs = new LiqidObserver(this.config.ips[i], this.config.names[i]);
+            for (let i = 0; i < this.config.liqidSystems.length; i++) {
+                let obs = new LiqidObserver(this.config.liqidSystems[i].ip, this.config.liqidSystems[i].name);
                 let res = await obs.start();
                 this.liqidObservers[obs.getFabricId()] = obs;
-                let ctrl = new LiqidController(this.config.ips[i], this.config.names[i]);
+                let ctrl = new LiqidController(this.config.liqidSystems[i].ip, this.config.liqidSystems[i].name);
                 res = await ctrl.start();
                 this.liqidControllers[ctrl.getFabricId()] = ctrl;
             }
@@ -214,7 +233,7 @@ export class RestServer {
         this.socketioStarted = true;
 
         this.https.listen(this.config.hostPort, () => {
-            console.log(`listening on *:${this.config.hostPort}`);
+            //console.log(`listening on *:${this.config.hostPort}`);
         });
         this.io.on('connection', (socket) => {
             socket.emit('init-config', { fabrIds: Object.keys(this.liqidObservers) });
@@ -300,26 +319,29 @@ export class RestServer {
         });
         passport.deserializeUser((id, done) => {
             if (id == 'mainUser') {
-                done(null, { name: 'evlroot', id: 'mainUser' });
+                done(null, { name: this.adminLogin.username, id: 'mainUser' });
             }
         });
         passport.use(new LocalStrategy({
             passReqToCallback: true
         }, (req, username, password, done) => {
-            if (username != 'evlroot') {
+            if (username != this.adminLogin.username) {
                 return done(null, false, { message: 'Incorrect username.' });
             }
-            if (password != 'getaccess[asdjkl90-]') {
+            if (password != this.adminLogin.password) {
                 return done(null, false, { message: 'Incorrect password.' });
             }
             return done(null, { name: username, id: 'mainUser' });
         }));
 
-        this.app.use(cookieParser());
-        this.app.use(bodyParser.urlencoded({ extended: false }));
+        this.app.use(cookieParser('secretmightwork'));
+        this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(bodyParser.json());
         this.app.use(session({
-            secret: 'thismightwork',
+            secret: 'secretmightwork',
+            store: new MemoryStore({
+                checkPeriod: 86400000
+            }),
             resave: false,
             saveUninitialized: true
         }));
@@ -793,7 +815,7 @@ export class RestServer {
     }
 
     private initializeDetailsHandlers(): void {
-        this.apiRouter.get('/details/group/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/group/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -812,7 +834,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.apiRouter.get('/details/machine/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/machine/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -831,7 +853,7 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-        this.apiRouter.get('/details/device/fabr_id/id', (req, res, next) => {
+        this.apiRouter.get('/details/device/:fabr_id/:id', (req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             if (parseInt(req.params.fabr_id) == NaN) {
                 let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
@@ -870,21 +892,22 @@ export class RestServer {
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
                 this.liqidControllers[req.body.fabrId].createGroup(req.body.name)
                     .then((group) => {
-                        let data: GroupInfo = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
-                        if (data) {
-                            res.json(data);
-                            this.liqidObservers[req.params.fabr_id].refresh()
-                                .then(() => {
-                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
-                                }, err => {
-                                    console.log('Group creation refresh failed: ' + err);
-                                });
-                        }
-                        else {
-                            let err: BasicError = { code: 500, description: 'Group seems to be created, but final verification failed.' };
-                            console.log(err);
-                            res.status(err.code).json(err);
-                        }
+                        this.liqidObservers[req.body.fabrId].refresh()
+                            .then(() => {
+                                let data: GroupInfo = this.prepareGroupInfo(Math.floor(req.body.fabrId), group.grp_id);
+                                if (data) {
+                                    res.json(data);
+                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.body.fabrId)));
+                                }
+                                else {
+                                    let err: BasicError = { code: 500, description: 'Group seems to be created, but final verification failed.' };
+                                    console.log(err);
+                                    res.status(err.code).json(err);
+                                }
+                            }, err => {
+                                console.log('Group creation refresh failed: ' + err);
+                            });
+
                     }, err => {
                         let error: BasicError = { code: err.code, description: err.description };
                         res.status(error.code).json(error);
@@ -943,21 +966,22 @@ export class RestServer {
             else if (this.liqidControllers.hasOwnProperty(Math.floor(req.body.fabrId))) {
                 this.liqidControllers[req.body.fabrId].compose(req.body)
                     .then((mach) => {
-                        let data: MachineInfo = this.prepareMachineInfo(Math.floor(req.body.fabrId), mach.mach_id);
-                        if (data) {
-                            res.json(data);
-                            this.liqidObservers[req.params.fabr_id].refresh()
-                                .then(() => {
-                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.params.fabr_id)));
-                                }, err => {
-                                    console.log('Machine compose refresh failed: ' + err);
-                                });
-                        }
-                        else {
-                            let err: BasicError = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
-                            console.log(err);
-                            res.status(err.code).json(err);
-                        }
+                        this.liqidObservers[req.body.fabrId].refresh()
+                            .then(() => {
+                                let data: MachineInfo = this.prepareMachineInfo(Math.floor(req.body.fabrId), mach.mach_id);
+                                if (data) {
+                                    res.json(data);
+                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(parseInt(req.body.fabrId)));
+                                }
+                                else {
+                                    let err: BasicError = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
+                                    console.log(err);
+                                    res.status(err.code).json(err);
+                                }
+                            }, err => {
+                                console.log('Machine compose refresh failed: ' + err);
+                            });
+
                     }, err => {
                         let error: BasicError = { code: err.code, description: err.description };
                         res.status(error.code).json(error);
@@ -1018,23 +1042,23 @@ export class RestServer {
         if (!deviceStatus) return null;
         switch (deviceStatus.type) {
             case 'ComputeDeviceStatus':
-                device.type = DeviceType.cpu;
+                device.type = MachineDeviceType.cpu;
                 device.ipmi = this.liqidObservers[fabr_id].getIpmiAddressByName(name);
                 break;
             case 'GpuDeviceStatus':
-                device.type = DeviceType.gpu;
+                device.type = MachineDeviceType.gpu;
                 break;
             case 'SsdDeviceStatus':
                 if (deviceStatus.name.indexOf('ssd') >= 0)
-                    device.type = DeviceType.ssd;
+                    device.type = MachineDeviceType.ssd;
                 else
-                    device.type = DeviceType.optane;
+                    device.type = MachineDeviceType.optane;
                 break;
             case 'LinkDeviceStatus':
-                device.type = DeviceType.nic;
+                device.type = MachineDeviceType.nic;
                 break;
             case 'FpgaDeviceStatus':
-                device.type = DeviceType.fpga;
+                device.type = MachineDeviceType.fpga;
                 break;
         }
         device.lanes = deviceStatus.lanes;

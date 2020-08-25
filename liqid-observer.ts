@@ -183,8 +183,8 @@ export class LiqidObserver {
         try {
             let list = await this.liqidComm.getManageableIpmiAddresses();
             for (let i = 0; i < list.length; i++) {
-                this.ipmiToCpuNameMap[list[i].ipmi_address] = list[i].cpu_name;
-                this.cpuNameToIpmiMap[list[i].cpu_name] = list[i].ipmi_address;
+                this.ipmiToCpuNameMap[list[i].ip_address] = list[i].cpu_name;
+                this.cpuNameToIpmiMap[list[i].cpu_name] = list[i].ip_address;
             }
         }
         catch (err) {
@@ -647,7 +647,7 @@ export class LiqidObserver {
             if (typeof options.cpu === 'number') {
                 options.cpu = (options.cpu < 0) ? 0 : Math.floor(options.cpu);
                 let deviceNames = Object.keys(deviceStats.cpu);
-                if (deviceNames.length > 1) {
+                if (options.cpu > 1) {
                     let err: LiqidError = {
                         code: 422,
                         origin: 'observer',
