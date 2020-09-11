@@ -1023,7 +1023,27 @@ export class RestServer {
                 res.status(err.code).json(err);
             }
         });
-
+        this.apiRouter.post('/p2p/:fabr_id/:id', (req, res, next) => {
+            if (parseInt(req.params.fabr_id) == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (parseInt(req.params.id) == NaN) {
+                let err: BasicError = { code: 400, description: 'id has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else {
+                let mode = req.query.mode;
+                let machInfo: MachineInfo = this.prepareMachineInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
+                this.liqidControllers[req.params.fabr_id].triggerP2P(mode, req.params.id)
+                    .then((machine) => {
+                        res.json(machInfo);
+                    }, err => {
+                        let error: BasicError = { code: err.code, description: err.description };
+                        res.status(error.code).json(error);
+                    });
+            }
+        });
     }
 
     private summarizeDevice(fabr_id: number, name: string): Device {

@@ -1,7 +1,7 @@
 import _ = require('lodash');
 import { LiqidCommunicator, LiqidError } from './liqid-communicator';
 import { LiqidObserver, OrganizedDeviceStatuses } from './liqid-observer';
-import { MachineDeviceRelator, DeviceStatus, Group, Machine, GroupPool, GroupDeviceRelator, PreDevice } from './models';
+import { MachineDeviceRelator, DeviceStatus, Group, Machine, GroupPool, GroupDeviceRelator, PreDevice, P2PStatus } from './models';
 
 
 export interface ComposeOptions {
@@ -16,6 +16,9 @@ export interface ComposeOptions {
     fabrId: number
 }
 
+export enum P2PActionType {
+    on = 'on', off = 'off', cycleOn = 'cycleOn'
+}
 
 /**
  * Controller for specific liqid tasks
@@ -712,6 +715,86 @@ export class LiqidController {
         }
         catch (err) {
             throw new Error(err);
+        }
+    }
+
+
+    public async triggerP2P(mode: P2PActionType, machId: number | string): Promise<void> {
+        try {
+            let mach: Machine = this.liqidObs.getMachineById(machId);
+            if (!mach) {
+                let error: LiqidError = {
+                    code: 404,
+                    origin: 'controller',
+                    description: `Machine ${machId} does not exist.`
+                }
+                throw error;
+            }
+            switch (mode) {
+                case P2PActionType.cycleOn: // this case will not break; it will attempt to turn p2p off if possible, then continue with turning it back on
+                    if (mach.p2p == P2PStatus.on) { // if on, turn it off
+                        let respMach = await this.liqidComm.toggleP2P(mach);
+                        if (respMach.p2p != P2PStatus.on) {
+                            let error: LiqidError = {
+                                code: 500,
+                                origin: 'controller',
+                                description: 'Liqid command completed without error, but p2p status appears unchanged.'
+                            }
+                            throw error;
+                        }
+                    }
+                // else, it should be in off mode, so just move on to the next case
+                case P2PActionType.on:
+                    if (mach.p2p == P2PStatus.on) {
+                        // already on, nothing to do
+                        return;
+                    }
+                    else {
+                        let respMach = await this.liqidComm.toggleP2P(mach);
+                        // if status is unchanged, throw
+                        if (respMach.p2p != P2PStatus.on) {
+                            let error: LiqidError = {
+                                code: 500,
+                                origin: 'controller',
+                                description: 'Liqid command completed without error, but p2p status appears unchanged.'
+                            }
+                            throw error;
+                        }
+                    }
+                    break;
+                case P2PActionType.off:
+                    if (mach.p2p == P2PStatus.off) {
+                        // already off, nothing to do
+                        return;
+                    }
+                    else {
+                        let respMach = await this.liqidComm.toggleP2P(mach);
+                        // if status is unchanged, throw
+                        if (respMach.p2p != P2PStatus.off) {
+                            let error: LiqidError = {
+                                code: 500,
+                                origin: 'controller',
+                                description: 'Liqid command completed without error, but p2p status appears unchanged.'
+                            }
+                            throw error;
+                        }
+                    }
+                    break;
+            }
+        }
+        catch (err) {
+            if (err.origin) {
+                throw err;
+            }
+            else {
+                console.log(err);
+                let error: LiqidError = {
+                    code: 500,
+                    origin: 'controller',
+                    description: 'Undocumented error occurred in updating p2p.'
+                }
+                throw error;
+            }
         }
     }
 }
