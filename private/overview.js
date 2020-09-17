@@ -1183,22 +1183,16 @@ function decomposeMachine(machine) {
 }
 
 function triggerP2P(mode, machId) {
-    try {
-        $.ajax({
-            url: `api/p2p/${fabricSelected}/${machId}?mode=${mode}`,
-            type: 'POST',
-            dataType: 'json',
-            success: (data) => {
-                console.log(data);
-            },
-            error: (err) => {
-                console.log(err);
-            }
-        });
-    }
-    catch (err) {
-        console.log(err);
-    }
+    $.ajax({
+        url: `/api/p2p/${fabricSelected}/${machId}?mode=${mode}`,
+        type: 'POST',
+        success: (data) => {
+            console.log(data);
+        },
+        error: (err) => {
+            console.log(err);
+        }
+    });
 }
 
 function generateAlertId() {

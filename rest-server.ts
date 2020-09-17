@@ -1034,10 +1034,9 @@ export class RestServer {
             }
             else {
                 let mode = req.query.mode;
-                let machInfo: MachineInfo = this.prepareMachineInfo(parseInt(req.params.fabr_id), parseInt(req.params.id));
                 this.liqidControllers[req.params.fabr_id].triggerP2P(mode, req.params.id)
-                    .then((machine) => {
-                        res.json(machInfo);
+                    .then(() => {
+                        res.end();
                     }, err => {
                         let error: BasicError = { code: err.code, description: err.description };
                         res.status(error.code).json(error);

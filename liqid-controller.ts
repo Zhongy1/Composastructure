@@ -17,7 +17,7 @@ export interface ComposeOptions {
 }
 
 export enum P2PActionType {
-    on = 'on', off = 'off', cycleOn = 'cycleOn'
+    on = 'on', off = 'off', cycleOn = 'cycleOn', setOn = 'setOn', setOff = 'setOff'
 }
 
 /**
@@ -733,8 +733,9 @@ export class LiqidController {
             switch (mode) {
                 case P2PActionType.cycleOn: // this case will not break; it will attempt to turn p2p off if possible, then continue with turning it back on
                     if (mach.p2p == P2PStatus.on) { // if on, turn it off
+                        mach.p2p = P2PStatus.off;
                         let respMach = await this.liqidComm.toggleP2P(mach);
-                        if (respMach.p2p != P2PStatus.on) {
+                        if (respMach.p2p != P2PStatus.off) {
                             let error: LiqidError = {
                                 code: 500,
                                 origin: 'controller',
@@ -750,6 +751,7 @@ export class LiqidController {
                         return;
                     }
                     else {
+                        mach.p2p = P2PStatus.on;
                         let respMach = await this.liqidComm.toggleP2P(mach);
                         // if status is unchanged, throw
                         if (respMach.p2p != P2PStatus.on) {
@@ -768,6 +770,7 @@ export class LiqidController {
                         return;
                     }
                     else {
+                        mach.p2p = P2PStatus.off;
                         let respMach = await this.liqidComm.toggleP2P(mach);
                         // if status is unchanged, throw
                         if (respMach.p2p != P2PStatus.off) {
@@ -780,6 +783,16 @@ export class LiqidController {
                         }
                     }
                     break;
+                case P2PActionType.setOn: {
+                    mach.p2p = P2PStatus.on;
+                    let respMach = await this.liqidComm.toggleP2P(mach);
+                    break;
+                }
+                case P2PActionType.setOff: {
+                    mach.p2p = P2PStatus.off;
+                    let respMach = await this.liqidComm.toggleP2P(mach);
+                    break;
+                }
             }
         }
         catch (err) {
