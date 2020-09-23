@@ -1182,6 +1182,19 @@ function decomposeMachine(machine) {
     }
 }
 
+function triggerP2P(mode, machId) {
+    $.ajax({
+        url: `/api/p2p/${fabricSelected}/${machId}?mode=${mode}`,
+        type: 'POST',
+        success: (data) => {
+            console.log(data);
+        },
+        error: (err) => {
+            console.log(err);
+        }
+    });
+}
+
 function generateAlertId() {
     if (usableAlertIds.length > 0) {
         let id = usableAlertIds.pop();
