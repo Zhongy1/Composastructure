@@ -88,6 +88,12 @@ var miscOptions = [
                 showSecondarySideConfig();
             }
         }
+    },
+    {
+        name: 'Download This System State',
+        function: () => {
+            window.open(`/api/system-state/${fabricSelected}`);
+        }
     }
 ];
 
@@ -370,46 +376,7 @@ function displayInGroupModeOn(fabricId) {
         groupCard.appendChild(groupHeader);
 
         group.machines.forEach(machine => {
-            let machineCard = document.createElement('div');
-            machineCard.setAttribute('class', 'card card-machine');
-            machineCard.setAttribute('id', 'card-machine-' + machine.machId);
-            machineCard.addEventListener('click', (e) => {
-                loadMachineDetailsV2(machine);
-                showSecondarySideConfig();
-            });
-
-            let machineHeader = document.createElement('div');
-            machineHeader.setAttribute('class', 'card-machine-header');
-            machineHeader.innerHTML = `${machine.mname} (id: ${machine.machId})`;
-            machineCard.appendChild(machineHeader);
-
-            let characteristics = getMachineCharacteristics(machine.devices);
-
-            let ipmiBlock = document.createElement('div');
-            ipmiBlock.setAttribute('class', 'card-machine-textblock-1');
-            ipmiBlock.innerHTML = characteristics.ipmi;
-            machineCard.appendChild(ipmiBlock);
-
-            let cpuBlock = document.createElement('div');
-            cpuBlock.setAttribute('class', 'card-machine-textblock-2');
-            cpuBlock.innerHTML = 'CPUs: ' + characteristics.cpuCount;
-            machineCard.appendChild(cpuBlock);
-
-            let gpuBlock = document.createElement('div');
-            gpuBlock.setAttribute('class', 'card-machine-textblock-2');
-            gpuBlock.innerHTML = 'GPUs: ' + characteristics.gpuCount;
-            machineCard.appendChild(gpuBlock);
-
-            let ssdBlock = document.createElement('div');
-            ssdBlock.setAttribute('class', 'card-machine-textblock-2');
-            ssdBlock.innerHTML = 'SSDs: ' + characteristics.ssdCount;
-            machineCard.appendChild(ssdBlock);
-
-            let nicBlock = document.createElement('div');
-            nicBlock.setAttribute('class', 'card-machine-textblock-2');
-            nicBlock.innerHTML = 'NICs: ' + characteristics.nicCount;
-            machineCard.appendChild(nicBlock);
-
+            let machineCard = generateMachineCard(machine);
             groupCard.appendChild(machineCard);
         });
         liqidView.appendChild(groupCard);
@@ -421,49 +388,64 @@ function displayInGroupModeOff(fabricId) {
     if (index == -1) return;
     fabrics.groups[index].forEach(group => {
         group.machines.forEach(machine => {
-            let machineCard = document.createElement('div');
-            machineCard.setAttribute('class', 'card card-machine');
-            machineCard.setAttribute('id', 'card-machine-' + machine.machId);
-            machineCard.addEventListener('click', (e) => {
-                loadMachineDetailsV2(machine);
-                showSecondarySideConfig();
-            });
-
-            let machineHeader = document.createElement('div');
-            machineHeader.setAttribute('class', 'card-machine-header');
-            machineHeader.innerHTML = `${machine.mname} (id: ${machine.machId})`;
-            machineCard.appendChild(machineHeader);
-
-            let characteristics = getMachineCharacteristics(machine.devices);
-
-            let ipmiBlock = document.createElement('div');
-            ipmiBlock.setAttribute('class', 'card-machine-textblock-1');
-            ipmiBlock.innerHTML = characteristics.ipmi;
-            machineCard.appendChild(ipmiBlock);
-
-            let cpuBlock = document.createElement('div');
-            cpuBlock.setAttribute('class', 'card-machine-textblock-2');
-            cpuBlock.innerHTML = 'CPUs: ' + characteristics.cpuCount;
-            machineCard.appendChild(cpuBlock);
-
-            let gpuBlock = document.createElement('div');
-            gpuBlock.setAttribute('class', 'card-machine-textblock-2');
-            gpuBlock.innerHTML = 'GPUs: ' + characteristics.gpuCount;
-            machineCard.appendChild(gpuBlock);
-
-            let ssdBlock = document.createElement('div');
-            ssdBlock.setAttribute('class', 'card-machine-textblock-2');
-            ssdBlock.innerHTML = 'SSDs: ' + characteristics.ssdCount;
-            machineCard.appendChild(ssdBlock);
-
-            let nicBlock = document.createElement('div');
-            nicBlock.setAttribute('class', 'card-machine-textblock-2');
-            nicBlock.innerHTML = 'NICs: ' + characteristics.nicCount;
-            machineCard.appendChild(nicBlock);
-
+            let machineCard = generateMachineCard(machine);
             liqidView.appendChild(machineCard);
         });
     });
+}
+
+function generateMachineCard(machine) {
+    let machineCard = document.createElement('div');
+    machineCard.setAttribute('class', 'card card-machine');
+    machineCard.setAttribute('id', 'card-machine-' + machine.machId);
+    machineCard.addEventListener('click', (e) => {
+        loadMachineDetailsV2(machine);
+        showSecondarySideConfig();
+    });
+
+    let machineHeader = document.createElement('div');
+    machineHeader.setAttribute('class', 'card-machine-header');
+    machineHeader.innerHTML = `${machine.mname} (id: ${machine.machId})`;
+    machineCard.appendChild(machineHeader);
+
+    let characteristics = getMachineCharacteristics(machine.devices);
+
+    let ipmiBlock = document.createElement('div');
+    ipmiBlock.setAttribute('class', 'card-machine-textblock-1');
+    ipmiBlock.innerHTML = characteristics.ipmi;
+    machineCard.appendChild(ipmiBlock);
+
+    let cpuBlock = document.createElement('div');
+    cpuBlock.setAttribute('class', 'card-machine-textblock-2');
+    cpuBlock.innerHTML = 'CPUs: ' + characteristics.cpuCount;
+    machineCard.appendChild(cpuBlock);
+
+    let gpuBlock = document.createElement('div');
+    gpuBlock.setAttribute('class', 'card-machine-textblock-2');
+    gpuBlock.innerHTML = 'GPUs: ' + characteristics.gpuCount;
+    machineCard.appendChild(gpuBlock);
+
+    let ssdBlock = document.createElement('div');
+    ssdBlock.setAttribute('class', 'card-machine-textblock-2');
+    ssdBlock.innerHTML = 'SSDs: ' + characteristics.ssdCount;
+    machineCard.appendChild(ssdBlock);
+
+    let nicBlock = document.createElement('div');
+    nicBlock.setAttribute('class', 'card-machine-textblock-2');
+    nicBlock.innerHTML = 'NICs: ' + characteristics.nicCount;
+    machineCard.appendChild(nicBlock);
+
+    let p2pButton = createElement('div', 'p2p-button', 'P2P');
+    p2pButton.addEventListener('click', () => {
+        if (fabricLocked) {
+            indicateOperationBlocked();
+            return;
+        }
+        triggerP2P('cycleOn', machine.machId);
+    });
+    machineCard.appendChild(p2pButton);
+
+    return machineCard;
 }
 
 function getMachineCharacteristics(deviceArray) {
@@ -1186,14 +1168,22 @@ function triggerP2P(mode, machId) {
     $.ajax({
         url: `/api/p2p/${fabricSelected}/${machId}?mode=${mode}`,
         type: 'POST',
-        success: (data) => {
-            console.log(data);
+        success: () => {
+            generateAlert({
+                title: 'Success: P2p Enabled.',
+                message: 'Message: P2p cycle on for machine ' + machId + ' completed.'
+            });
         },
         error: (err) => {
-            console.log(err);
+            generateAlert({
+                title: 'Error: ' + err.responseJSON.code,
+                message: 'Message: ' + err.responseJSON.description
+            });
         }
     });
 }
+
+// function 
 
 function generateAlertId() {
     if (usableAlertIds.length > 0) {

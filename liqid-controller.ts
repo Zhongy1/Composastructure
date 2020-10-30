@@ -12,6 +12,7 @@ export interface ComposeOptions {
     nic?: number | string[],
     fpga?: number | string[],
     name: string,
+    machId?: number,
     grpId?: number,
     fabrId: number
 }
@@ -83,7 +84,7 @@ export class LiqidController {
      * @param   {string}    name    The name the new group will use
      * @return  {Promise<Group>}    The created group
      */
-    public async createGroup(name: string, ignoreBusy: boolean = false): Promise<Group> {
+    public async createGroup(name: string, ignoreBusy: boolean = false, grpId?: number): Promise<Group> {
         try {
             if (!this.ready) {
                 let err: LiqidError = {
@@ -128,7 +129,7 @@ export class LiqidController {
             let group: Group = {
                 fabr_id: this.fabricId,
                 group_name: name,
-                grp_id: await this.liqidComm.getNextGroupId(),
+                grp_id: (typeof grpId === 'number') ? grpId : await this.liqidComm.getNextGroupId(),
                 pod_id: -1
             }
             let grp = await this.liqidComm.createGroup(group);
@@ -303,6 +304,7 @@ export class LiqidController {
                 else {
                     var group = await this.createGroup('UngroupedGroup', true);
                     await this.liqidObs.refresh();
+                    await delay(2000);// prevent crashing
                 }
             }
 
@@ -317,7 +319,7 @@ export class LiqidController {
             }
 
             //check machine name is only letters
-            if (!options.name.match(/^[A-Za-z]+$/)) {
+            if (!options.name.match(/^[A-Za-z0-9]+$/)) {
                 let err: LiqidError = {
                     code: 422,
                     origin: 'controller',
@@ -355,7 +357,7 @@ export class LiqidController {
                 fabr_gid: '-1',
                 fabr_id: this.fabricId,
                 grp_id: group.grp_id,
-                mach_id: parseInt(await this.liqidComm.getNextMachineId()),
+                mach_id: (typeof options.machId == 'number') ? options.machId : parseInt(await this.liqidComm.getNextMachineId()),
                 mach_name: options.name
             }
             var machineId: number = (await this.liqidComm.createMachine(machine)).mach_id;
@@ -366,6 +368,7 @@ export class LiqidController {
             //verify all devices exist in machine
             let assembleSuccessful = true;
             await this.liqidObs.refresh();
+            await delay(1000);// prevent crashing
             for (let i = 0; i < deviceStatuses.length; i++) {
                 let predevice = this.liqidObs.getPreDeviceByName(deviceStatuses[i].name);
                 if (predevice.mach_id != machineId.toString()) {
@@ -377,7 +380,7 @@ export class LiqidController {
             //if there's an issue, abort and get rid of created machine
             if (!assembleSuccessful) {
                 await this.liqidComm.deleteMachine(machineId);
-                delay(1000);
+                await delay(1000);
                 let err: LiqidError = {
                     code: 500,
                     origin: 'controller',
@@ -388,6 +391,7 @@ export class LiqidController {
             }
 
             await this.liqidObs.refresh();
+            await delay(2000);// prevent crashing
             this.busy = false;
             this.liqidObs.setBusyState(false);
             return this.liqidObs.getMachineById(machine.mach_id);
@@ -427,6 +431,7 @@ export class LiqidController {
         try {
             if (devices.length == 0) return;
             await this.liqidObs.refresh();
+            await delay(2000);// prevent crashing
             //place target group in edit mode
             var grpsInEditMode: { [key: string]: GroupPool } = {};
             var targetGroup = this.liqidObs.getGroupById(grpId);
@@ -437,6 +442,7 @@ export class LiqidController {
                 fabr_id: this.fabricId
             };
             await this.liqidComm.enterPoolEditMode(targetGroupPool);
+            await delay(2000);// prevent crashing
             //only devices outside of target group will be moved
             var transDevices: DeviceStatus[] = [];
             for (let i = 0; i < devices.length; i++) {
@@ -456,6 +462,7 @@ export class LiqidController {
                     };
                     await this.liqidComm.enterPoolEditMode(grpsInEditMode[predevice.grp_id]);
                     await delay(300);
+                    await delay(1000);// prevent crashing
                 }
             }
             //pull out of pool
@@ -483,9 +490,11 @@ export class LiqidController {
                         await this.liqidComm.removeFpgaFromPool(groupDeviceRelator);
                         break;
                 }
+                await delay(2000);// prevent crashing
                 //await delay(300);
             }
             await this.liqidObs.refresh();
+            await delay(2000);// prevent crashing
             //complete removal process (save edit)
             let gids = Object.keys(grpsInEditMode);
             for (let i = 0; i < gids.length; i++) {
@@ -523,6 +532,7 @@ export class LiqidController {
                         await this.liqidComm.addFpgaToPool(groupDeviceRelator);
                         break;
                 }
+                await delay(2000);// prevent crashing
                 //await delay(300);
             }
             await this.liqidObs.refresh();
@@ -550,6 +560,7 @@ export class LiqidController {
         try {
             if (devices.length == 0) return;
             await this.liqidObs.refresh();
+            await delay(1000);// prevent crashing
             //gather all neccessary pieces and enter fabric edit mode
             var machine: Machine = this.liqidObs.getMachineById(machId);
             if (!machine)
@@ -557,6 +568,7 @@ export class LiqidController {
             var group: Group = this.liqidObs.getGroupById(machine.grp_id);
             await this.liqidComm.enterFabricEditMode(machine);
             await delay(300);
+            await delay(1000);// prevent crashing
             //select only the devices that needs to be moved
             var transDevices: DeviceStatus[] = [];
             for (let i = 0; i < devices.length; i++) {
@@ -595,10 +607,13 @@ export class LiqidController {
                         await this.liqidComm.addFpgaToMach(machDeviceRelator);
                         break;
                 }
+                await delay(2000);// prevent crashing
                 //await delay(500);
             }
             await this.liqidObs.refresh();
+            await delay(1000);// prevent crashing
             await this.liqidComm.reprogramFabric(machine);
+            await delay(2000);// prevent crashing
         }
         catch (err) {
             throw err;
@@ -610,6 +625,9 @@ export class LiqidController {
      * @param {Machine} machine The machine to be decomposed
      */
     public async decompose(id: number): Promise<Machine> {
+        function delay(time) {
+            return new Promise(resolve => { setTimeout(() => resolve(''), time); });
+        }
         try {
             if (!this.ready) {
                 let err: LiqidError = {
@@ -636,6 +654,7 @@ export class LiqidController {
                 this.liqidObs.setBusyState(true);
                 let deviceStatuses = this.liqidObs.convertHistToDevStatuses(machine.connection_history);
                 await this.liqidComm.deleteMachine(machine.mach_id);
+                await delay(2000);
                 //move devices out of group...
                 if (deviceStatuses.length == 0) return machine;
                 let grpPool: GroupPool = {
@@ -644,6 +663,7 @@ export class LiqidController {
                     fabr_id: machine.fabr_id
                 }
                 await this.liqidComm.enterPoolEditMode(grpPool);
+                await delay(2000);
                 for (let i = 0; i < deviceStatuses.length; i++) {
                     let groupDeviceRelator: GroupDeviceRelator = {
                         deviceStatus: deviceStatuses[i],
@@ -666,8 +686,10 @@ export class LiqidController {
                             await this.liqidComm.removeFpgaFromPool(groupDeviceRelator);
                             break;
                     }
+                    await delay(2000);
                 }
                 await this.liqidComm.savePoolEdit(grpPool);
+                await delay(2000);
                 this.liqidObs.refresh();
                 this.busy = false;
                 this.liqidObs.setBusyState(false);
@@ -720,6 +742,9 @@ export class LiqidController {
 
 
     public async triggerP2P(mode: P2PActionType, machId: number | string): Promise<void> {
+        function delay(time) {
+            return new Promise(resolve => { setTimeout(() => resolve(''), time); });
+        }
         try {
             let mach: Machine = this.liqidObs.getMachineById(machId);
             if (!mach) {
@@ -743,6 +768,7 @@ export class LiqidController {
                             }
                             throw error;
                         }
+                        await delay(2000);
                     }
                 // else, it should be in off mode, so just move on to the next case
                 case P2PActionType.on:

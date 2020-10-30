@@ -493,6 +493,7 @@ h1 {
     display: block;
     overflow: hidden;
     cursor: pointer;
+    position: relative;
 }
 
 .card-group-header {
@@ -536,6 +537,17 @@ h1 {
     font-size: 18px;
     padding: 3.5px 5% 3.5px 5%;
     color: black;
+}
+.card-machine>.p2p-button {
+    position: absolute;
+    top: 27px;
+    right: 2px;
+    width: 30px;
+    height: 25px;
+    text-align: center;
+    background-color: orange;
+    z-index: 1;
+    cursor: pointer;
 }
 
 .green {

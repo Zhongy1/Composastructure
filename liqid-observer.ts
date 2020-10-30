@@ -53,7 +53,7 @@ export class LiqidObserver {
 
     constructor(private liqidIp: string, public systemName: string = '') {
         this.liqidComm = new LiqidCommunicator(liqidIp);
-        this.wsUrl = `ws://${liqidIp}:8080/liqidui/event`;
+        this.wsUrl = `ws://${liqidIp}:8080/liqid/event`;
         this.busyState = false;
 
         this.groups = {};
@@ -424,7 +424,7 @@ export class LiqidObserver {
 
     public async fetchGroupDetails(id: number): Promise<GroupDetails> {
         try {
-            if (this.machines.hasOwnProperty(id)) {
+            if (this.groups.hasOwnProperty(id)) {
                 return await this.liqidComm.getGroupDetails(id);
             }
             else {

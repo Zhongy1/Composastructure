@@ -4,7 +4,9 @@ import * as socketio from 'socket.io';
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as serveStatic from 'serve-static';
+import * as fs from 'fs';
 import * as path from 'path';
+import * as util from 'util';
 import * as session from 'express-session';
 import * as passport from 'passport';
 import * as passportLocal from 'passport-local';
@@ -15,12 +17,15 @@ import * as helmet from 'helmet';
 import * as morgan from 'morgan';
 import { LiqidObserver } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
-import { Group, Machine, PreDevice, DeviceStatus, Run } from './models';
+import { Group, Machine, PreDevice, DeviceStatus, Run, P2PStatus } from './models';
 import { Router } from 'express-serve-static-core';
+const fileUpload = require('express-fileupload');
 
 const LocalStrategy = passportLocal.Strategy;
 
-var MemoryStore = require('memorystore')(session)
+var MemoryStore = require('memorystore')(session);
+
+const writeFile = util.promisify(fs.writeFile);
 
 export interface RestServerConfig {
     liqidSystems: {
@@ -142,11 +147,16 @@ export interface BasicError {
     description: string
 }
 
-// export interface SuccessResponse<T> {
-//     code: number,
-//     description: string,
-//     content: T
-// }
+export interface SystemState {
+    fabrId: number,
+    group_create_delay?: number,
+    machine_compose_delay?: number,
+    groups: {
+        name: string,
+        id: number,
+    }[],
+    state: ComposeOptions[]
+}
 
 
 export class RestServer {
@@ -174,7 +184,11 @@ export class RestServer {
         this.app.set('port', config.hostPort);
         this.app.use(helmet());
         this.app.use(cors());
+        this.app.use(fileUpload());
         this.app.use(morgan('combined'));
+        this.app.use(cookieParser('secretmightwork'));
+        this.app.use(bodyParser.urlencoded({ extended: true }));
+        this.app.use(bodyParser.json());
 
         if (!config.sslCert)
             this.https = require('http').Server(this.app);
@@ -220,6 +234,7 @@ export class RestServer {
             this.initializeLookupHandlers();
             this.initializeDetailsHandlers();
             this.initializeControlHandlers();
+            this.initializePowermoveHandlers();
             this.ready = true;
         }
         catch (err) {
@@ -334,9 +349,6 @@ export class RestServer {
             return done(null, { name: username, id: 'mainUser' });
         }));
 
-        this.app.use(cookieParser('secretmightwork'));
-        this.app.use(bodyParser.urlencoded({ extended: true }));
-        this.app.use(bodyParser.json());
         this.app.use(session({
             secret: 'secretmightwork',
             store: new MemoryStore({
@@ -348,6 +360,9 @@ export class RestServer {
         this.app.use(passport.initialize());
         this.app.use(passport.session());
         this.app.use(flash());
+        this.app.get('/', (req, res, next) => {
+            res.redirect('/overview.html');
+        });
 
         var isLoggedIn = (req, res, next) => {
             if (req.isAuthenticated()) {
@@ -1019,7 +1034,7 @@ export class RestServer {
                     });
             }
             else {
-                let err: BasicError = { code: 404, description: 'Fabric ' + parseInt(req.params.fabr_id) + ' does not exist.' };
+                let err: BasicError = { code: 404, description: 'Fabric ' + req.params.fabr_id + ' does not exist.' };
                 res.status(err.code).json(err);
             }
         });
@@ -1042,6 +1057,46 @@ export class RestServer {
                         res.status(error.code).json(error);
                     });
             }
+        });
+    }
+
+    private initializePowermoveHandlers(): void {
+        this.apiRouter.get('/system-state/:fabrId', async (req, res, next) => {
+            if (!this.liqidObservers.hasOwnProperty(req.params.fabrId)) {
+                let err: BasicError = { code: 404, description: 'Fabric ' + req.params.fabrId + ' does not exist.' };
+                return res.status(err.code).json(err);
+            }
+            let systemState = this.copySystemState(parseInt(req.params.fabrId));
+            let date = new Date();
+            let fileName = `${this.liqidObservers[req.params.fabrId].systemName}-${date.getMonth() + 1}_${date.getDate()}_${date.getFullYear()}-${date.getHours()}_${date.getMinutes()}_${date.getSeconds()}.json`
+            await writeFile(path.join(__filename, '/../../saves/system-state.json'), JSON.stringify(systemState));
+            return res.download(path.join(__filename, '/../../saves/system-state.json'), fileName);
+        });
+        this.apiRouter.post('/system-state/:fabrId', async (req, res, next) => {
+            function delay(time) {
+                return new Promise(resolve => { setTimeout(() => resolve(''), time); });
+            }
+            if (!this.liqidObservers.hasOwnProperty(req.params.fabrId)) {
+                let err: BasicError = { code: 404, description: 'Fabric ' + req.params.fabrId + ' does not exist.' };
+                return res.status(err.code).json(err);
+            }
+            if (req.files) {
+                let data: SystemState = JSON.parse(req.files.state.data.toString());
+                try {
+                    for (let i = 0; i < data.groups.length; i++) {
+                        await this.liqidControllers[data.fabrId].createGroup(data.groups[i].name, false, data.groups[i].id);
+                        await delay(data.group_create_delay || 3000);
+                    }
+                    for (let i = 0; i < data.state.length; i++) {
+                        await this.liqidControllers[data.fabrId].compose(data.state[i]);
+                        await delay(data.machine_compose_delay || 10000);
+                    }
+                }
+                catch (err) {
+                    console.log(JSON.stringify(err));
+                }
+            }
+            return res.end();
         });
     }
 
@@ -1163,5 +1218,39 @@ export class RestServer {
             fabric.pools.push(pool);
         });
         return fabric;
+    }
+
+    private copySystemState(fabrId: number): SystemState {
+        let systemState: SystemState = {
+            fabrId: fabrId,
+            group_create_delay: 3000, //default 3 seconds
+            machine_compose_delay: 10000, //default 10 seconds
+            groups: [],
+            state: []
+        }
+        let groups = this.liqidObservers[fabrId].getGroups();
+        Object.keys(groups).forEach(grpId => {
+            systemState.groups.push({
+                name: groups[grpId].group_name,
+                id: groups[grpId].grp_id
+            });
+        });
+        let machineWrapper: MachineWrapper = this.prepareMachineInfo(fabrId);
+        machineWrapper.machines.forEach(machine => {
+            let machineDescription = { // uses interface ComposeOptions
+                name: machine.mname,
+                machId: machine.machId,
+                grpId: machine.grpId,
+                fabrId: fabrId
+            }
+            machine.devices.forEach(device => {
+                if (!machineDescription.hasOwnProperty(device.type)) {
+                    machineDescription[device.type] = [];
+                }
+                machineDescription[device.type].push(device.id);
+            });
+            systemState.state.push(machineDescription);
+        });
+        return systemState;
     }
 }
