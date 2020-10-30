@@ -1098,6 +1098,47 @@ export class RestServer {
             }
             return res.end();
         });
+        this.apiRouter.post('/hot-toggle', (req, res, next) => {
+            if (req.body.fabrId == null || req.body.machId == null) {
+                let err: BasicError = { code: 400, description: 'Request body is missing one or more required properties.' };
+                res.status(err.code).json(err);
+            }
+            else if (typeof req.body.fabrId !== 'number') {
+                let err: BasicError = { code: 400, description: 'fabrId has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (typeof req.body.machId !== 'number') {
+                let err: BasicError = { code: 400, description: 'machId has to be a number.' };
+                res.status(err.code).json(err);
+            }
+            else if (this.liqidControllers.hasOwnProperty(req.body.fabrId)) {
+                this.liqidControllers[req.body.fabrId].hotToggle(req.body)
+                    .then((mach) => {
+                        this.liqidObservers[req.body.fabrId].refresh()
+                            .then(() => {
+                                let data: MachineInfo = this.prepareMachineInfo(req.body.fabrId, mach.mach_id);
+                                if (data) {
+                                    res.json(data);
+                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(req.body.fabrId));
+                                }
+                                else {
+                                    let err: BasicError = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
+                                    console.log(err);
+                                    res.status(err.code).json(err);
+                                }
+                            }, err => {
+                                console.log('Machine compose refresh failed: ' + err);
+                            });
+                    }, err => {
+                        let error: BasicError = { code: err.code, description: err.description };
+                        res.status(error.code).json(error);
+                    });
+            }
+            else {
+                let err: BasicError = { code: 404, description: 'Fabric ' + req.body.fabrId + ' does not exist.' };
+                res.status(err.code).json(err);
+            }
+        });
     }
 
     private summarizeDevice(fabr_id: number, name: string): Device {

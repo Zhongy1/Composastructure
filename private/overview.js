@@ -1183,7 +1183,21 @@ function triggerP2P(mode, machId) {
     });
 }
 
-// function 
+function hotToogle(data) {
+    $.ajax({
+        url: `/api/hot-toggle`,
+        type: 'POST',
+        data: JSON.stringify(data),
+        contentType: "application/json; charset=utf-8",
+        dataType: 'json',
+        success: (mach) => {
+            console.log(mach);
+        },
+        error: (err) => {
+            console.log(err);
+        }
+    });
+}
 
 function generateAlertId() {
     if (usableAlertIds.length > 0) {
