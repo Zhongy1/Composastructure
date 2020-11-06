@@ -1183,7 +1183,7 @@ function triggerP2P(mode, machId) {
     });
 }
 
-function hotToogle(data) {
+function hotToggle(data) {
     $.ajax({
         url: `/api/hot-toggle`,
         type: 'POST',

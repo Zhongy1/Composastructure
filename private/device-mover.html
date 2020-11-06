@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <script src="socket.io.js"></script>
     <script src='jquery.min.js'></script>
     <script src='device-mover.js'></script>
     <link rel='stylesheet' href='style2.css'>
@@ -9,73 +10,26 @@
 </head>
 
 <body>
-    <div class='machines-display' id='machines-display'>
-        <div class='machine'>
-            <div class='title'>CompaasSilver01 (ID: 10)</div>
-            <div class='device-list'>
-                <div class='device' type='cpu'>pcpu10</div>
-                <div class='device' type='gpu'>gpu10</div>
-                <div class='device' type='ssd'>ssd10</div>
-                <div class='device' type='optane'>scm10</div>
-                <div class='device' type='nic'>nic10</div>
-            </div>
-        </div>
-        <div class='machine'>
-            <div class='title'></div>
-            <div class='device-list'></div>
-        </div>
-        <div class='machine'>
-            <div class='title'>CompaasSilver01 (ID: 10)</div>
-            <div class='device-list'>
-                <div class='device' type='cpu'>pcpu10</div>
-                <div class='device' type='gpu'>gpu10</div>
-                <div class='device' type='ssd'>ssd10</div>
-                <div class='device' type='optane'>scm10</div>
-                <div class='device' type='nic'>nic10</div>
-            </div>
-        </div>
-    </div>
+    <div class='machines-display' id='machines-display'></div>
     <div class='device-drawer'>
-        <div class='device-list' id='device-list'>
-            <div class='device' type='cpu'>pcpu10</div>
-            <div class='device' type='gpu'>gpu10</div>
-            <div class='device' type='ssd'>ssd10</div>
-            <div class='device' type='optane'>scm10</div>
-            <div class='device' type='nic'>nic10</div>
-        </div>
+        <div class='device-list' id='device-list'></div>
         <div class='arrow'></div>
     </div>
     <div class='machine-config-panel'>
         <div class='configurer'>
-            <div class='machine-display' id='selected-machine-view'>
-                <div class='machine for-show'>
-                    <div class='title'>CompaasSilver01 (ID: 10)</div>
-                    <div class='device-list'>
-                        <div class='device' type='cpu'>pcpu10</div>
-                        <div class='device' type='gpu'>gpu10</div>
-                        <div class='device' type='ssd'>ssd10</div>
-                        <div class='device' type='optane'>scm10</div>
-                        <div class='device' type='nic'>nic10</div>
-                    </div>
-                </div>
-            </div>
+            <div class='machine-display' id='selected-machine-view'></div>
             <div class='interface'>
                 <h1>Device Edit Mode</h1>
                 <div class='buttons'>
                     <div id='cancel'>Cancel</div>
                     <div id='submit'>Submit</div>
                 </div>
-                <div class='logs-window'>Machine successfully modified. Click cancel to see new system state.</div>
+                <div class='logs-window' id='logs-window'></div>
             </div>
         </div>
         <div class='divider'></div>
     </div>
     <div class='device hidden' id='draggable-device'></div>
-    <!-- <script>
-        document.body.addEventListener('click', () => {
-            document.body.classList.toggle('configure-mode');
-        });
-    </script> -->
 </body>
 
 </html>

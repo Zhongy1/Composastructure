@@ -16,8 +16,10 @@ let selectedMachView;
 
 let configuring = true;
 let machDomRefs = {};
+let machRef;
 let configureDevList;
 
+let logsWindow;
 
 
 $(document).ready(() => {
@@ -30,20 +32,38 @@ function initLocalView() {
     machinesDisplay = document.getElementById('machines-display');
     deviceList = document.getElementById('device-list');
     selectedMachView = document.getElementById('selected-machine-view');
+    logsWindow = document.getElementById('logs-window');
 
-    document.getElementById('cancel', () => {
+    document.getElementById('cancel').addEventListener('click', () => {
         if (!configuring) return;
         displayFabric(fabricSelected);
     });
-    document.getElementById('submit', () => {
+    document.getElementById('submit').addEventListener('click', () => {
         if (!configuring) return;
-        console.log('submitting?');
-    })
+        doSubmit();
+    });
+}
+
+function doSubmit() {
+    let options = {
+        machId: machRef.machId,
+        fabrId: fabricSelected,
+        mode: 'union'
+    }
+    configureDevList.childNodes.forEach(deviceElem => {
+        let type = deviceElem.getAttribute('type');
+        if (options.hasOwnProperty(type)) {
+            options[type].push(deviceElem.innerText);
+        }
+        else {
+            options[type] = [deviceElem.innerText];
+        }
+    });
+    hotToggle(options);
 }
 
 function initDeviceDragging() {
     let draggableDevice = document.getElementById('draggable-device');
-    let selectedMachView = document.getElementById('selected-machine-view');
     let targ;
     document.body.addEventListener('mousedown', (e) => {
         if (!configuring) return;
@@ -78,9 +98,11 @@ function initDeviceDragging() {
 function configureMachine(machine) {
     let machElem = createMachineElement(machine);
     machElem.classList.add('for-show');
+    machRef = machine;
     configureDevList = machElem.querySelector('.device-list');
 
     selectedMachView.appendChild(machElem);
+    machDomRefs[machine.machId].classList.add('disabled');
     configuring = true;
     document.body.classList.add('configure-mode');
 }
@@ -94,19 +116,22 @@ function selectFabric(fabricId) {
 function displayFabric(fabricId) {
     if (!fabrics.fabrIds.includes(fabricId)) return;
     configuring = false;
-    document.body.classList.remove('conifgure-mode');
+    document.body.classList.remove('configure-mode');
     machinesDisplay.innerHTML = '';
     deviceList.innerHTML = '';
-    selectedMachView = '';
+    selectedMachView.innerHTML = '';
 
     machDomRefs = {};
+    machRef = null;
     configureDevList = null;
 
-    fabrics.devices.forEach(device => {
-        let deviceLabel = createDeviceElement(device.id, device.type);
+    let index = fabrics.fabrIds.indexOf(fabricId);
+    fabrics.devices[index].forEach(device => {
+        if (device.mach_id != null) return;
+        let deviceLabel = createDeviceElement(device);
         deviceList.appendChild(deviceLabel);
     });
-    fabrics.groups.forEach(group => {
+    fabrics.groups[index].forEach(group => {
         group.machines.forEach(machine => {
             let machElem = createMachineElement(machine);
             machDomRefs[machine.machId] = machElem;
@@ -133,9 +158,9 @@ function createMachineElement(machine) {
 }
 
 function createDeviceElement(device) {
-    let device = createElement('div', 'device', device.id);
-    device.setAttribute('type', device.type);
-    return device;
+    let deviceElem = createElement('div', 'device', device.id);
+    deviceElem.setAttribute('type', device.type);
+    return deviceElem;
 }
 
 function createElement(elementType, classes, content) {
@@ -145,6 +170,33 @@ function createElement(elementType, classes, content) {
         element.innerHTML = content;
     }
     return element;
+}
+
+function hotToggle(data) {
+    logsWindow.innerHTML = 'Processing...';
+    logsWindow.classList.remove('error');
+    $.ajax({
+        url: `/api/hot-toggle`,
+        type: 'POST',
+        data: JSON.stringify(data),
+        contentType: "application/json; charset=utf-8",
+        dataType: 'json',
+        success: (mach) => {
+            // console.log(mach);
+            logsWindow.innerHTML = 'Machine successfully modified. Click cancel to see new system state.';
+            logsWindow.classList.remove('error');
+        },
+        error: (err) => {
+            // console.log(err);
+            if (err.responseJSON) {
+                logsWindow.innerHTML = err.responseJSON.description;
+            }
+            else {
+                logsWindow.innerHTML = 'Connection error. Try refreshing.'
+            }
+            logsWindow.classList.add('error');
+        }
+    });
 }
 
 
