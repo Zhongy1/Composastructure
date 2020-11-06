@@ -17,6 +17,10 @@ export interface ComposeOptions {
     fabrId: number
 }
 
+export enum PlugMode {
+    Toggle = 'toggle', Union = 'union', Disunion = 'disunion'
+}
+
 export interface HotToggleOptions {
     cpu?: string[],
     gpu?: string[],
@@ -25,7 +29,8 @@ export interface HotToggleOptions {
     nic?: string[],
     fpga?: string[],
     machId: number,
-    fabrId: number
+    fabrId: number,
+    mode: PlugMode
 }
 
 export enum P2PActionType {
@@ -993,6 +998,16 @@ export class LiqidController {
                 throw err;
             }
 
+            // ensure selecting a valid mode
+            if (options.mode != PlugMode.Toggle && options.mode != PlugMode.Union && options.mode != PlugMode.Disunion) {
+                let err: LiqidError = {
+                    code: 400,
+                    origin: 'controller',
+                    description: `Invalid mode specification. Possible modes: toggle, union, disunion.`
+                }
+                throw err;
+            }
+
             //grab all devices, even ones already in machines
             let deviceStatuses: DeviceStatus[] = await this.liqidObs.gatherRequiredDeviceStatuses({
                 cpu: options.cpu,
@@ -1033,18 +1048,24 @@ export class LiqidController {
                 }
             }
 
-            // detach devices
-            await this.moveDevicesOutOfMachine(devStatUnplug, options.machId);
-            let affectedMachIds = Object.keys(machDevStatUnplug);
-            for (let i = 0; i < affectedMachIds.length; i++) {
-                await this.moveDevicesOutOfMachine(machDevStatUnplug[affectedMachIds[i]], parseInt(affectedMachIds[i]));
+            // detach from target machine if not in union mode
+            if (options.mode != PlugMode.Union) {
+                await this.moveDevicesOutOfMachine(devStatUnplug, options.machId);
             }
+            // other machines can be affected if not in disunion mode
+            if (options.mode != PlugMode.Disunion) {
+                // detach from other machines
+                let affectedMachIds = Object.keys(machDevStatUnplug);
+                for (let i = 0; i < affectedMachIds.length; i++) {
+                    await this.moveDevicesOutOfMachine(machDevStatUnplug[affectedMachIds[i]], parseInt(affectedMachIds[i]));
+                }
 
-            // move devices to group
-            await this.moveDevicesToGroup(devStatPlug, group.grp_id);
+                // move devices to group
+                await this.moveDevicesToGroup(devStatPlug, group.grp_id);
 
-            // move devices to machine
-            await this.moveDevicesToMachine(devStatPlug, options.machId);
+                // move devices to machine
+                await this.moveDevicesToMachine(devStatPlug, options.machId);
+            }
 
             // refresh
             await this.liqidObs.refresh();
