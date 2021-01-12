@@ -256,71 +256,71 @@ export class RestServer {
             socket.emit('initialize', this.prepareFabricOverview());
             //new stuff ^^^
 
-            socket.on('refresh-devices', () => {
-                let deviceArray: Device[][] = [];
-                let fabrIds = Object.keys(this.liqidObservers);
-                for (let i = 0; i < fabrIds.length; i++) {
-                    let devices = this.summarizeAllDevices(parseInt(fabrIds[i]));
-                    deviceArray.push([]);
-                    Object.keys(devices).forEach((deviceId) => {
-                        deviceArray[i].push(devices[deviceId]);
-                    });
-                }
-                socket.emit('liqid-state-update', { fabrIds: fabrIds, devices: deviceArray });
-            });
-            socket.on('reload', () => {
-                let response: MainResponse = {
-                    fabrics: []
-                }
-                Object.keys(this.liqidObservers).forEach(fabr_id => {
-                    let fabric: Fabric = this.getInfoFromFabric(parseInt(fabr_id));
-                    if (!fabric)
-                        return null;
-                    else
-                        response.fabrics.push(fabric);
-                });
-                socket.emit('update', response);
-            });
-            socket.on('create', (composeOpts) => {
-                if (this.liqidObservers.hasOwnProperty(composeOpts.fabr_id)) {
-                    this.liqidControllers[composeOpts.fabr_id].compose(composeOpts)
-                        .then((mach) => {
-                            socket.emit('success', mach);
-                        }, err => {
-                            socket.emit('err', 'Error composing machine.');
-                        });
-                }
-                else {
-                    socket.emit('err', `Fabric with fabr_id ${composeOpts.fabr_id} does not exist.`);
-                }
-            });
-            socket.on('delete-machine', (machDeleteOpts) => {
-                if (this.liqidObservers.hasOwnProperty(machDeleteOpts.fabr_id)) {
-                    this.liqidControllers[machDeleteOpts.fabr_id].decompose(machDeleteOpts.id)
-                        .then(() => {
-                            socket.emit('success', 'Machine decomposed successfully.');
-                        }, err => {
-                            if (err)
-                                socket.emit('err', 'There was a problem decomposing a machine.');
-                        });
-                }
-                else {
-                    socket.emit('err', `Fabric with fabr_id ${machDeleteOpts.fabr_id} does not exist.`);
-                }
-            })
-            socket.on('delete-group', (grpDeleteOpts) => {
-                if (this.liqidObservers.hasOwnProperty(grpDeleteOpts.fabr_id)) {
-                    this.liqidControllers[grpDeleteOpts.fabr_id].deleteGroup(parseInt(grpDeleteOpts.id))
-                        .then((group) => {
-                            socket.emit('success', group);
-                        }, err => {
-                            socket.emit('err', 'Error deleting group.');
-                        });
-                }
-                else {
-                    socket.emit('err', `Fabric with fabr_id ${grpDeleteOpts.fabr_id} does not exist.`);
-                }
-            });
+            // socket.on('refresh-devices', () => {
+            //     let deviceArray: Device[][] = [];
+            //     let fabrIds = Object.keys(this.liqidObservers);
+            //     for (let i = 0; i < fabrIds.length; i++) {
+            //         let devices = this.summarizeAllDevices(parseInt(fabrIds[i]));
+            //         deviceArray.push([]);
+            //         Object.keys(devices).forEach((deviceId) => {
+            //             deviceArray[i].push(devices[deviceId]);
+            //         });
+            //     }
+            //     socket.emit('liqid-state-update', { fabrIds: fabrIds, devices: deviceArray });
+            // });
+            // socket.on('reload', () => {
+            //     let response: MainResponse = {
+            //         fabrics: []
+            //     }
+            //     Object.keys(this.liqidObservers).forEach(fabr_id => {
+            //         let fabric: Fabric = this.getInfoFromFabric(parseInt(fabr_id));
+            //         if (!fabric)
+            //             return null;
+            //         else
+            //             response.fabrics.push(fabric);
+            //     });
+            //     socket.emit('update', response);
+            // });
+            // socket.on('create', (composeOpts) => {
+            //     if (this.liqidObservers.hasOwnProperty(composeOpts.fabr_id)) {
+            //         this.liqidControllers[composeOpts.fabr_id].compose(composeOpts)
+            //             .then((mach) => {
+            //                 socket.emit('success', mach);
+            //             }, err => {
+            //                 socket.emit('err', 'Error composing machine.');
+            //             });
+            //     }
+            //     else {
+            //         socket.emit('err', `Fabric with fabr_id ${composeOpts.fabr_id} does not exist.`);
+            //     }
+            // });
+            // socket.on('delete-machine', (machDeleteOpts) => {
+            //     if (this.liqidObservers.hasOwnProperty(machDeleteOpts.fabr_id)) {
+            //         this.liqidControllers[machDeleteOpts.fabr_id].decompose(machDeleteOpts.id)
+            //             .then(() => {
+            //                 socket.emit('success', 'Machine decomposed successfully.');
+            //             }, err => {
+            //                 if (err)
+            //                     socket.emit('err', 'There was a problem decomposing a machine.');
+            //             });
+            //     }
+            //     else {
+            //         socket.emit('err', `Fabric with fabr_id ${machDeleteOpts.fabr_id} does not exist.`);
+            //     }
+            // })
+            // socket.on('delete-group', (grpDeleteOpts) => {
+            //     if (this.liqidObservers.hasOwnProperty(grpDeleteOpts.fabr_id)) {
+            //         this.liqidControllers[grpDeleteOpts.fabr_id].deleteGroup(parseInt(grpDeleteOpts.id))
+            //             .then((group) => {
+            //                 socket.emit('success', group);
+            //             }, err => {
+            //                 socket.emit('err', 'Error deleting group.');
+            //             });
+            //     }
+            //     else {
+            //         socket.emit('err', `Fabric with fabr_id ${grpDeleteOpts.fabr_id} does not exist.`);
+            //     }
+            // });
         });
         Object.keys(this.liqidObservers).forEach(fabrId => {
             //currently disabled in observer (not used)
@@ -368,12 +368,7 @@ export class RestServer {
             if (req.isAuthenticated()) {
                 return next();
             } else {
-                if (this.enableGUI) {
-                    return res.redirect('/login.html');
-                }
-                else {
-                    return res.status(401).send('Unauthorized');
-                }
+                return res.status(401).send('Unauthorized');
             }
         }
 
@@ -411,6 +406,25 @@ export class RestServer {
                 })(req, res, next);
             });
         }
+        this.app.post('/api-login', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/json');
+            passport.authenticate('local', (err, user, info) => {
+                if (!user) { return res.status(401).json(info) }
+                req.logIn(user, err => {
+                    if (err) {
+                        console.log(err);
+                        return res.status(500).json(err);
+                    }
+                    return res.json(user);
+                });
+            })(req, res, next);
+        });
+        this.app.get('/check-state', (req, res, next) => {
+            if (req.isAuthenticated) {
+                return res.json(true);
+            }
+            return res.json(false);
+        });
 
         // this.app.use(serveStatic(path.resolve(__dirname, '../public')));
         // this.app.use(isLoggedIn, serveStatic(path.resolve(__dirname, '../private')));
@@ -1062,13 +1076,18 @@ export class RestServer {
 
     private initializePowermoveHandlers(): void {
         this.apiRouter.get('/system-state/:fabrId', async (req, res, next) => {
-            if (!this.liqidObservers.hasOwnProperty(req.params.fabrId)) {
-                let err: BasicError = { code: 404, description: 'Fabric ' + req.params.fabrId + ' does not exist.' };
+            let fabrId = parseInt(req.params.fabrId);
+            if (fabrId == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
                 return res.status(err.code).json(err);
             }
-            let systemState = this.copySystemState(parseInt(req.params.fabrId));
+            if (!this.liqidObservers.hasOwnProperty(fabrId)) {
+                let err: BasicError = { code: 404, description: 'Fabric ' + fabrId + ' does not exist.' };
+                return res.status(err.code).json(err);
+            }
+            let systemState = this.copySystemState(fabrId);
             let date = new Date();
-            let fileName = `${this.liqidObservers[req.params.fabrId].systemName}-${date.getMonth() + 1}_${date.getDate()}_${date.getFullYear()}-${date.getHours()}_${date.getMinutes()}_${date.getSeconds()}.json`
+            let fileName = `${this.liqidObservers[fabrId].systemName}-${date.getMonth() + 1}_${date.getDate()}_${date.getFullYear()}-${date.getHours()}_${date.getMinutes()}_${date.getSeconds()}.json`
             await writeFile(path.join(__filename, '/../../saves/system-state.json'), JSON.stringify(systemState));
             return res.download(path.join(__filename, '/../../saves/system-state.json'), fileName);
         });
@@ -1076,11 +1095,20 @@ export class RestServer {
             function delay(time) {
                 return new Promise(resolve => { setTimeout(() => resolve(''), time); });
             }
-            if (!this.liqidObservers.hasOwnProperty(req.params.fabrId)) {
-                let err: BasicError = { code: 404, description: 'Fabric ' + req.params.fabrId + ' does not exist.' };
+            let fabrId = parseInt(req.params.fabrId);
+            if (fabrId == NaN) {
+                let err: BasicError = { code: 400, description: 'fabr_id has to be a number.' };
                 return res.status(err.code).json(err);
             }
-            if (req.files) {
+            if (!this.liqidObservers.hasOwnProperty(fabrId)) {
+                let err: BasicError = { code: 404, description: 'Fabric ' + fabrId + ' does not exist.' };
+                return res.status(err.code).json(err);
+            }
+            if (this.liqidObservers[fabrId].getGroupById()) {
+                let err: BasicError = { code: 422, description: 'Fabric state is already modified. Ensure there are no existing machines or groups created in the system.' };
+                return res.status(err.code).json(err);
+            }
+            if (req.files && req.files.state) {
                 let data: SystemState = JSON.parse(req.files.state.data.toString());
                 try {
                     for (let i = 0; i < data.groups.length; i++) {
@@ -1093,23 +1121,28 @@ export class RestServer {
                     }
                 }
                 catch (err) {
-                    console.log(JSON.stringify(err));
+                    let error: BasicError = { code: 500, description: 'System state build failed. A partial system may have been built. If you encounter this problem while using an unmodified downloaded system state, please report this problem.' };
+                    return res.status(error.code).json(error);
                 }
             }
-            return res.end();
+            else {
+                let err: BasicError = { code: 404, description: 'No file named "state" specified.' };
+                return res.status(err.code).json(err);
+            }
+            return res.json(true);
         });
         this.apiRouter.post('/hot-toggle', (req, res, next) => {
             if (req.body.fabrId == null || req.body.machId == null) {
                 let err: BasicError = { code: 400, description: 'Request body is missing one or more required properties.' };
-                res.status(err.code).json(err);
+                return res.status(err.code).json(err);
             }
             else if (typeof req.body.fabrId !== 'number') {
                 let err: BasicError = { code: 400, description: 'fabrId has to be a number.' };
-                res.status(err.code).json(err);
+                return res.status(err.code).json(err);
             }
             else if (typeof req.body.machId !== 'number') {
                 let err: BasicError = { code: 400, description: 'machId has to be a number.' };
-                res.status(err.code).json(err);
+                return res.status(err.code).json(err);
             }
             else if (this.liqidControllers.hasOwnProperty(req.body.fabrId)) {
                 this.liqidControllers[req.body.fabrId].hotToggle(req.body)
@@ -1117,15 +1150,8 @@ export class RestServer {
                         this.liqidObservers[req.body.fabrId].refresh()
                             .then(() => {
                                 let data: MachineInfo = this.prepareMachineInfo(req.body.fabrId, mach.mach_id);
-                                if (data) {
-                                    res.json(data);
-                                    this.io.sockets.emit('fabric-update', this.prepareFabricOverview(req.body.fabrId));
-                                }
-                                else {
-                                    let err: BasicError = { code: 500, description: 'Machine seems to be composed, but final verification failed.' };
-                                    console.log(err);
-                                    res.status(err.code).json(err);
-                                }
+                                res.json(data);
+                                this.io.sockets.emit('fabric-update', this.prepareFabricOverview(req.body.fabrId));
                             }, err => {
                                 console.log('Machine compose refresh failed: ' + err);
                             });
@@ -1136,7 +1162,7 @@ export class RestServer {
             }
             else {
                 let err: BasicError = { code: 404, description: 'Fabric ' + req.body.fabrId + ' does not exist.' };
-                res.status(err.code).json(err);
+                return res.status(err.code).json(err);
             }
         });
     }
