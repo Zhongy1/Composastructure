@@ -580,6 +580,7 @@ h1 {
     background-color: #001742; /*#bbb*/
     position: absolute;
     bottom: 100%;
+    z-index: 1;
 }
 .main-config>.drawer>.drawer-header {
     background-color: #000835; /*aaa*/

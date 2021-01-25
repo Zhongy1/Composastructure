@@ -420,7 +420,7 @@ export class RestServer {
             })(req, res, next);
         });
         this.app.get('/check-state', (req, res, next) => {
-            if (req.isAuthenticated) {
+            if (req.isAuthenticated()) {
                 return res.json(true);
             }
             return res.json(false);
