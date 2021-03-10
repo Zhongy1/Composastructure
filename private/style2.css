@@ -108,7 +108,7 @@ body {
     right: 0px;
     width: calc(100% - 500px);
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
     display: flex;
     flex-flow: row wrap;
     justify-content: space-around;

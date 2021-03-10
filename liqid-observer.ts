@@ -53,7 +53,7 @@ export class LiqidObserver {
 
     constructor(private liqidIp: string, public systemName: string = '') {
         this.liqidComm = new LiqidCommunicator(liqidIp);
-        this.wsUrl = `ws://${liqidIp}:8080/liqid/event`;
+        this.wsUrl = `ws://${liqidIp}:8080/liqid/websocket/v2/event`;
         this.busyState = false;
 
         this.groups = {};
@@ -99,6 +99,8 @@ export class LiqidObserver {
                     map[group.grp_id] = group;
                 });
                 let updated: boolean = this.makeNecessaryUpdates(map, this.groups);
+                if (this.updateCallback)
+                    this.updateCallback(this.fabricId);
             }, { 'id': "group-data-socket" });
             this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
                 if (this.busyState)
@@ -108,6 +110,8 @@ export class LiqidObserver {
                     map[machine.mach_id] = machine;
                 });
                 let updated: boolean = this.makeNecessaryUpdates(map, this.machines);
+                if (this.updateCallback)
+                    this.updateCallback(this.fabricId);
             }, { 'id': "machine-socket" });
             this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
                 if (this.busyState)
@@ -117,8 +121,8 @@ export class LiqidObserver {
                     map[device.name] = device;
                 });
                 let updated: boolean = this.makeNecessaryUpdates(map, this.devices);
-                // if (this.updateCallback)
-                //     this.updateCallback(this.fabricId);
+                if (this.updateCallback)
+                    this.updateCallback(this.fabricId);
             }, { 'id': "predevice-socket" });
             // this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
             //     if (this.busyState)

@@ -7,19 +7,73 @@
 </head>
 
 <body>
-    <div>
+    <!-- <div>
         <a href='/api/system-state/25'>Download</a> system state.
-    </div>
+    </div> -->
     <div>
         <h2>Upload System State</h2>
-        <label>Create system on submit. </label>
-        <form id='form'>
+        <label>Create system on submit for CompaasSilver.</label>
+        <form id='form-silver'>
+            <input type='file' name='state'>
+            <input type='submit' value='submit'>
+        </form>
+        <br>
+        <label>Create system on submit for CompaasGold.</label>
+        <form id='form-gold'>
+            <input type='file' name='state'>
+            <input type='submit' value='submit'>
+        </form>
+        <br>
+        <label>Create system on submit for Dev Kit.</label>
+        <form id='form-dev'>
             <input type='file' name='state'>
             <input type='submit' value='submit'>
         </form>
     </div>
     <script>
-        $('#form').on('submit', (function (e) {
+        $('#form-silver').on('submit', (function (e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                type: 'POST',
+                url: '/api/system-state/20',
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    console.log("success");
+                    console.log(data);
+                },
+                error: function (data) {
+                    console.log("error");
+                    console.log(data);
+                }
+            });
+        }));
+        $('#form-gold').on('submit', (function (e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                type: 'POST',
+                url: '/api/system-state/30',
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    console.log("success");
+                    console.log(data);
+                },
+                error: function (data) {
+                    console.log("error");
+                    console.log(data);
+                }
+            });
+        }));
+        $('#form-dev').on('submit', (function (e) {
             e.preventDefault();
             var formData = new FormData(this);
 

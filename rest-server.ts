@@ -324,7 +324,7 @@ export class RestServer {
         });
         Object.keys(this.liqidObservers).forEach(fabrId => {
             //currently disabled in observer (not used)
-            this.liqidObservers[fabrId].attachUpdateCallback(this.observerCallback);
+            this.liqidObservers[fabrId].attachUpdateCallback(this.observerCallback.bind(this));
         });
     }
 
@@ -350,9 +350,12 @@ export class RestServer {
         }));
 
         this.app.use(session({
+            cookie: {
+                maxAge: 86400000
+            },
             secret: 'secretmightwork',
             store: new MemoryStore({
-                checkPeriod: 86400000
+                checkPeriod: 86400000 //24hr
             }),
             resave: false,
             saveUninitialized: true

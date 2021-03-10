@@ -75,6 +75,9 @@ function initDeviceDragging() {
             draggableDevice.style.left = e.pageX + 'px';
             draggableDevice.classList.remove('hidden');
         }
+        else {
+            targ = null;
+        }
     });
     document.body.addEventListener('mouseup', (e) => {
         if (!configuring) return;
@@ -199,10 +202,11 @@ function hotToggle(data) {
     });
 }
 
-
+const urlParams = new URLSearchParams(window.location.search);
+const fIndex = parseInt(urlParams.get('index')) || 0;
 socket.on('initialize', (data) => {
     fabrics = data;
-    selectFabric(fabrics.fabrIds[0]);
+    selectFabric(fabrics.fabrIds[fIndex]);
 });
 socket.on('fabric-update', (data) => {
     if (fabrics && fabrics.fabrIds.includes(data.fabrIds[0])) {
