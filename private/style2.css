@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
+
+body {
+    margin: 0px;
+    background-color: black;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Inconsolata', monospace;
+}
+
+.machine-config-panel {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    background-color: #000;
+    width: 500px;
+    height: 100%;
+    box-sizing: border-box;
+}
+.machine-config-panel>.configurer {
+    width: 490px;
+    height: 100%;
+    float: left;
+    overflow: hidden;
+}
+.machine-config-panel>.configurer>.machine-display {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    transition: height 0.5s;
+    display: flex;
+    justify-content: center;
+    align-content: flex-start;
+}
+.machine-config-panel>.configurer>.machine-display::-webkit-scrollbar {
+    display: none;
+}
+.machine-config-panel>.configurer>.interface {
+    width: 100%;
+    height: 200px;
+    color: #0f0;
+    text-shadow: 0px 0px 2px #0f0;
+    box-sizing: border-box;
+    padding: 10px;
+}
+.machine-config-panel>.divider {
+    float: left;
+    width: 10px;
+    height: 100%;
+    transition: filter 0.3s;
+}
+.machine-config-panel>.divider::after {
+    content: '';
+    background-color: #111;
+    display: block;
+    width: 100%;
+    height: 100%;
+    transition: background-color 0.3s;
+}
+
+.device-drawer {
+    position: absolute;
+    top: 0px;
+    left: 350px;
+    width: 170px;
+    height: 100%;
+    overflow: hidden;
+    transition: left 0.5s;
+}
+.device-drawer>.device-list {
+    width: 150px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    overflow: auto;
+    float: left;
+}
+.device-drawer>.device-list::-webkit-scrollbar {
+    display: none;
+}
+.device-drawer>.arrow {
+    position: relative;
+    top: 50%;
+    width: 20px;
+    height: 40px;
+    transform: translateY(-50%);
+    float: left;
+    transition: filter 0.3s;
+}
+.device-drawer>.arrow::after {
+    content: '';
+    background-color: #111;
+    display: block;
+    /* background-color: #0F0; */
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(25% 25%, 75% 50%, 25% 75%);
+    transition: background-color 0.3s;
+}
+.device-drawer:hover {
+    left: 500px;
+}
+
+.machines-display {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: calc(100% - 500px);
+    height: 100%;
+    overflow: auto;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-around;
+    align-content: flex-start;
+}
+
+
+
+.interface>h1 {
+    margin-top: 0px;
+    font-size: 1.5em;
+}
+.interface>.buttons {
+    width: 100%;
+    height: 35px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+}
+.interface>.buttons>div {
+    font-size: 20px;
+    cursor: pointer;
+}
+.interface>.buttons>div:hover {
+    text-decoration: underline;
+}
+.interface>.logs-window {
+    background-color: #111;
+    box-sizing: border-box;
+    margin: 15px 10px 0px;
+    padding: 5px;
+    border-radius: 5px;
+    height: 80px;
+    text-shadow: 0px 0px 1px #0f0;
+}
+.interface>.logs-window.error {
+    text-shadow: 0px 0px 1px #f00;
+    color: #f00;
+}
+
+
+
+.machine {
+    width: 300px;
+    color: #ddd;
+    margin: 15px;
+}
+.machine.for-show {
+    pointer-events: none;
+}
+.machine>.title {
+    text-align: center;
+    box-sizing: border-box;
+    border: 3px solid #ddd;
+    min-height: 28px;
+    font-size: 20px;
+    white-space: pre-wrap;
+    cursor: pointer;
+}
+.machine>.device-list {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 30px;
+    border-left: 3px solid #ddd;
+    border-right: 3px solid #ddd;
+    border-bottom: 3px solid #ddd;
+}
+
+
+
+.device {
+    text-align: center;
+    width: 100%;
+    height: 30px;
+    line-height: 30px;
+    font-size: 18px;
+    color: #ddd;
+}
+#draggable-device {
+    width: 100px;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+#draggable-device.hidden {
+    display: none;
+}
+
+
+
+
+
+.configure-mode .machine-config-panel>.divider {
+    filter: drop-shadow(0px 0px 3px #0f0);
+}
+.configure-mode .machine-config-panel>.divider::after {
+    background-color: #0f0;
+}
+.configure-mode .machine-config-panel>.configurer>.machine-display {
+    height: calc(100% - 200px);
+}
+
+
+
+.configure-mode .device-drawer>.arrow{
+    filter: drop-shadow(0px 0px 3px #0f0);
+}
+.configure-mode .device-drawer>.arrow::after {
+    background-color: #0f0;
+}
+
+
+
+.configure-mode .machine.disabled {
+    color: #333;
+    pointer-events: none;
+}
+.machine.disabled>.title {
+    border-color: #333;
+}
+.machine.disabled>.device-list {
+    border-color: #333;
+}
+
+
+
+.configure-mode .device {
+    cursor: pointer;
+    -webkit-touch-callout: none; 
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.configure-mode .machine.disabled>.device-list>.device {
+    color: #333;
+    text-shadow: initial;
+}
+.configure-mode .device[type=cpu] {
+    color: #00f;
+    text-shadow: 0px 0px 2px #00f;
+}
+.configure-mode .device[type=gpu] {
+    color: #0ff;
+    text-shadow: 0px 0px 2px #0ff;
+}
+.configure-mode .device[type=ssd] {
+    color: #f00;
+    text-shadow: 0px 0px 2px #f00;
+}
+.configure-mode .device[type=optane] {
+    color: #f80;
+    text-shadow: 0px 0px 2px #f80;
+}
+.configure-mode .device[type=nic] {
+    color: #80f;
+    text-shadow: 0px 0px 2px #80f;
+}
+.configure-mode .device.disabled {
+    color: #333;
+    text-shadow: initial;
+    pointer-events: none;
+}

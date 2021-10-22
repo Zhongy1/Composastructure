@@ -65,3 +65,6 @@ dist/doc/
 .DS_Store
 keys/
 discarded/
+saves/
+dist/
+docs/

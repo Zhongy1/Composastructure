@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="socket.io.js"></script>
+    <script src='jquery.min.js'></script>
+    <script src='device-mover.js'></script>
+    <link rel='stylesheet' href='style2.css'>
+    <title>Document</title>
+</head>
+
+<body>
+    <div class='machines-display' id='machines-display'></div>
+    <div class='device-drawer'>
+        <div class='device-list' id='device-list'></div>
+        <div class='arrow'></div>
+    </div>
+    <div class='machine-config-panel'>
+        <div class='configurer'>
+            <div class='machine-display' id='selected-machine-view'></div>
+            <div class='interface'>
+                <h1>Device Edit Mode</h1>
+                <div class='buttons'>
+                    <div id='cancel'>Cancel</div>
+                    <div id='submit'>Submit</div>
+                </div>
+                <div class='logs-window' id='logs-window'></div>
+            </div>
+        </div>
+        <div class='divider'></div>
+    </div>
+    <div class='device hidden' id='draggable-device'></div>
+</body>
+
+</html>

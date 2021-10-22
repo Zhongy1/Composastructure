@@ -23,6 +23,10 @@ export interface GatheringDevStatsOptions {
     gatherUnused: boolean
 }
 
+export enum ConnectionState {
+    on, connecting, off
+}
+
 /**
  * Observer for liqid system state
 ```typescript
@@ -50,10 +54,11 @@ export class LiqidObserver {
     private updateCallback;
 
     public fabricTracked: boolean;
+    public connState: ConnectionState;
 
     constructor(private liqidIp: string, public systemName: string = '') {
         this.liqidComm = new LiqidCommunicator(liqidIp);
-        this.wsUrl = `ws://${liqidIp}:8080/liqidui/event`;
+        this.wsUrl = `ws://${liqidIp}:8080/liqid/websocket/v2/event`;
         this.busyState = false;
 
         this.groups = {};
@@ -65,6 +70,7 @@ export class LiqidObserver {
         this.cpuNameToIpmiMap = {};
 
         this.fabricTracked = false;
+        this.connState = ConnectionState.off;
     }
 
     /**
@@ -99,6 +105,8 @@ export class LiqidObserver {
                     map[group.grp_id] = group;
                 });
                 let updated: boolean = this.makeNecessaryUpdates(map, this.groups);
+                if (this.updateCallback)
+                    this.updateCallback(this.fabricId);
             }, { 'id': "group-data-socket" });
             this.stompClient.subscribe('/data/machine', (m: Stomp.Message) => {
                 if (this.busyState)
@@ -108,6 +116,8 @@ export class LiqidObserver {
                     map[machine.mach_id] = machine;
                 });
                 let updated: boolean = this.makeNecessaryUpdates(map, this.machines);
+                if (this.updateCallback)
+                    this.updateCallback(this.fabricId);
             }, { 'id': "machine-socket" });
             this.stompClient.subscribe('/data/predevice', (m: Stomp.Message) => {
                 if (this.busyState)
@@ -117,8 +127,8 @@ export class LiqidObserver {
                     map[device.name] = device;
                 });
                 let updated: boolean = this.makeNecessaryUpdates(map, this.devices);
-                // if (this.updateCallback)
-                //     this.updateCallback(this.fabricId);
+                if (this.updateCallback)
+                    this.updateCallback(this.fabricId);
             }, { 'id': "predevice-socket" });
             // this.stompClient.subscribe('/data/device', (m: Stomp.Message) => {
             //     if (this.busyState)
@@ -132,6 +142,13 @@ export class LiqidObserver {
             // }, { 'id': "device-data-socket" });
         }
         try {
+            let state = await this.liqidComm.ping();
+            if (state) {
+                this.connState = ConnectionState.on;
+            }
+            else {
+                return false;
+            }
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();
@@ -424,7 +441,7 @@ export class LiqidObserver {
 
     public async fetchGroupDetails(id: number): Promise<GroupDetails> {
         try {
-            if (this.machines.hasOwnProperty(id)) {
+            if (this.groups.hasOwnProperty(id)) {
                 return await this.liqidComm.getGroupDetails(id);
             }
             else {

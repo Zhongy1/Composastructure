@@ -45,6 +45,17 @@ export class LiqidCommunicator {
         this.liqidUri = 'http://' + this.liqidIp + ':8080/liqid/api/v2';
     }
 
+    public ping(): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            axios.get(this.liqidUri + '/fabric/id', { timeout: 3 })
+                .then(res => {
+                    resolve(true);
+                }, err => {
+                    resolve(false);
+                });
+        });
+    }
+
     //Assembly Controller
     //POST '/assembly/assemble' Assemble a specific machine. Requires MachineAssembly
     //POST '/assembly/assemble/all' Assemble each machine belonging to the specified group. Requires GroupAssembly
@@ -82,9 +93,7 @@ export class LiqidCommunicator {
     //GET '/status' getStatus. Accepts a string criteria and an object parameters
     public getDeviceStats(options?: DeviceStatusParams): Promise<DeviceStatus[]> {
         return new Promise<DeviceStatus[]>((resolve, reject) => {
-            axios.get(this.liqidUri + '/status', {
-                params: options
-            })
+            axios.get(this.liqidUri + '/status', { params: options })
                 .then(res => {
                     resolve(res.data.response.data);
                 }, err => {
