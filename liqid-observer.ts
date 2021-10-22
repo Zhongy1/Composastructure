@@ -23,6 +23,10 @@ export interface GatheringDevStatsOptions {
     gatherUnused: boolean
 }
 
+export enum ConnectionState {
+    on, connecting, off
+}
+
 /**
  * Observer for liqid system state
 ```typescript
@@ -50,6 +54,7 @@ export class LiqidObserver {
     private updateCallback;
 
     public fabricTracked: boolean;
+    public connState: ConnectionState;
 
     constructor(private liqidIp: string, public systemName: string = '') {
         this.liqidComm = new LiqidCommunicator(liqidIp);
@@ -65,6 +70,7 @@ export class LiqidObserver {
         this.cpuNameToIpmiMap = {};
 
         this.fabricTracked = false;
+        this.connState = ConnectionState.off;
     }
 
     /**
@@ -136,6 +142,13 @@ export class LiqidObserver {
             // }, { 'id': "device-data-socket" });
         }
         try {
+            let state = await this.liqidComm.ping();
+            if (state) {
+                this.connState = ConnectionState.on;
+            }
+            else {
+                return false;
+            }
             if (!this.fabricTracked) {
                 this.fabricTracked = await this.trackSystemChanges();
                 this.fabricId = await this.identifyFabricId();

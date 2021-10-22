@@ -15,7 +15,7 @@ import * as tls from 'tls';
 import * as cors from 'cors';
 import * as helmet from 'helmet';
 import * as morgan from 'morgan';
-import { LiqidObserver } from './liqid-observer';
+import { LiqidObserver, ConnectionState } from './liqid-observer';
 import { LiqidController, ComposeOptions } from './liqid-controller';
 import { Group, Machine, PreDevice, DeviceStatus, Run, P2PStatus } from './models';
 import { Router } from 'express-serve-static-core';
@@ -132,6 +132,7 @@ export interface DeviceWrapper {
 
 export interface Overview {
     fabrIds: number[],
+    connStates: FabrConnectionState[],
     names: string[],
     groups: GroupInfo[][],
     devices: Device[][]
@@ -156,6 +157,11 @@ export interface SystemState {
         id: number,
     }[],
     state: ComposeOptions[]
+}
+
+export interface FabrConnectionState {
+    fabrId: number,
+    state: ConnectionState
 }
 
 
@@ -219,10 +225,12 @@ export class RestServer {
             for (let i = 0; i < this.config.liqidSystems.length; i++) {
                 let obs = new LiqidObserver(this.config.liqidSystems[i].ip, this.config.liqidSystems[i].name);
                 let res = await obs.start();
-                this.liqidObservers[obs.getFabricId()] = obs;
-                let ctrl = new LiqidController(this.config.liqidSystems[i].ip, this.config.liqidSystems[i].name);
-                res = await ctrl.start();
-                this.liqidControllers[ctrl.getFabricId()] = ctrl;
+                if (res) {
+                    this.liqidObservers[obs.getFabricId()] = obs;
+                    let ctrl = new LiqidController(this.config.liqidSystems[i].ip, this.config.liqidSystems[i].name);
+                    res = await ctrl.start();
+                    this.liqidControllers[ctrl.getFabricId()] = ctrl;
+                }
             }
             // this.app.listen(this.config.hostPort, () => {
             //     console.log(`Server running on port ${this.config.hostPort}`);

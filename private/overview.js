@@ -527,6 +527,16 @@ function prepareSideMenu() {
         menu.classList.remove('shown');
         shade.classList.remove('shown');
     });
+
+    let deviceMoverItem = document.getElementById('device-mover-options');
+    deviceMoverItem.addEventListener('click', (e) => {
+        if (deviceMoverItem.classList.contains('closed')) {
+            deviceMoverItem.classList.remove('closed');
+        }
+        else {
+            deviceMoverItem.classList.add('closed');
+        }
+    });
 }
 
 function prepareFabricIndicator() {
@@ -1339,6 +1349,6 @@ socket.on('fabric-update', (data) => {
         }
     }
 });
-// socket.on('busy', (busyData) => {
+socket.on('connection-state-update', (data) => {
 
-// });
+});
