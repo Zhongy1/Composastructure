@@ -490,11 +490,16 @@ export class RestServer {
         }
         let overview: Overview = {
             fabrIds: fabrIds,
+            connStates: [],
             names: names,
             groups: [],
             devices: []
         };
         for (let i = 0; i < overview.fabrIds.length; i++) {
+            overview.connStates.push({
+                fabrId: overview.fabrIds[i],
+                state: this.liqidObservers[overview.fabrIds[i]].connState
+            });
             let groups = this.liqidObservers[overview.fabrIds[i]].getGroups();
             let tempGroups = {};
             Object.keys(groups).forEach(grpId => {

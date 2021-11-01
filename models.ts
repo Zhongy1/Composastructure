@@ -14,16 +14,37 @@ export enum P2PStatus {
     on = 'on', off = 'off'
 }
 
-export interface ApplicationVersion {
-    'liqcfgd-version': Version,
-    'liqmgt-version': Version,
-    'liqmond-version': Version,
-    'ui-version': Version
+export interface AbstractAuthProviderConfigurationContext {
+    provider: 'okta' | 'google' | 'facebook' | 'keycloak',
+    'provider-configuration': AuthProviderConfiguration
 }
-
+export interface ApplicationVersion {
+    branch: string,
+    changeset: string,
+    changeset_short: string,
+    component: string,
+    date: string,
+    date_short: string,
+    version: string
+}
 export interface AssemblyTimestamp {
     assemblyEndTime: number,
     assemblyStartTime: number
+}
+export interface AuthMetaData {
+    data: { [key: string]: string },
+    mode: 'provided' | 'basic' | 'none'
+}
+export interface AuthProviderConfiguration {
+    'authorization-uri': string,
+    'client-secret': string,
+    client_id: string,
+    'jwk-set-uri': string,
+    'token-uri': string
+}
+export interface CompositeEnclosureId {
+    enclosure_index: number,
+    vendor_id: number
 }
 export interface ComputeDeviceStatus {
     dev_id?: string,
@@ -47,6 +68,12 @@ export interface ComputeDeviceStatus {
     vid?: string,
     hconn?: string,
     unique?: string
+}
+export interface ComputeHostLicenseListing {
+    'current host': number,
+    licenses: string[],
+    'max host licenses': number,
+    name: string[]
 }
 export interface ConfigurationEntry {
     comment?: string,
@@ -90,18 +117,19 @@ export interface DeviceDescription {
     udesc: string
 }
 export interface DeviceFilteringCriteria {
-    attributes: any,
+    attributes: { [key: string]: string[] },
     deviceType: string//might be DeviceType
 }
 export interface DeviceStatus {
+    conn_type?: string,
     dev_id?: string,
     device_state?: string,
     device_type?: string,
     did?: string,
     fabr_gid: string,
     fabr_id: number,
-    flags?: string,
     fabric_type?: string,
+    flags?: string,
     index?: number,
     lanes?: number,
     location?: LiqidCoordinates,
@@ -125,16 +153,25 @@ export interface ErrorMessage {
 }
 export interface FabricConfigurationEntry {
     description?: ManageableEntryDescription,
-    fabr_connect: ConfigurationEntry,
+    fabr_altlogin: ConfigurationEntry[],
+    fabr_connect: ConfigurationEntry[],
+    fabr_encl: ConfigurationEntry[]
     fabr_thresh: ConfigurationEntry,
     fabr_type: ConfigurationEntry,
+    fabricAlternateLoginEntrie?: ConfigurationEntry[],
     fabricThreshhold?: ConfigurationEntry,
     name?: string
 }
 export interface FabricId {
     id: number
 }
+export interface FabircToggleComposite {
+    coordinates: LiqidCoordinates,
+    flag: ControlFlag,
+    options: 'add'
+}
 export interface FPGADeviceStatus {
+    conn_type?: string,
     dev_id?: string,
     device_state?: string,
     device_type?: string,
@@ -157,6 +194,7 @@ export interface FPGADeviceStatus {
     unique?: string
 }
 export interface GPUDeviceStatus {
+    conn_type?: string,
     dev_id?: string,
     device_state?: string,
     device_type?: string,
@@ -231,7 +269,23 @@ export interface ImageContext {
     machine: Machine,
     type: string
 }
+export interface IpmiEclosureConnection {
+    ipmi_addr: string,
+    ipmi_login: string,
+    ipmi_passwd: string
+}
+export interface KubernetesApplicationConfiguration {
+    fabric_id: number,
+    group_create: boolean,
+    group_info: string,
+    reset_after: boolean,
+    reset_before: boolean,
+    server: string,
+    system_reset: boolean,
+    type: string
+}
 export interface LinkDeviceStatus {
+    conn_type?: string,
     dev_id?: string,
     device_state?: string,
     device_type?: string,
@@ -261,7 +315,8 @@ export interface LiqidCoordinates {
 export interface LiqidDaemonConfiguration {
     configurationEntries: ConfigurationEntry[],
     configurationEntryStanzas: ConfigurationEntryStanza[],
-    fabricConfigurationEntries: FabricConfigurationEntry[]
+    fabricConfigurationEntries: FabricConfigurationEntry[],
+    portSetConfigurationEntries: ConfigurationEntry[]
 }
 export interface LiqidDegradedSteps {
     index?: number,
@@ -269,8 +324,36 @@ export interface LiqidDegradedSteps {
     steps?: string[],
     type: string
 }
-export interface LiqidReset {
+export interface LiqidDeploymentState {
+    fabricId: number,
+    fabricType: string,
+    flags: string,
+    flags2: string,
+    flags3: string,
+    instanceMode: string,
+    kubernetesEnabled: boolean,
+    liqidCoordinates: LiqidCoordinates,
+    modeId: number,
+    openstackEnabled: boolean,
+    quorum: boolean,
+    redfishEnabled: boolean,
+    slurmEnabled: boolean
+}
+export interface LiqidNodeCoordinates {
+    address: string,
+    coordinates: LiqidCoordinates,
+    port: number
+}
+export interface LiqidResetTimestamp {
     epoch: number
+}
+export interface ListResponseContainer<T> {
+    response: ListResponse<T>
+}
+export interface ListResponse<T> {
+    code: number,
+    data: T[],
+    errors: ErrorMessage[]
 }
 export interface Machine {
     comp_name?: string,
@@ -302,6 +385,11 @@ export interface MachineAssemblyList {
     name: string,
     owner_gid: string,
     udesc: string
+}
+export interface MachineCreateAttribute {
+    mach_create: string,
+    name: string,
+    type: string
 }
 export interface MachineDetails {
     boot_device: string,
@@ -342,39 +430,33 @@ export interface MachineWithBusyDevice {
     type: string
 }
 export interface Manageable {
-    type: string //ipmi | device
+    credentials: any,
+    ip_address: string,
+    port: number,
+    type: 'ManageableDevice' | ' ManageableCpuIpmiNetworkConfig' | 'ManageableEnclosureIpmiNetworkConfig'
 }
 export interface ManageableDevice {
+    credentials: any,
+    ip_address: string,
+    port: number,
     type: string,
-    capacity: number,
-    companion_device: string,
-    coreMhz: number
-    cores: number,
-    description: string,
-    device_manufacturer: string,
-    device_type: DeviceType,
-    did: string,
-    discovery_token: string,
-    dram_size: number,
-    dram_type: string,
-    entry_description: ManageableEntryDescription,
-    model: string,
-    speed: number
-    speed_string: string,
-    threads: number,
-    unique?: string,
-    vid: string
+    enclosure_name: string
 }
 export interface ManageableEntryDescription {
     active: boolean,
-    required?: boolean
+    required: boolean
 }
-export interface ManageableIpmiAddress {
-    type: string,
-    cpu_name: string,
-    credentials: any,
-    ip_address: string,
-    port: number
+export interface MappableFabric {
+    fabrics: number[],
+    'provider-role': string
+}
+export interface MappableGroup {
+    groups: number[],
+    'provider-role': string
+}
+export interface MappableRole {
+    'liqid-role': 'ROLE_LIQID_ADMIN' | 'ROLE_LIQID_FABRIC_ADMIN' | 'ROLE_LIQID_GROUP_ADMIN' | 'ROLE_LIQID_READ_ONLY',
+    'provider-role': string
 }
 export interface NodeConfiguration {
     liqcfgd_configuration: LiqidDaemonConfiguration,
@@ -395,11 +477,17 @@ export interface NodeStatus {
     targs: number,
     uptime: string
 }
+export interface NorthboundApplicationState {
+    application: 'slurm' | 'kubernetes' | 'redfish' | 'openstack',
+    coordingates: LiqidCoordinates,
+    fabric: number,
+    status: 'enabled' | 'disabled'
+}
 export interface NullDegradedSteps {
-    index: number,
-    key: string,
-    steps: string[],
-    type: string //ManageableDevice|ManageableIpmiAddress
+    index?: number,
+    key?: string,
+    steps?: string[],
+    type: 'ManageableDevice' | 'ManageableCpuIpmiNetworkConfig' | 'ManageableEnclosureIpmiNetworkConfig'
 }
 export interface PciNode {
     deviceType: DeviceType,
@@ -457,7 +545,6 @@ export interface PreDevice {
     grp_id: number,
     index: string,
     lanes: number,
-    liqid_gid: string,
     mach_id: string,
     mname: string,
     name: string,
@@ -465,22 +552,48 @@ export interface PreDevice {
     port_gid: string,
     swit_gid: string
 }
+export interface RedfishEnclosureConnection {
+    redfish_addr: string,
+    redfish_login: string,
+    redfish_passwd: string
+}
 export interface ResponseBodyEmitter {
     timeout: number
 }
 export interface Result {
-    'commandLine': string,
-    'errorOutput': string,
-    'exitValue': number,
-    'standardOutput': string
+    commandLine: string,
+    errorOutput: string,
+    exitValue: number,
+    standardOutput: string
+}
+export interface RoleToFabricMapping {
+    mappings: { [key: string]: number[] }
+}
+export interface RoleToGroupMapping {
+    mappings: { [key: string]: number[] }
+}
+export interface RoleToRoleMapping {
+    mappings: { [key: string]: string }
+}
+export interface SlurmApplicationConfiguration {
+    fabric_id: number,
+    group_create: boolean,
+    group_info: string,
+    reset_after: boolean,
+    reset_before: boolean,
+    server: string,
+    system_reset: boolean,
+    type: string
 }
 export interface SsdDeviceStatus {
+    conn_type?: string,
     dev_id?: string,
     device_state?: string,
     device_type?: string,
     did?: string,
     fabr_gid: string,
     fabr_id: number,
+    fabric_type?: string,
     flags?: string,
     index?: number,
     lanes?: number,
@@ -495,11 +608,17 @@ export interface SsdDeviceStatus {
     vid?: string,
     capacity?: number
 }
-export interface UpgradeArguments {
-
+export interface SshStatus {
+    active: boolean,
+    enabled: boolean
 }
-export interface Version {
-
+export interface UpgradeArguments {
+    arguments: string
+}
+export interface VapiEnclosureConnection {
+    vapi_addr: string,
+    vapi_login: string,
+    vapi_passwd: string
 }
 
 // For request parameters
