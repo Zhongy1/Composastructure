@@ -51,7 +51,7 @@
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "serve-static": "^1.14.1",
-    "socket.io": "^2.4.1",
+    "socket.io": "^2.5.0",
     "stompjs": "^2.3.3",
     "tls": "0.0.1",
     "typedoc": "^0.22.6"
